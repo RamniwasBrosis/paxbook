@@ -1,0 +1,22 @@
+{
+  "name": "paxbook-platform",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "db:migrate": "pnpm --filter @paxbook/api prisma:migrate",
+    "db:seed": "pnpm --filter @paxbook/api prisma:seed",
+    "db:studio": "pnpm --filter @paxbook/api prisma:studio"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.6.3"
+  }
+}

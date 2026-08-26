@@ -1,0 +1,530 @@
+
+> paxbook-platform@0.1.0 dev D:\guddu\projects\PaxbookPlatform
+> turbo run dev
+
+• turbo 2.10.9
+
+   • Packages in scope: @paxbook/admin, @paxbook/api, @paxbook/api-client, @paxbook/auth-client, @paxbook/config, @paxbook/eslint-config, @paxbook/tsconfig, @paxbook/types, @paxbook/ui, @paxbook/user, @paxbook/vendor
+   • Running dev in 11 packages
+   • Remote caching disabled
+
+@paxbook/config:build: cache hit, replaying logs 88f427af4187c550
+@paxbook/config:build: 
+@paxbook/config:build: > @paxbook/config@0.0.0 build D:\guddu\projects\PaxbookPlatform\packages\config
+@paxbook/config:build: > tsc -p tsconfig.json
+@paxbook/config:build: 
+@paxbook/types:build: cache hit, replaying logs e866b02454757490
+@paxbook/types:build: 
+@paxbook/types:build: > @paxbook/types@0.0.0 build D:\guddu\projects\PaxbookPlatform\packages\types
+@paxbook/types:build: > tsc -p tsconfig.json
+@paxbook/types:build: 
+@paxbook/user:dev: cache bypass, force executing a5ca6b2aabad7cab
+@paxbook/vendor:dev: cache bypass, force executing a705ef94eba94e6f
+@paxbook/api:dev: cache bypass, force executing d815f00380a24c46
+@paxbook/admin:dev: cache bypass, force executing b8f65aa98764f852
+@paxbook/user:dev: 
+@paxbook/user:dev: > @paxbook/user@0.0.0 dev D:\guddu\projects\PaxbookPlatform\apps\user
+@paxbook/user:dev: > next dev -p 3001
+@paxbook/user:dev: 
+@paxbook/vendor:dev: 
+@paxbook/vendor:dev: > @paxbook/vendor@0.0.0 dev D:\guddu\projects\PaxbookPlatform\apps\vendor
+@paxbook/vendor:dev: > next dev -p 3002
+@paxbook/vendor:dev: 
+@paxbook/api:dev: 
+@paxbook/api:dev: > @paxbook/api@0.1.0 dev D:\guddu\projects\PaxbookPlatform\apps\api
+@paxbook/api:dev: > nest start --watch
+@paxbook/api:dev: 
+@paxbook/admin:dev: 
+@paxbook/admin:dev: > @paxbook/admin@0.1.0 dev D:\guddu\projects\PaxbookPlatform\apps\admin
+@paxbook/admin:dev: > next dev -p 3000
+@paxbook/admin:dev: 
+@paxbook/admin:dev:   ▲ Next.js 14.2.18
+@paxbook/user:dev:   ▲ Next.js 14.2.18
+@paxbook/admin:dev:   - Local:        http://localhost:3000
+@paxbook/admin:dev:   - Environments: .env.local
+@paxbook/user:dev:   - Local:        http://localhost:3001
+@paxbook/admin:dev: 
+@paxbook/user:dev: 
+@paxbook/user:dev:  ✓ Starting...
+@paxbook/admin:dev:  ✓ Starting...
+@paxbook/vendor:dev:   ▲ Next.js 14.2.18
+@paxbook/vendor:dev:   - Local:        http://localhost:3002
+@paxbook/vendor:dev: 
+@paxbook/vendor:dev:  ✓ Starting...
+@paxbook/api:dev: [2J[3J[H[[90m1:24:13 pm[0m] Starting compilation in watch mode...
+@paxbook/api:dev: 
+@paxbook/admin:dev:  ✓ Ready in 9.4s
+@paxbook/user:dev:  ✓ Ready in 10s
+@paxbook/user:dev:  ○ Compiling /middleware ...
+@paxbook/vendor:dev:  ✓ Ready in 13s
+@paxbook/user:dev:  ✓ Compiled /middleware in 5.8s (72 modules)
+@paxbook/user:dev:  ○ Compiling / ...
+@paxbook/user:dev:  ✓ Compiled / in 31.9s (713 modules)
+@paxbook/user:dev:  ⨯ TypeError: fetch failed
+@paxbook/user:dev:     at async publicFetch (./lib/api.ts:10:17)
+@paxbook/user:dev:     at async Promise.all (index 0)
+@paxbook/user:dev:     at async HomePage (./app/page.tsx:49:37)
+@paxbook/user:dev: digest: "2221616689"
+@paxbook/user:dev: Cause: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:     at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:     at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:     at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:   code: 'ECONNREFUSED',
+@paxbook/user:dev:   [errors]: [
+@paxbook/user:dev:     Error: connect ECONNREFUSED ::1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '::1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     },
+@paxbook/user:dev:     Error: connect ECONNREFUSED 127.0.0.1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '127.0.0.1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     }
+@paxbook/user:dev:   ]
+@paxbook/user:dev: }
+@paxbook/user:dev:  ⨯ TypeError: fetch failed
+@paxbook/user:dev:     at async publicFetch (./lib/api.ts:10:17)
+@paxbook/user:dev:     at async Promise.all (index 0)
+@paxbook/user:dev:     at async HomePage (./app/page.tsx:49:37)
+@paxbook/user:dev: digest: "2221616689"
+@paxbook/user:dev: Cause: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:     at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:     at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:     at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:   code: 'ECONNREFUSED',
+@paxbook/user:dev:   [errors]: [
+@paxbook/user:dev:     Error: connect ECONNREFUSED ::1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '::1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     },
+@paxbook/user:dev:     Error: connect ECONNREFUSED 127.0.0.1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '127.0.0.1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     }
+@paxbook/user:dev:   ]
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 500 in 33921ms
+@paxbook/api:dev: [[90m1:25:03 pm[0m] Found 0 errors. Watching for file changes.
+@paxbook/api:dev: 
+@paxbook/user:dev:  ⨯ TypeError: fetch failed
+@paxbook/user:dev:     at async publicFetch (./lib/api.ts:10:17)
+@paxbook/user:dev:     at async Promise.all (index 0)
+@paxbook/user:dev:     at async HomePage (./app/page.tsx:49:37)
+@paxbook/user:dev: digest: "2221616689"
+@paxbook/user:dev: Cause: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:     at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:     at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:     at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:   code: 'ECONNREFUSED',
+@paxbook/user:dev:   [errors]: [
+@paxbook/user:dev:     Error: connect ECONNREFUSED ::1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '::1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     },
+@paxbook/user:dev:     Error: connect ECONNREFUSED 127.0.0.1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '127.0.0.1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     }
+@paxbook/user:dev:   ]
+@paxbook/user:dev: }
+@paxbook/user:dev:  ⨯ TypeError: fetch failed
+@paxbook/user:dev:     at async publicFetch (./lib/api.ts:10:17)
+@paxbook/user:dev:     at async Promise.all (index 0)
+@paxbook/user:dev:     at async HomePage (./app/page.tsx:49:37)
+@paxbook/user:dev: digest: "2221616689"
+@paxbook/user:dev: Cause: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:     at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:     at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:     at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:   code: 'ECONNREFUSED',
+@paxbook/user:dev:   [errors]: [
+@paxbook/user:dev:     Error: connect ECONNREFUSED ::1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '::1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     },
+@paxbook/user:dev:     Error: connect ECONNREFUSED 127.0.0.1:4000
+@paxbook/user:dev:         at createConnectionError (node:net:1679:14)
+@paxbook/user:dev:         at afterConnectMultiple (node:net:1709:16)
+@paxbook/user:dev:         at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:       errno: -4078,
+@paxbook/user:dev:       code: 'ECONNREFUSED',
+@paxbook/user:dev:       syscall: 'connect',
+@paxbook/user:dev:       address: '127.0.0.1',
+@paxbook/user:dev:       port: 4000
+@paxbook/user:dev:     }
+@paxbook/user:dev:   ]
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 500 in 495ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [NestFactory] Starting Nest application...
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] PrismaModule dependencies initialized +163ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] PassportModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] ThrottlerModule dependencies initialized +91ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] ConfigHostModule dependencies initialized +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] ConfigModule dependencies initialized +6ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] ConfigModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] AuditLogModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] RolesModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] ReviewsModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] OffersModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] CrmModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] ReportsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] TenantModule dependencies initialized +9ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] StorageModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] SmsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] UsersModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] JwtModule dependencies initialized +5ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] JwtModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] JwtModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] UploadsModule dependencies initialized +15ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] AppModule dependencies initialized +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] DestinationsModule dependencies initialized +6ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] PackagesModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] CmsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] CustomersModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] BookingsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] FinanceModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] PublicModule dependencies initialized +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] VendorsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] PlatformModule dependencies initialized +7ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] VendorPortalModule dependencies initialized +4ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] CustomerAuthModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] VendorAuthModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] CustomerPortalModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:11 pm     LOG [InstanceLoader] AuthModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] AuditLogController {/api/audit-log} (version: 1): +432ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/audit-log, GET} (version: 1) route +10ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] RolesController {/api/roles} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/roles, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] UsersController {/api/users} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/users, POST} (version: 1) route +2ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] AuthController {/api/auth} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/auth/refresh, POST} (version: 1) route +2ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/auth/logout, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/auth/me, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] UploadsController {/api/uploads} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/uploads, POST} (version: 1) route +2ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] DestinationsController {/api/destinations} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations, GET} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/countries, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/categories, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/highlights, GET} (version: 1) route +2ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/highlights, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/highlights/:highlightId, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/highlights/:highlightId, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/activities, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/activities, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/activities/:activityId, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/activities/:activityId, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/hotel-suggestions, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/hotel-suggestions, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/hotel-suggestions/:hotelId, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/destinations/:id/hotel-suggestions/:hotelId, DELETE} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PackagesController {/api/packages} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/packages, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/packages/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/packages, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/packages/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/packages/:id/publish, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/packages/:id/unpublish, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/packages/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] BannersController {/api/cms/banners} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/banners, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/banners, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/banners/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/banners/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] FaqController {/api/cms/faq} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/faq, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/faq, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/faq/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/faq/:id, DELETE} (version: 1) route +4ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] TestimonialsController {/api/cms/testimonials} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/testimonials, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/testimonials, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/testimonials/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/testimonials/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] BlogController {/api/cms/blog} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/blog, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/blog, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/blog/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/blog/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] HomepageBlocksController {/api/cms/homepage-blocks} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PagesController {/api/cms/pages} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/pages, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/pages, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/pages/:id, PATCH} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/pages/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VisaInfoController {/api/cms/visa-info} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/visa-info, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/cms/visa-info/:countryId, PUT} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] ReviewsController {/api/reviews} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reviews, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reviews, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reviews/:id/status, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reviews/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] OffersController {/api/offers} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/offers, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/offers, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/offers/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/offers/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomersController {/api/customers} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:customerId/travelers, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:customerId/travelers/:travelerId, PATCH} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:customerId/travelers/:travelerId, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:customerId/documents, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customers/:customerId/documents/:documentId, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] BookingsController {/api/bookings} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings, POST} (version: 1) route +2ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:id/status, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:id/travelers, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:id/voucher, PUT} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] AdminDirectoryController {/api/crm/admins} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/admins, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] LeadsController {/api/leads} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads/:id, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads/:id/status, PATCH} (version: 1) route +4ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] LeadFollowUpsController {/api/leads/:leadId/follow-ups} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads/:leadId/follow-ups, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads/:leadId/follow-ups/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/leads/:leadId/follow-ups/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] ConsultantsController {/api/crm/consultants} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/consultants, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/consultants, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/consultants/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/consultants/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] TasksController {/api/crm/tasks} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/tasks, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/tasks, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/tasks/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/crm/tasks/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PaymentsController {/api/payments} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/payments, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/payments, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/payments/:id/status, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] InvoicesController {/api/invoices} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/invoices, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/invoices, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] EmiPlansController {/api/bookings/:bookingId/emi-plan} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:bookingId/emi-plan, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:bookingId/emi-plan, PUT} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/bookings/:bookingId/emi-plan, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] RefundsController {/api/refunds} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/refunds, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/refunds, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/refunds/:id/status, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorsController {/api/vendors} (version: 1): +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:id/portal-access, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:id/portal-access/reset-password, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorContractsController {/api/vendors/:vendorId/contracts} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:vendorId/contracts, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:vendorId/contracts/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendors/:vendorId/contracts/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorPaymentsController {/api/vendor-payments} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor-payments, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor-payments, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor-payments/:id/mark-paid, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] ReportsController {/api/reports} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reports/sales, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reports/revenue, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reports/consultants, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reports/marketing, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/reports/satisfaction, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PublicContentController {/api/public} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/homepage, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/branding, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/stats, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/destinations, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/destinations/:slug, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/packages, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/packages/:slug, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/blog, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/blog/:slug, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/pages, GET} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/pages/:slug, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/visa-guide, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/sitemap, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PublicLeadsController {/api/public/leads} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/public/leads, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomerAuthController {/api/customer-auth} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer-auth/otp/request, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer-auth/otp/verify, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer-auth/register, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer-auth/login, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer-auth/refresh, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer-auth/logout, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer-auth/me, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomerBookingsController {/api/customer/bookings} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings/cancellation-requests, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id/invoice, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id/voucher, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id/cancellation-request, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomerPaymentsController {/api/customer/bookings/:bookingId/payment} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings/:bookingId/payment/order, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/bookings/:bookingId/payment/:paymentId/verify, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomerProfileController {/api/customer/profile} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile/full, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile/travelers, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile/travelers/:travelerId, PATCH} (version: 1) route +4ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile/travelers/:travelerId, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile/documents, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/profile/documents/:documentId, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomerWishlistController {/api/customer/wishlist} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/wishlist, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/wishlist/:packageId, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/wishlist/:packageId, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomerNotificationsController {/api/customer/notifications} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/notifications, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/notifications/:id/read, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] CustomerReviewsController {/api/customer/reviews} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/reviews/mine, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/customer/reviews, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] AdminCancellationRequestsController {/api/admin/cancellation-requests} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/admin/cancellation-requests, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/admin/cancellation-requests/:id/resolve, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorAuthController {/api/vendor-auth} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor-auth/login, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor-auth/refresh, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor-auth/logout, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor-auth/me, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorProfileController {/api/vendor/profile} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/profile, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/profile, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/profile/password, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorContractsController {/api/vendor/contracts} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/contracts, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/contracts/:id/document, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorPaymentsController {/api/vendor/payments} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/payments, GET} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorAssignmentsController {/api/vendor/assignments} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/assignments, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] VendorUploadsController {/api/vendor/uploads} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/vendor/uploads, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] TenantSignupController {/api/platform/tenants} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/platform/tenants/signup, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PlatformTenantsController {/api/platform/tenants} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/platform/tenants, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/platform/tenants/:id/status, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PlatformPlansController {/api/platform/plans} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/platform/plans/public, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/platform/plans, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/platform/plans, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/platform/plans/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] PlatformBillingController {/api/settings/billing} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/settings/billing, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/settings/billing/activate, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/settings/billing/confirm, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] TenantBrandingController {/api/settings/branding} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/settings/branding, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/settings/branding, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RoutesResolver] TenantIntegrationsController {/api/settings/integrations} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/settings/integrations, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [RouterExplorer] Mapped {/api/settings/integrations, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [PrismaService] Connected to PostgreSQL via Prisma
+@paxbook/api:dev: [Nest] 6268  - 20/08/2026, 1:25:12 pm     LOG [NestApplication] Nest application successfully started +11ms
+@paxbook/api:dev: Paxbook API listening on http://localhost:4000/api/v1
+@paxbook/api:dev: Swagger docs at http://localhost:4000/api/docs
+@paxbook/user:dev:  GET / 200 in 419ms
+@paxbook/user:dev:  GET / 200 in 662ms
+@paxbook/user:dev:  ○ Compiling /destinations ...
+@paxbook/user:dev:  ✓ Compiled /destinations in 2.9s (702 modules)
+@paxbook/user:dev:  GET /destinations 200 in 4076ms
+@paxbook/user:dev:  ○ Compiling /destinations/[slug] ...
+@paxbook/user:dev:  ✓ Compiled /destinations/[slug] in 1322ms (700 modules)
+@paxbook/user:dev:  GET /destinations/bali 200 in 5105ms
+@paxbook/user:dev:  ○ Compiling /packages ...
+@paxbook/user:dev:  ✓ Compiled /packages in 1030ms (706 modules)
+@paxbook/user:dev:  GET /packages 200 in 2017ms
+@paxbook/user:dev:  ○ Compiling /packages/[slug] ...
+@paxbook/user:dev:  ✓ Compiled /packages/[slug] in 1566ms (724 modules)
+@paxbook/user:dev:  GET /packages/bali-honeymoon-escape 200 in 3255ms
+@paxbook/user:dev:  ○ Compiling /blog ...
+@paxbook/user:dev:  ✓ Compiled /blog in 1314ms (728 modules)
+@paxbook/user:dev:  GET /blog 200 in 1765ms
+@paxbook/user:dev:  ○ Compiling /visa-guide ...
+@paxbook/user:dev:  ✓ Compiled /visa-guide in 1097ms (732 modules)
+@paxbook/user:dev:  GET /visa-guide 200 in 1771ms
+@paxbook/user:dev:  ○ Compiling /contact ...
+@paxbook/user:dev:  ✓ Compiled /contact in 2.3s (739 modules)
+@paxbook/user:dev:  GET /contact 200 in 2872ms
+@paxbook/user:dev:  ○ Compiling /ai-planner ...
+@paxbook/user:dev:  ✓ Compiled /ai-planner in 1930ms (743 modules)
+@paxbook/user:dev:  GET /ai-planner 200 in 2433ms
+@paxbook/user:dev:  ○ Compiling /login ...
+@paxbook/user:dev:  ✓ Compiled /login in 1657ms (748 modules)
+@paxbook/user:dev:  GET /login 200 in 2131ms
+@paxbook/user:dev:  GET / 200 in 641ms
+@paxbook/user:dev:  GET / 200 in 503ms
+@paxbook/user:dev:  ○ Compiling /register ...
+@paxbook/user:dev:  ✓ Compiled /register in 2.8s (735 modules)

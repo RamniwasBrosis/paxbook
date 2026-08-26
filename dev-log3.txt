@@ -1,0 +1,1305 @@
+
+> paxbook-platform@0.1.0 dev D:\guddu\projects\PaxbookPlatform
+> turbo run dev
+
+• turbo 2.10.9
+
+   • Packages in scope: @paxbook/admin, @paxbook/api, @paxbook/api-client, @paxbook/auth-client, @paxbook/config, @paxbook/eslint-config, @paxbook/tsconfig, @paxbook/types, @paxbook/ui, @paxbook/user, @paxbook/vendor
+   • Running dev in 11 packages
+   • Remote caching disabled
+
+@paxbook/config:build: cache hit, replaying logs 88f427af4187c550
+@paxbook/config:build: 
+@paxbook/config:build: > @paxbook/config@0.0.0 build D:\guddu\projects\PaxbookPlatform\packages\config
+@paxbook/config:build: > tsc -p tsconfig.json
+@paxbook/config:build: 
+@paxbook/types:build: cache hit, replaying logs 9e84ee44ccde9ac2
+@paxbook/types:build: 
+@paxbook/types:build: > @paxbook/types@0.0.0 build D:\guddu\projects\PaxbookPlatform\packages\types
+@paxbook/types:build: > tsc -p tsconfig.json
+@paxbook/types:build: 
+@paxbook/user:dev: cache bypass, force executing a29bbe7f0ac9b032
+@paxbook/api:dev: cache bypass, force executing 06497e0d79fe71a4
+@paxbook/vendor:dev: cache bypass, force executing 255e700dcb8a64d9
+@paxbook/admin:dev: cache bypass, force executing fbb17fa55a1be1e4
+@paxbook/user:dev: 
+@paxbook/user:dev: > @paxbook/user@0.0.0 dev D:\guddu\projects\PaxbookPlatform\apps\user
+@paxbook/user:dev: > next dev -p 3001
+@paxbook/user:dev: 
+@paxbook/api:dev: 
+@paxbook/api:dev: > @paxbook/api@0.1.0 dev D:\guddu\projects\PaxbookPlatform\apps\api
+@paxbook/api:dev: > nest start --watch
+@paxbook/api:dev: 
+@paxbook/vendor:dev: 
+@paxbook/vendor:dev: > @paxbook/vendor@0.0.0 dev D:\guddu\projects\PaxbookPlatform\apps\vendor
+@paxbook/vendor:dev: > next dev -p 3002
+@paxbook/vendor:dev: 
+@paxbook/admin:dev: 
+@paxbook/admin:dev: > @paxbook/admin@0.1.0 dev D:\guddu\projects\PaxbookPlatform\apps\admin
+@paxbook/admin:dev: > next dev -p 3000
+@paxbook/admin:dev: 
+@paxbook/admin:dev: [?25h
+@paxbook/user:dev:   ▲ Next.js 14.2.18
+@paxbook/user:dev:   - Local:        http://localhost:3001
+@paxbook/user:dev: 
+@paxbook/user:dev:  ✓ Starting...
+@paxbook/vendor:dev:   ▲ Next.js 14.2.18
+@paxbook/vendor:dev:   - Local:        http://localhost:3002
+@paxbook/vendor:dev: 
+@paxbook/vendor:dev:  ✓ Starting...
+@paxbook/api:dev: [2J[3J[H[[90m9:45:47 am[0m] Starting compilation in watch mode...
+@paxbook/api:dev: 
+@paxbook/vendor:dev:  ✓ Ready in 34.3s
+@paxbook/user:dev:  ✓ Ready in 38s
+@paxbook/user:dev:  ○ Compiling /middleware ...
+@paxbook/user:dev:  ✓ Compiled /middleware in 11.1s (72 modules)
+@paxbook/user:dev:  ○ Compiling / ...
+@paxbook/user:dev: The user aborted a request.
+@paxbook/user:dev: 
+@paxbook/user:dev: Retrying 1/3...
+@paxbook/user:dev:  ✓ Compiled / in 20.6s (654 modules)
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 4812ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 333ms
+@paxbook/api:dev: [[90m9:46:49 am[0m] Found 0 errors. Watching for file changes.
+@paxbook/api:dev: 
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 1408ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 1067ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 937ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 196ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 984ms
+@paxbook/user:dev:  GET / 200 in 898ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6)
+@paxbook/user:dev:     at async Object.close (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\compiled\next-server\app-page.runtime.dev.js:35:386487) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 937ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 1316ms
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 1) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 2) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 3) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 4) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 5) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev: TypeError: fetch failed
+@paxbook/user:dev:     at node:internal/deps/undici/undici:15157:13
+@paxbook/user:dev:     at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+@paxbook/user:dev:     at async Promise.all (index 6) {
+@paxbook/user:dev:   [cause]: AggregateError [ECONNREFUSED]: 
+@paxbook/user:dev:       at internalConnectMultiple (node:net:1135:18)
+@paxbook/user:dev:       at afterConnectMultiple (node:net:1716:7)
+@paxbook/user:dev:       at TCPConnectWrap.callbackTrampoline (node:internal/async_hooks:130:17) {
+@paxbook/user:dev:     code: 'ECONNREFUSED',
+@paxbook/user:dev:     [errors]: [ [Error], [Error] ]
+@paxbook/user:dev:   }
+@paxbook/user:dev: }
+@paxbook/user:dev:  GET / 200 in 651ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [NestFactory] Starting Nest application...
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] PrismaModule dependencies initialized +365ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] PassportModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] ThrottlerModule dependencies initialized +93ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] ConfigHostModule dependencies initialized +2ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] ConfigModule dependencies initialized +5ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] ConfigModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] AuditLogModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] RolesModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] ReviewsModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] OffersModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] CrmModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] ReportsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] TenantModule dependencies initialized +4ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] StorageModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] SmsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] UsersModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] JwtModule dependencies initialized +2ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] JwtModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] JwtModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] UploadsModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] AppModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] DestinationsModule dependencies initialized +2ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] PackagesModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] CmsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] CustomersModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] BookingsModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] FinanceModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] PublicModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] VendorsModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] PlatformModule dependencies initialized +3ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] VendorPortalModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] CustomerAuthModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] VendorAuthModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] CustomerPortalModule dependencies initialized +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:16 am     LOG [InstanceLoader] AuthModule dependencies initialized +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] AuditLogController {/api/audit-log} (version: 1): +171ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/audit-log, GET} (version: 1) route +3ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] RolesController {/api/roles} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/roles, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] UsersController {/api/users} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/users, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/users, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] AuthController {/api/auth} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/auth/login, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/auth/refresh, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/auth/logout, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/auth/me, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] UploadsController {/api/uploads} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/uploads, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] DestinationsController {/api/destinations} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/destinations, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/destinations/countries, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/destinations/categories, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/destinations/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/destinations, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/destinations/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/destinations/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PackagesController {/api/packages} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/packages, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/packages/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/packages, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/packages/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/packages/:id/publish, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/packages/:id/unpublish, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/packages/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] BannersController {/api/cms/banners} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/banners, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/banners, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/banners/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/banners/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] FaqController {/api/cms/faq} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/faq, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/faq, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/faq/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/faq/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] TestimonialsController {/api/cms/testimonials} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/testimonials, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/testimonials, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/testimonials/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/testimonials/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] BlogController {/api/cms/blog} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/blog, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/blog, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/blog/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/blog/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] HomepageBlocksController {/api/cms/homepage-blocks} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/homepage-blocks/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PagesController {/api/cms/pages} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/pages, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/pages, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/pages/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/pages/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VisaInfoController {/api/cms/visa-info} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/visa-info, GET} (version: 1) route +2ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/cms/visa-info/:countryId, PUT} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] ReviewsController {/api/reviews} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reviews, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reviews, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reviews/:id/status, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reviews/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] OffersController {/api/offers} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/offers, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/offers, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/offers/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/offers/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomersController {/api/customers} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:id, PATCH} (version: 1) route +2ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:customerId/travelers, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:customerId/travelers/:travelerId, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:customerId/travelers/:travelerId, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:customerId/documents, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customers/:customerId/documents/:documentId, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] BookingsController {/api/bookings} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:id, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:id/status, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:id/travelers, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:id/voucher, PUT} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] AdminDirectoryController {/api/crm/admins} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/admins, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] LeadsController {/api/leads} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads/:id, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads/:id/status, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] LeadFollowUpsController {/api/leads/:leadId/follow-ups} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads/:leadId/follow-ups, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads/:leadId/follow-ups/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/leads/:leadId/follow-ups/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] ConsultantsController {/api/crm/consultants} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/consultants, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/consultants, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/consultants/:id, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/consultants/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] TasksController {/api/crm/tasks} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/tasks, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/tasks, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/tasks/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/crm/tasks/:id, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PaymentsController {/api/payments} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/payments, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/payments, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/payments/:id/status, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] InvoicesController {/api/invoices} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/invoices, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/invoices, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] EmiPlansController {/api/bookings/:bookingId/emi-plan} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:bookingId/emi-plan, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:bookingId/emi-plan, PUT} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/bookings/:bookingId/emi-plan, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] RefundsController {/api/refunds} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/refunds, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/refunds, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/refunds/:id/status, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorsController {/api/vendors} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:id, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:id/portal-access, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:id/portal-access/reset-password, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorContractsController {/api/vendors/:vendorId/contracts} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:vendorId/contracts, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:vendorId/contracts/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendors/:vendorId/contracts/:id, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorPaymentsController {/api/vendor-payments} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor-payments, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor-payments, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor-payments/:id/mark-paid, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] ReportsController {/api/reports} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reports/sales, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reports/revenue, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reports/consultants, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reports/marketing, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/reports/satisfaction, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PublicContentController {/api/public} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/homepage, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/branding, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/stats, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/destinations, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/destinations/:slug, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/packages, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/packages/:slug, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/blog, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/blog/:slug, GET} (version: 1) route +4ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/pages, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/pages/:slug, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/visa-guide, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/sitemap, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PublicLeadsController {/api/public/leads} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/public/leads, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomerAuthController {/api/customer-auth} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer-auth/otp/request, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer-auth/otp/verify, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer-auth/register, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer-auth/login, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer-auth/refresh, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer-auth/logout, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer-auth/me, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomerBookingsController {/api/customer/bookings} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings/cancellation-requests, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id/invoice, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id/voucher, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings/:id/cancellation-request, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomerPaymentsController {/api/customer/bookings/:bookingId/payment} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings/:bookingId/payment/order, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/bookings/:bookingId/payment/:paymentId/verify, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomerProfileController {/api/customer/profile} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile/full, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile/travelers, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile/travelers/:travelerId, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile/travelers/:travelerId, DELETE} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile/documents, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/profile/documents/:documentId, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomerWishlistController {/api/customer/wishlist} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/wishlist, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/wishlist/:packageId, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/wishlist/:packageId, DELETE} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomerNotificationsController {/api/customer/notifications} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/notifications, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/notifications/:id/read, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] CustomerReviewsController {/api/customer/reviews} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/reviews/mine, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/customer/reviews, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] AdminCancellationRequestsController {/api/admin/cancellation-requests} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/admin/cancellation-requests, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/admin/cancellation-requests/:id/resolve, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorAuthController {/api/vendor-auth} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor-auth/login, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor-auth/refresh, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor-auth/logout, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor-auth/me, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorProfileController {/api/vendor/profile} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/profile, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/profile, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/profile/password, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorContractsController {/api/vendor/contracts} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/contracts, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/contracts/:id/document, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorPaymentsController {/api/vendor/payments} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/payments, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorAssignmentsController {/api/vendor/assignments} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/assignments, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] VendorUploadsController {/api/vendor/uploads} (version: 1): +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/vendor/uploads, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] TenantSignupController {/api/platform/tenants} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/platform/tenants/signup, POST} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PlatformTenantsController {/api/platform/tenants} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/platform/tenants, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/platform/tenants/:id/status, PATCH} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PlatformPlansController {/api/platform/plans} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/platform/plans/public, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/platform/plans, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/platform/plans, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/platform/plans/:id, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] PlatformBillingController {/api/settings/billing} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/settings/billing, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/settings/billing/activate, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/settings/billing/confirm, POST} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] TenantBrandingController {/api/settings/branding} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/settings/branding, GET} (version: 1) route +1ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/settings/branding, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RoutesResolver] TenantIntegrationsController {/api/settings/integrations} (version: 1): +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/settings/integrations, GET} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:17 am     LOG [RouterExplorer] Mapped {/api/settings/integrations, PATCH} (version: 1) route +0ms
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:18 am     LOG [PrismaService] Connected to PostgreSQL via Prisma
+@paxbook/api:dev: [Nest] 10508  - 19/08/2026, 9:49:18 am     LOG [NestApplication] Nest application successfully started +8ms
+@paxbook/api:dev: Paxbook API listening on http://localhost:4000/api/v1
+@paxbook/api:dev: Swagger docs at http://localhost:4000/api/docs
+@paxbook/user:dev:  GET / 200 in 1239ms
+@paxbook/user:dev:  ○ Compiling /destinations ...
+@paxbook/user:dev:  ✓ Compiled /destinations in 2.4s (579 modules)
+@paxbook/user:dev:  GET /destinations 200 in 3880ms
+@paxbook/user:dev:  GET /destinations 200 in 324ms
+@paxbook/user:dev:  ✓ Compiled / in 429ms (356 modules)
+@paxbook/user:dev:  ⨯ Error: Cannot find module './152.js'
+@paxbook/user:dev: Require stack:
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\webpack-runtime.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\app\page.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\require.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\load-components.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\build\utils.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\dev\hot-middleware.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\dev\hot-reloader-webpack.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\lib\router-utils\setup-dev-bundler.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\lib\router-server.js
+@paxbook/user:dev: - D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\lib\start-server.js
+@paxbook/user:dev:     at Function.<anonymous> (node:internal/modules/cjs/loader:1430:15)
+@paxbook/user:dev:     at D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\require-hook.js:55:36
+@paxbook/user:dev:     at defaultResolveImpl (node:internal/modules/cjs/loader:1040:19)
+@paxbook/user:dev:     at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1045:22)
+@paxbook/user:dev:     at Function._load (node:internal/modules/cjs/loader:1216:25)
+@paxbook/user:dev:     at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+@paxbook/user:dev:     at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+@paxbook/user:dev:     at mod.require (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\require-hook.js:65:28)
+@paxbook/user:dev:     at require (node:internal/modules/helpers:147:16)
+@paxbook/user:dev:     at __webpack_require__.f.require (D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\webpack-runtime.js:203:28)
+@paxbook/user:dev:     at D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\webpack-runtime.js:116:40
+@paxbook/user:dev:     at Array.reduce (<anonymous>)
+@paxbook/user:dev:     at __webpack_require__.e (D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\webpack-runtime.js:115:67)
+@paxbook/user:dev:     at Array.map (<anonymous>)
+@paxbook/user:dev:     at __webpack_require__.X (D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\webpack-runtime.js:167:22)
+@paxbook/user:dev:     at D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\app\page.js:1:40373
+@paxbook/user:dev:     at Object.<anonymous> (D:\guddu\projects\PaxbookPlatform\apps\user\.next\server\app\page.js:1:40426)
+@paxbook/user:dev:     at Module._compile (node:internal/modules/cjs/loader:1781:14)
+@paxbook/user:dev:     at Object..js (node:internal/modules/cjs/loader:1913:10)
+@paxbook/user:dev:     at Module.load (node:internal/modules/cjs/loader:1505:32)
+@paxbook/user:dev:     at Function._load (node:internal/modules/cjs/loader:1309:12)
+@paxbook/user:dev:     at wrapModuleLoad (node:internal/modules/cjs/loader:254:19)
+@paxbook/user:dev:     at Module.<anonymous> (node:internal/modules/cjs/loader:1527:12)
+@paxbook/user:dev:     at mod.require (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\require-hook.js:65:28)
+@paxbook/user:dev:     at require (node:internal/modules/helpers:147:16)
+@paxbook/user:dev:     at requirePage (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\require.js:109:84)
+@paxbook/user:dev:     at D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\load-components.js:98:84
+@paxbook/user:dev:     at async loadComponentsImpl (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\load-components.js:98:26)
+@paxbook/user:dev:     at async DevServer.findPageComponentsImpl (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\next-server.js:709:36)
+@paxbook/user:dev:     at async DevServer.findPageComponents (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\dev\next-dev-server.js:577:20)
+@paxbook/user:dev:     at async DevServer.renderPageComponent (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\base-server.js:1897:24)
+@paxbook/user:dev:     at async DevServer.renderToResponseImpl (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\base-server.js:1949:32)
+@paxbook/user:dev:     at async DevServer.pipeImpl (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\base-server.js:921:25)
+@paxbook/user:dev:     at async NextNodeServer.handleCatchallRenderRequest (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\next-server.js:272:17)
+@paxbook/user:dev:     at async DevServer.handleRequestImpl (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\base-server.js:817:17)
+@paxbook/user:dev:     at async D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\dev\next-dev-server.js:339:20
+@paxbook/user:dev:     at async Span.traceAsyncFn (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\trace\trace.js:154:20)
+@paxbook/user:dev:     at async DevServer.handleRequest (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\dev\next-dev-server.js:336:24)
+@paxbook/user:dev:     at async invokeRender (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\lib\router-server.js:173:21)
+@paxbook/user:dev:     at async handleRequest (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\lib\router-server.js:350:24)
+@paxbook/user:dev:     at async requestHandlerImpl (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\lib\router-server.js:374:13)
+@paxbook/user:dev:     at async Server.requestListener (D:\guddu\projects\PaxbookPlatform\node_modules\.pnpm\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\node_modules\next\dist\server\lib\start-server.js:141:13) {
+@paxbook/user:dev:   code: 'MODULE_NOT_FOUND',
+@paxbook/user:dev:   requireStack: [
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\apps\\user\\.next\\server\\webpack-runtime.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\apps\\user\\.next\\server\\app\\page.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\server\\require.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\server\\load-components.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\build\\utils.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\server\\dev\\hot-middleware.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\server\\dev\\hot-reloader-webpack.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\server\\lib\\router-utils\\setup-dev-bundler.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\server\\lib\\router-server.js',
+@paxbook/user:dev:     'D:\\guddu\\projects\\PaxbookPlatform\\node_modules\\.pnpm\\next@14.2.18_react-dom@18.3.1_react@18.3.1__react@18.3.1\\node_modules\\next\\dist\\server\\lib\\start-server.js'
+@paxbook/user:dev:   ],
+@paxbook/user:dev:   page: '/'
+@paxbook/user:dev: }
+@paxbook/user:dev:  ○ Compiling /_error ...
+@paxbook/user:dev:  ✓ Compiled /_error in 5.5s (849 modules)
+@paxbook/user:dev:  GET / 500 in 6878ms

@@ -1,0 +1,17 @@
+{
+  "name": "@paxbook/types",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@paxbook/config": "workspace:*"
+  },
+  "devDependencies": {
+    "@paxbook/tsconfig": "workspace:*",
+    "typescript": "^5.6.3"
+  }
+}

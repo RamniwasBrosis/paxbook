@@ -1,0 +1,16 @@
+-- AlterTable
+ALTER TABLE "tenants" ADD COLUMN     "facebookPixelId" TEXT,
+ADD COLUMN     "ga4MeasurementId" TEXT,
+ADD COLUMN     "googleClientId" TEXT,
+ADD COLUMN     "googleClientSecretEncrypted" TEXT,
+ADD COLUMN     "googleMapsApiKey" TEXT,
+ADD COLUMN     "s3AccessKeyId" TEXT,
+ADD COLUMN     "s3Bucket" TEXT,
+ADD COLUMN     "s3PublicBaseUrl" TEXT,
+ADD COLUMN     "s3Region" TEXT,
+ADD COLUMN     "s3SecretAccessKeyEncrypted" TEXT,
+ADD COLUMN     "smtpFromEmail" TEXT,
+ADD COLUMN     "smtpHost" TEXT,
+ADD COLUMN     "smtpPasswordEncrypted" TEXT,
+ADD COLUMN     "smtpPort" INTEGER,
+ADD COLUMN     "smtpUser" TEXT;

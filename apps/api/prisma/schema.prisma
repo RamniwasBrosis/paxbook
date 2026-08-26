@@ -1,0 +1,1235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// Tenancy — Phase 1 runs a single seeded tenant. Every tenant-scoped model
+// below carries tenantId now so Phase 4 (real multi-tenant enforcement) is an
+// additive change (resolver + guard), never a migration.
+// ============================================================================
+
+enum TenantStatus {
+  ACTIVE
+  TRIAL
+  SUSPENDED
+}
+
+model Tenant {
+  id              String       @id @default(uuid())
+  name            String
+  slug            String       @unique
+  status          TenantStatus @default(ACTIVE)
+  logoStorageKey  String?
+  primaryColor    String?
+  templateSlug    String       @default("classic")
+  customDomain    String?      @unique
+  razorpayKeyId              String?
+  razorpayKeySecretEncrypted String?
+  twilioAccountSid           String?
+  twilioAuthTokenEncrypted   String?
+  twilioFromNumber           String?
+  twilioWhatsappFromNumber   String?
+  /// Google OAuth client used for "Continue with Google" on the customer site.
+  googleClientId              String?
+  googleClientSecretEncrypted String?
+  /// Outbound transactional email (booking confirmations, OTP fallback, notifications).
+  smtpHost                 String?
+  smtpPort                 Int?
+  smtpUser                 String?
+  smtpPasswordEncrypted    String?
+  smtpFromEmail             String?
+  /// Client-side analytics/marketing tags — not secrets, but still tenant-owned so each agency tracks its own site.
+  ga4MeasurementId          String?
+  facebookPixelId           String?
+  /// Used for the destination/package route map — Maps JS key is inherently client-visible, stored per tenant so each
+  /// agency can use its own billing account rather than a shared platform key.
+  googleMapsApiKey          String?
+  /// S3-compatible object storage — when unset, StorageService falls back to local disk.
+  s3AccessKeyId             String?
+  s3SecretAccessKeyEncrypted String?
+  s3Bucket                  String?
+  s3Region                  String?
+  s3PublicBaseUrl           String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  adminUsers   AdminUser[]
+  roles        Role[]
+  destinations Destination[]
+  packages     Package[]
+  banners      Banner[]
+  faqItems     FaqItem[]
+  testimonials Testimonial[]
+  blogPosts    BlogPost[]
+  homepageBlocks HomepageBlock[]
+  customers    Customer[]
+  leads        Lead[]
+  tasks        Task[]
+  bookings     Booking[]
+  payments     Payment[]
+  invoices     Invoice[]
+  vendors      Vendor[]
+  auditLogs    AuditLog[]
+  reviews      Review[]
+  coupons      Coupon[]
+  pages        Page[]
+  wishlistItems WishlistItem[]
+  notifications Notification[]
+  subscription  Subscription?
+
+  @@map("tenants")
+}
+
+model Plan {
+  id             String   @id @default(uuid())
+  name           String   @unique
+  priceMonthly   Decimal  @db.Decimal(10, 2)
+  currency       String   @default("INR")
+  maxAdminUsers  Int?
+  maxPackages    Int?
+  isActive       Boolean  @default(true)
+  razorpayPlanId String?
+  createdAt      DateTime @default(now())
+
+  subscriptions Subscription[]
+
+  @@map("plans")
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+}
+
+model Subscription {
+  id                     String             @id @default(uuid())
+  tenantId               String             @unique
+  tenant                 Tenant             @relation(fields: [tenantId], references: [id])
+  planId                 String
+  plan                   Plan               @relation(fields: [planId], references: [id])
+  status                 SubscriptionStatus @default(TRIALING)
+  razorpaySubscriptionId String?
+  currentPeriodEnd       DateTime?
+  createdAt              DateTime           @default(now())
+
+  @@map("subscriptions")
+}
+
+// ============================================================================
+// Identity & RBAC (Admin / staff side — Phase 1 scope)
+// ============================================================================
+
+enum AdminStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model AdminUser {
+  id           String      @id @default(uuid())
+  tenantId     String
+  tenant       Tenant      @relation(fields: [tenantId], references: [id])
+  email        String      @unique
+  passwordHash String
+  name         String
+  phone        String?
+  status       AdminStatus @default(ACTIVE)
+  isPlatformOwner Boolean  @default(false)
+  roleId       String
+  role         Role        @relation(fields: [roleId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  refreshTokens   RefreshToken[]
+  auditLogs       AuditLog[]
+  consultant      Consultant?
+  assignedLeads   Lead[]         @relation("LeadAssignedConsultant")
+  assignedTasks   Task[]         @relation("TaskAssignedTo")
+  bookingsHandled Booking[]      @relation("BookingConsultant")
+  bookingStatusChanges BookingStatusHistory[]
+
+  @@index([tenantId])
+  @@map("admin_users")
+}
+
+model Role {
+  id       String  @id @default(uuid())
+  tenantId String
+  tenant   Tenant  @relation(fields: [tenantId], references: [id])
+  name     String
+  isSystem Boolean @default(false)
+
+  adminUsers      AdminUser[]
+  rolePermissions RolePermission[]
+
+  @@unique([tenantId, name])
+  @@map("roles")
+}
+
+model Permission {
+  id          String @id @default(uuid())
+  key         String @unique
+  description String?
+
+  rolePermissions RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model RefreshToken {
+  id          String    @id @default(uuid())
+  adminUserId String
+  adminUser   AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  replacedBy  String?
+  createdAt   DateTime  @default(now())
+
+  @@index([adminUserId])
+  @@map("refresh_tokens")
+}
+
+/// Schema-ready for Phase 2 (User Panel) Mobile OTP login. Not written to by
+/// anything in Phase 1 — kept here so the customer-auth migration is additive.
+model OtpCode {
+  id          String    @id @default(uuid())
+  subjectType String // "CUSTOMER"
+  subjectId   String
+  channel     String // "SMS" | "WHATSAPP" | "EMAIL"
+  codeHash    String
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([subjectType, subjectId])
+  @@map("otp_codes")
+}
+
+// ============================================================================
+// Destinations & Packages (catalog — Checkpoint 2)
+// ============================================================================
+
+model Country {
+  id     String  @id @default(uuid())
+  name   String
+  iso2   String  @unique
+  /// Broad geographic grouping used by the destinations-list region filter (Asia / Middle East / Europe / Indian Ocean / India). Admin-editable, not a strict enum since new regions may be added.
+  region String?
+
+  destinations Destination[]
+  visaInfo     VisaInfo?
+
+  @@map("countries")
+}
+
+/// One row per country — the Visa Guide (PDF section 10 / reference site's
+/// per-country visa pages). Not tenant-scoped: visa rules are a fact about
+/// the country, not something each tenant customizes.
+model VisaInfo {
+  id                String   @id @default(uuid())
+  countryId         String   @unique
+  country           Country  @relation(fields: [countryId], references: [id])
+  visaType          String
+  requiredDocuments String[] @default([])
+  isVisaFree        Boolean  @default(false)
+  processingTime    String
+  visaFee           Decimal? @db.Decimal(10, 2)
+  currency          String   @default("INR")
+  notes             String?
+  updatedAt         DateTime @updatedAt
+
+  @@map("visa_info")
+}
+
+model Destination {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  countryId     String
+  country       Country  @relation(fields: [countryId], references: [id])
+  name          String
+  slug          String
+  description   String?
+  heroImageKey  String?
+  isFeatured    Boolean  @default(false)
+  /// Admin show/hide toggle — same semantics as Coupon.isActive / Plan.isActive. When false the
+  /// destination is fully hidden from every public query but stays intact for the admin to re-enable.
+  isActive      Boolean  @default(true)
+  bestTimeToVisit String?
+  deletedAt     DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  categoryLinks DestinationCategoryMap[]
+  packages      Package[]
+  coupons       Coupon[]
+  highlights    DestinationHighlight[]
+  activities    DestinationActivity[]
+  hotelSuggestions DestinationHotelSuggestion[]
+  testimonials  Testimonial[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("destinations")
+}
+
+/// "Highlights of X" / things-to-do cards on the destination detail page.
+model DestinationHighlight {
+  id            String      @id @default(uuid())
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  title         String
+  description   String
+  sortOrder     Int         @default(0)
+
+  @@index([destinationId])
+  @@map("destination_highlights")
+}
+
+/// "Activities we can add" pill chips on the destination detail page.
+model DestinationActivity {
+  id            String      @id @default(uuid())
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  label         String
+  sortOrder     Int         @default(0)
+
+  @@index([destinationId])
+  @@map("destination_activities")
+}
+
+/// "Where you could stay" sidebar suggestions. `name` stays null until an admin supplies a real
+/// hotel — the UI shows the descriptor only in that case rather than inventing a property name.
+model DestinationHotelSuggestion {
+  id            String      @id @default(uuid())
+  destinationId String
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  name          String?
+  starRating    Int
+  area          String
+  descriptor    String?
+  sortOrder     Int         @default(0)
+
+  @@index([destinationId])
+  @@map("destination_hotel_suggestions")
+}
+
+/// Theme / Honeymoon / Family / Adventure / Seasonal / Budget / Luxury tags.
+model DestinationCategory {
+  id   String @id @default(uuid())
+  name String @unique
+
+  destinationLinks DestinationCategoryMap[]
+
+  @@map("destination_categories")
+}
+
+model DestinationCategoryMap {
+  destinationId String
+  destination   Destination         @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  categoryId    String
+  category      DestinationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([destinationId, categoryId])
+  @@map("destination_category_map")
+}
+
+enum PackageStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+}
+
+enum TestimonialStatus {
+  DRAFT
+  PENDING_REVIEW
+  PUBLISHED
+}
+
+model Package {
+  id              String        @id @default(uuid())
+  tenantId        String
+  tenant          Tenant        @relation(fields: [tenantId], references: [id])
+  destinationId   String
+  destination     Destination   @relation(fields: [destinationId], references: [id])
+  title           String
+  slug            String
+  durationDays    Int
+  durationNights  Int
+  basePrice       Decimal       @db.Decimal(12, 2)
+  status          PackageStatus @default(DRAFT)
+  templateHintSlug String?
+  /// Tags drawn from a fixed vocabulary (Flights/Hotels/Transfers/Activities) that drive the
+  /// inclusions icon row on package cards — admin multi-select, not free text.
+  inclusions      String[]      @default([])
+  deletedAt       DateTime?
+  publishedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  itineraryDays ItineraryDay[]
+  hotels        PackageHotel[]
+  flights       PackageFlight[]
+  pricingTiers  PackagePricingTier[]
+  seasonalRates SeasonalRate[]
+  galleryImages PackageGalleryImage[]
+  routeMapPoints PackageRouteMapPoint[]
+  bookings      Booking[]
+  reviews       Review[]
+  wishlistedBy  WishlistItem[]
+  leads         Lead[]
+  testimonials  Testimonial[]
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("packages")
+}
+
+model ItineraryDay {
+  id          String  @id @default(uuid())
+  packageId   String
+  package     Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  title       String
+  description String?
+  location        String?
+  mealsIncluded   String[] @default([])
+  notes           String?
+  imageStorageKey String?
+
+  activities PackageActivity[]
+
+  @@unique([packageId, dayNumber])
+  @@map("itinerary_days")
+}
+
+model PackageActivity {
+  id             String       @id @default(uuid())
+  itineraryDayId String
+  itineraryDay   ItineraryDay @relation(fields: [itineraryDayId], references: [id], onDelete: Cascade)
+  activityVendorId String?
+  activityVendor Vendor?      @relation(fields: [activityVendorId], references: [id])
+  name           String
+  description    String?
+  isOptional     Boolean      @default(false)
+  timeLabel       String?
+  imageStorageKey String?
+
+  @@map("package_activities")
+}
+
+model PackageHotel {
+  id            String  @id @default(uuid())
+  packageId     String
+  package       Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  cityName      String
+  hotelVendorId String?
+  hotelVendor   Vendor? @relation(fields: [hotelVendorId], references: [id])
+  roomType      String?
+  mealPlan      String?
+  checkInDay    Int
+  checkOutDay   Int
+  imageStorageKey String?
+
+  @@map("package_hotels")
+}
+
+model PackageFlight {
+  id          String  @id @default(uuid())
+  packageId   String
+  package     Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  sector      String
+  carrierName String?
+  isIncluded  Boolean @default(true)
+  dayNumber   Int?
+
+  @@map("package_flights")
+}
+
+model PackagePricingTier {
+  id        String  @id @default(uuid())
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  name      String
+  basePrice Decimal @db.Decimal(12, 2)
+  currency  String  @default("INR")
+
+  @@map("package_pricing_tiers")
+}
+
+enum PriceModifierType {
+  FIXED
+  PERCENT
+}
+
+model SeasonalRate {
+  id                String            @id @default(uuid())
+  packageId         String
+  package           Package           @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  startDate         DateTime
+  endDate           DateTime
+  priceModifierType PriceModifierType
+  value             Decimal           @db.Decimal(12, 2)
+
+  @@map("seasonal_rates")
+}
+
+model PackageGalleryImage {
+  id         String  @id @default(uuid())
+  packageId  String
+  package    Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  storageKey String
+  sortOrder  Int     @default(0)
+
+  @@map("package_gallery_images")
+}
+
+model PackageRouteMapPoint {
+  id        String  @id @default(uuid())
+  packageId String
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  lat       Float
+  lng       Float
+  sortOrder Int     @default(0)
+  label     String?
+
+  @@map("package_route_map_points")
+}
+
+// ============================================================================
+// Reviews & Offers (Checkpoint 2b)
+// ============================================================================
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+/// Per-package customer reviews with moderation — distinct from the
+/// hand-curated homepage Testimonial model. customerId is optional so admins
+/// can seed reviews before Phase 2 customer accounts exist.
+model Review {
+  id         String       @id @default(uuid())
+  tenantId   String
+  tenant     Tenant       @relation(fields: [tenantId], references: [id])
+  packageId  String
+  package    Package      @relation(fields: [packageId], references: [id])
+  customerId String?
+  customer   Customer?    @relation(fields: [customerId], references: [id])
+  authorName String
+  rating     Int
+  title      String?
+  comment    String
+  status     ReviewStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+
+  @@index([tenantId])
+  @@index([packageId])
+  @@map("reviews")
+}
+
+enum DiscountType {
+  FIXED
+  PERCENT
+}
+
+model Coupon {
+  id                String       @id @default(uuid())
+  tenantId          String
+  tenant            Tenant       @relation(fields: [tenantId], references: [id])
+  code              String
+  description       String?
+  discountType      DiscountType
+  value             Decimal      @db.Decimal(12, 2)
+  minBookingAmount  Decimal?     @db.Decimal(12, 2)
+  maxDiscountAmount Decimal?     @db.Decimal(12, 2)
+  destinationId     String?
+  destination       Destination? @relation(fields: [destinationId], references: [id])
+  validFrom         DateTime
+  validTo           DateTime
+  usageLimit        Int?
+  usageCount        Int          @default(0)
+  isActive          Boolean      @default(true)
+  createdAt         DateTime     @default(now())
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("coupons")
+}
+
+// ============================================================================
+// CMS & SEO (Checkpoint 2)
+// ============================================================================
+
+model Banner {
+  id         String    @id @default(uuid())
+  tenantId   String
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  imageKey   String
+  linkUrl    String?
+  placement  String
+  sortOrder  Int       @default(0)
+  activeFrom DateTime?
+  activeTo   DateTime?
+
+  @@index([tenantId])
+  @@map("banners")
+}
+
+model FaqItem {
+  id         String  @id @default(uuid())
+  tenantId   String
+  tenant     Tenant  @relation(fields: [tenantId], references: [id])
+  entityType String?
+  entityId   String?
+  question   String
+  answer     String
+  sortOrder  Int     @default(0)
+
+  @@index([tenantId])
+  @@map("faq_items")
+}
+
+model Testimonial {
+  id           String  @id @default(uuid())
+  tenantId     String
+  tenant       Tenant  @relation(fields: [tenantId], references: [id])
+  customerName String
+  rating       Int
+  content      String
+  imageKey     String?
+  isFeatured   Boolean @default(false)
+
+  slug            String?
+  title           String?
+  tripTitle       String?
+  destinationId   String?
+  destination     Destination?      @relation(fields: [destinationId], references: [id])
+  packageId       String?
+  package         Package?          @relation(fields: [packageId], references: [id])
+  videoKey        String?
+  posterKey       String?
+  durationSeconds Int?
+  testimonialDate DateTime?
+  sortOrder       Int               @default(0)
+  status          TestimonialStatus @default(DRAFT)
+  publishedAt     DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@index([destinationId])
+  @@index([packageId])
+  @@map("testimonials")
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+}
+
+model BlogPost {
+  id           String        @id @default(uuid())
+  tenantId     String
+  tenant       Tenant        @relation(fields: [tenantId], references: [id])
+  title        String
+  slug         String
+  body         String
+  excerpt      String?
+  category     String?
+  readMinutes  Int?
+  coverImageKey String?
+  authorId     String?
+  status       ContentStatus @default(DRAFT)
+  publishedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@unique([tenantId, slug])
+  @@map("blog_posts")
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Generic static content pages (About Us, Careers, Terms, Privacy, Cancellation
+/// Policy, ...) — the reference site's footer is built entirely from pages like
+/// these, and they don't fit the blog's authored/dated model.
+model Page {
+  id        String     @id @default(uuid())
+  tenantId  String
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  slug      String
+  title     String
+  body      String
+  status    PageStatus @default(DRAFT)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([tenantId, slug])
+  @@index([tenantId])
+  @@map("pages")
+}
+
+/// Flexible block-based homepage content. configJson keeps this schema-stable
+/// across future templates (Phase 4) — each template interprets block `type`s
+/// it understands and ignores the rest, so no migration is needed to add a
+/// new template's homepage layout.
+model HomepageBlock {
+  id         String @id @default(uuid())
+  tenantId   String
+  tenant     Tenant @relation(fields: [tenantId], references: [id])
+  type       String
+  configJson Json
+  sortOrder  Int    @default(0)
+
+  @@index([tenantId])
+  @@map("homepage_blocks")
+}
+
+/// Shared polymorphic SEO metadata reused by destinations/packages/blog/homepage.
+model SeoMeta {
+  id            String  @id @default(uuid())
+  entityType    String
+  entityId      String
+  title         String?
+  description   String?
+  ogImageKey    String?
+  canonicalUrl  String?
+  schemaJson    Json?
+
+  @@unique([entityType, entityId])
+  @@map("seo_meta")
+}
+
+model SitemapEntry {
+  id           String   @id @default(uuid())
+  url          String   @unique
+  lastModified DateTime
+  priority     Float    @default(0.5)
+
+  @@map("sitemap_entries")
+}
+
+// ============================================================================
+// Customers (Checkpoint 3)
+// ============================================================================
+
+enum CustomerStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model Customer {
+  id              String         @id @default(uuid())
+  tenantId        String
+  tenant          Tenant         @relation(fields: [tenantId], references: [id])
+  name            String
+  email           String
+  phone           String?
+  passwordHash    String?
+  status          CustomerStatus @default(ACTIVE)
+  phoneVerifiedAt DateTime?
+  emailVerifiedAt DateTime?
+  createdAt       DateTime       @default(now())
+
+  documents            CustomerDocument[]
+  travelerProfiles     Traveler[]
+  leads                Lead[]
+  bookings             Booking[]
+  reviews              Review[]
+  refreshTokens        CustomerRefreshToken[]
+  wishlistItems        WishlistItem[]
+  notifications        Notification[]
+  cancellationRequests CancellationRequest[]
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, phone])
+  @@index([tenantId])
+  @@map("customers")
+}
+
+/// Customer-side session tokens — parallel to RefreshToken (AdminUser-only)
+/// rather than generalizing it, so existing admin auth is untouched.
+model CustomerRefreshToken {
+  id         String    @id @default(uuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([customerId])
+  @@map("customer_refresh_tokens")
+}
+
+model WishlistItem {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  packageId  String
+  package    Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([customerId, packageId])
+  @@index([tenantId])
+  @@map("wishlist_items")
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id])
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       String
+  title      String
+  body       String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  @@index([tenantId, customerId])
+  @@map("notifications")
+}
+
+enum CancellationRequestStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+}
+
+/// Customer-initiated cancellation ask on a booking. Approving it is an admin
+/// action that reuses BookingsService.setStatus to move the booking to
+/// CANCELLED, rather than a parallel state machine.
+model CancellationRequest {
+  id             String                     @id @default(uuid())
+  bookingId      String
+  booking        Booking                    @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customerId     String
+  customer       Customer                   @relation(fields: [customerId], references: [id])
+  reason         String?
+  status         CancellationRequestStatus  @default(REQUESTED)
+  requestedAt    DateTime                   @default(now())
+  resolvedAt     DateTime?
+  resolutionNote String?
+
+  @@map("cancellation_requests")
+}
+
+model Traveler {
+  id             String    @id @default(uuid())
+  customerId     String
+  customer       Customer  @relation(fields: [customerId], references: [id])
+  name           String
+  dob            DateTime?
+  passportNumber String?
+  nationality    String?
+
+  documents      CustomerDocument[]
+  bookingLinks   BookingTraveler[]
+
+  @@map("travelers")
+}
+
+model CustomerDocument {
+  id         String    @id @default(uuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id])
+  travelerId String?
+  traveler   Traveler? @relation(fields: [travelerId], references: [id])
+  docType    String
+  storageKey String
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("customer_documents")
+}
+
+// ============================================================================
+// CRM (Checkpoint 4)
+// ============================================================================
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  CONVERTED
+  LOST
+}
+
+model Lead {
+  id                  String     @id @default(uuid())
+  tenantId            String
+  tenant              Tenant     @relation(fields: [tenantId], references: [id])
+  customerId          String?
+  customer            Customer?  @relation(fields: [customerId], references: [id])
+  name                String
+  email               String?
+  phone               String?
+  source              String?
+  status              LeadStatus @default(NEW)
+  assignedConsultantId String?
+  assignedConsultant  AdminUser? @relation("LeadAssignedConsultant", fields: [assignedConsultantId], references: [id])
+  destinationInterest String?
+  /// The rest of these come from the step-based "customize your trip" wizard (Who's coming along ->
+  /// destination -> travellers -> interests -> duration -> departure city/date -> mobile number).
+  /// All optional since a lead can also come from the plain inquiry form, which doesn't collect them.
+  travellerType String?
+  interests     String[] @default([])
+  tripDuration  String?
+  departureCity String?
+  departureDate DateTime?
+  packageId     String?
+  package       Package? @relation(fields: [packageId], references: [id])
+  createdAt           DateTime   @default(now())
+
+  followUps LeadFollowUp[]
+
+  @@index([tenantId])
+  @@map("leads")
+}
+
+model LeadFollowUp {
+  id          String    @id @default(uuid())
+  leadId      String
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  scheduledAt DateTime
+  completedAt DateTime?
+  notes       String?
+  method      String?
+
+  @@map("lead_follow_ups")
+}
+
+model Consultant {
+  id              String    @id @default(uuid())
+  adminUserId     String    @unique
+  adminUser       AdminUser @relation(fields: [adminUserId], references: [id])
+  targetRevenue   Decimal?  @db.Decimal(12, 2)
+  activeLeadCount Int       @default(0)
+
+  @@map("consultants")
+}
+
+enum TaskStatus {
+  OPEN
+  IN_PROGRESS
+  DONE
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Task {
+  id               String       @id @default(uuid())
+  tenantId         String
+  tenant           Tenant       @relation(fields: [tenantId], references: [id])
+  assignedToId     String
+  assignedTo       AdminUser    @relation("TaskAssignedTo", fields: [assignedToId], references: [id])
+  relatedEntityType String?
+  relatedEntityId   String?
+  title            String
+  dueDate          DateTime?
+  status           TaskStatus   @default(OPEN)
+  priority         TaskPriority @default(MEDIUM)
+
+  @@index([tenantId])
+  @@map("tasks")
+}
+
+// ============================================================================
+// Bookings (Checkpoint 3)
+// ============================================================================
+
+enum BookingStatus {
+  DRAFT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+model Booking {
+  id               String        @id @default(uuid())
+  tenantId         String
+  tenant           Tenant        @relation(fields: [tenantId], references: [id])
+  customerId       String
+  customer         Customer      @relation(fields: [customerId], references: [id])
+  packageId        String
+  package          Package       @relation(fields: [packageId], references: [id])
+  consultantId     String?
+  consultant       AdminUser?    @relation("BookingConsultant", fields: [consultantId], references: [id])
+  status           BookingStatus @default(DRAFT)
+  paymentStatus    PaymentStatus @default(PENDING)
+  totalAmount      Decimal       @db.Decimal(12, 2)
+  currency         String        @default("INR")
+  travelStartDate  DateTime?
+  travelEndDate    DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  travelers      BookingTraveler[]
+  statusHistory  BookingStatusHistory[]
+  voucher        Voucher?
+  payments       Payment[]
+  invoices       Invoice[]
+  emiPlan        EmiPlan?
+  refundRequests RefundRequest[]
+  vendorPayments VendorPayment[]
+  cancellationRequests CancellationRequest[]
+
+  @@index([tenantId])
+  @@map("bookings")
+}
+
+model BookingTraveler {
+  bookingId  String
+  booking    Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  travelerId String
+  traveler   Traveler @relation(fields: [travelerId], references: [id])
+
+  @@id([bookingId, travelerId])
+  @@map("booking_travelers")
+}
+
+model BookingStatusHistory {
+  id             String        @id @default(uuid())
+  bookingId      String
+  booking        Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  fromStatus     BookingStatus?
+  toStatus       BookingStatus
+  changedByAdminId String?
+  changedByAdmin AdminUser?    @relation(fields: [changedByAdminId], references: [id])
+  changedAt      DateTime      @default(now())
+  note           String?
+
+  @@map("booking_status_history")
+}
+
+model Voucher {
+  id          String   @id @default(uuid())
+  bookingId   String   @unique
+  booking     Booking  @relation(fields: [bookingId], references: [id])
+  storageKey  String
+  generatedAt DateTime @default(now())
+
+  @@map("vouchers")
+}
+
+// ============================================================================
+// Finance (Checkpoint 5)
+// ============================================================================
+
+enum PaymentRecordStatus {
+  CREATED
+  CAPTURED
+  FAILED
+  REFUNDED
+}
+
+model Payment {
+  id          String              @id @default(uuid())
+  tenantId    String
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  bookingId   String
+  booking     Booking             @relation(fields: [bookingId], references: [id])
+  provider    String              @default("razorpay")
+  providerRef String?
+  amount      Decimal             @db.Decimal(12, 2)
+  status      PaymentRecordStatus @default(CREATED)
+  method      String?
+  capturedAt  DateTime?
+  createdAt   DateTime            @default(now())
+
+  refundRequests RefundRequest[]
+
+  @@index([tenantId])
+  @@map("payments")
+}
+
+model Invoice {
+  id            String   @id @default(uuid())
+  tenantId      String
+  tenant        Tenant   @relation(fields: [tenantId], references: [id])
+  bookingId     String
+  booking       Booking  @relation(fields: [bookingId], references: [id])
+  invoiceNumber String   @unique
+  storageKey    String?
+  amount        Decimal  @db.Decimal(12, 2)
+  issuedAt      DateTime @default(now())
+
+  @@index([tenantId])
+  @@map("invoices")
+}
+
+model EmiPlan {
+  id                 String  @id @default(uuid())
+  bookingId          String  @unique
+  booking            Booking @relation(fields: [bookingId], references: [id])
+  totalInstallments  Int
+  schedule           Json
+
+  @@map("emi_plans")
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  PROCESSED
+  REJECTED
+}
+
+model RefundRequest {
+  id          String       @id @default(uuid())
+  bookingId   String
+  booking     Booking      @relation(fields: [bookingId], references: [id])
+  paymentId   String
+  payment     Payment      @relation(fields: [paymentId], references: [id])
+  amount      Decimal      @db.Decimal(12, 2)
+  reason      String?
+  status      RefundStatus @default(REQUESTED)
+  processedAt DateTime?
+
+  @@map("refund_requests")
+}
+
+// ============================================================================
+// Vendors (Checkpoint 6)
+// ============================================================================
+
+enum VendorCategoryType {
+  HOTEL
+  TRANSPORT
+  GUIDE
+  ACTIVITY
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Vendor {
+  id           String             @id @default(uuid())
+  tenantId     String
+  tenant       Tenant             @relation(fields: [tenantId], references: [id])
+  name         String
+  categoryType VendorCategoryType
+  contactInfo  String?
+  status       VendorStatus       @default(ACTIVE)
+  email        String?
+  passwordHash String?
+
+  contracts        VendorContract[]
+  payments         VendorPayment[]
+  hotelPackages    PackageHotel[]
+  activityPackages PackageActivity[]
+  refreshTokens    VendorRefreshToken[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("vendors")
+}
+
+/// Vendor-side session tokens — parallel to CustomerRefreshToken/RefreshToken,
+/// not a generalized shared model, so admin/customer auth stay untouched.
+model VendorRefreshToken {
+  id         String    @id @default(uuid())
+  vendorId   String
+  vendor     Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  replacedBy String?
+  createdAt  DateTime  @default(now())
+
+  @@index([vendorId])
+  @@map("vendor_refresh_tokens")
+}
+
+model VendorContract {
+  id             String    @id @default(uuid())
+  vendorId       String
+  vendor         Vendor    @relation(fields: [vendorId], references: [id])
+  startDate      DateTime
+  endDate        DateTime?
+  terms          String?
+  commissionRate Decimal?  @db.Decimal(5, 2)
+  storageKey     String?
+
+  @@map("vendor_contracts")
+}
+
+enum VendorPaymentStatus {
+  PENDING
+  PAID
+}
+
+model VendorPayment {
+  id        String              @id @default(uuid())
+  vendorId  String
+  vendor    Vendor              @relation(fields: [vendorId], references: [id])
+  bookingId String?
+  booking   Booking?            @relation(fields: [bookingId], references: [id])
+  amount    Decimal             @db.Decimal(12, 2)
+  status    VendorPaymentStatus @default(PENDING)
+  paidAt    DateTime?
+
+  @@map("vendor_payments")
+}
+
+// ============================================================================
+// Audit
+// ============================================================================
+
+model AuditLog {
+  id            String    @id @default(uuid())
+  tenantId      String
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  actorAdminId  String?
+  actorAdmin    AdminUser? @relation(fields: [actorAdminId], references: [id])
+  action        String
+  entityType    String
+  entityId      String
+  diffJson      Json?
+  ipAddress     String?
+  createdAt     DateTime  @default(now())
+
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
