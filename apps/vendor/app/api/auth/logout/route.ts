@@ -10,7 +10,10 @@ export async function POST() {
     try {
       await fetch(`${API_BASE_URL}/vendor-auth/logout`, {
         method: "POST",
-        headers: { Cookie: `paxbook_vendor_refresh_token=${refreshRaw}` },
+        // A bodyless POST omits Content-Length, which some hosts' WAF rules (e.g.
+        // OWASP CRS rule 921160) reject outright — an empty JSON body sidesteps that.
+        headers: { Cookie: `paxbook_vendor_refresh_token=${refreshRaw}`, "Content-Type": "application/json" },
+        body: "{}",
       });
     } catch {
       // Best-effort revoke — local cookies are cleared regardless below.

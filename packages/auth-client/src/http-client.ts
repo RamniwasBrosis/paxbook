@@ -28,6 +28,10 @@ async function refreshAccessToken(): Promise<boolean> {
       const res = await fetch(`${baseUrl}/auth/refresh`, {
         method: "POST",
         credentials: "include",
+        // A bodyless POST omits Content-Length, which some hosts' WAF rules (e.g.
+        // OWASP CRS rule 921160) reject outright — an empty JSON body sidesteps that.
+        headers: { "Content-Type": "application/json" },
+        body: "{}",
       });
       if (!res.ok) {
         clearSession();
@@ -68,6 +72,9 @@ async function performRequest<T>(path: string, options: ApiFetchOptions): Promis
     await refreshAccessToken();
   }
 
+  const method = (rest.method ?? "GET").toUpperCase();
+  const isBodyableMethod = method !== "GET" && method !== "HEAD";
+
   const doFetch = async () =>
     fetch(`${baseUrl}${path}`, {
       ...rest,
@@ -77,7 +84,10 @@ async function performRequest<T>(path: string, options: ApiFetchOptions): Promis
         ...(getAccessToken() ? { Authorization: `Bearer ${getAccessToken()}` } : {}),
         ...headers,
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      // A bodyless POST/PATCH/DELETE omits Content-Length, which some hosts' WAF
+      // rules (e.g. OWASP CRS rule 921160) reject outright — default to "{}" so
+      // there's always a body on methods where one is meaningful.
+      body: body !== undefined ? JSON.stringify(body) : isBodyableMethod ? "{}" : undefined,
     });
 
   let res = await doFetch();

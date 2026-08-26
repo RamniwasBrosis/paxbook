@@ -45,7 +45,10 @@ export async function middleware(req: NextRequest) {
     try {
       const res = await fetch(`${API_BASE_URL}/customer-auth/refresh`, {
         method: "POST",
-        headers: { Cookie: `${REFRESH_BACKEND_COOKIE}=${refreshRaw}` },
+        // A bodyless POST omits Content-Length, which some hosts' WAF rules (e.g.
+        // OWASP CRS rule 921160) reject outright — an empty JSON body sidesteps that.
+        headers: { Cookie: `${REFRESH_BACKEND_COOKIE}=${refreshRaw}`, "Content-Type": "application/json" },
+        body: "{}",
       });
       if (res.ok) {
         const body = await res.json();
