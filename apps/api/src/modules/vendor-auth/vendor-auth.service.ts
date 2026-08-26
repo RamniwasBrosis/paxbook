@@ -2,11 +2,11 @@ import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import type { Vendor } from "@prisma/client";
-import * as argon2 from "argon2";
 import { randomBytes } from "node:crypto";
 import type { AuthenticatedVendorDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { sha256Hex } from "../../common/crypto/hash";
+import { verifyPassword } from "../../common/crypto/password";
 import type { RequestVendor } from "../../common/types/request-vendor";
 
 export interface IssuedVendorTokens {
@@ -30,7 +30,7 @@ export class VendorAuthService {
     if (!vendor || !vendor.passwordHash) {
       throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Incorrect email or password." });
     }
-    const matches = await argon2.verify(vendor.passwordHash, password);
+    const matches = await verifyPassword(vendor.passwordHash, password);
     if (!matches) {
       throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Incorrect email or password." });
     }

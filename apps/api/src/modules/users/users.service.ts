@@ -1,6 +1,6 @@
 import { ConflictException, Injectable } from "@nestjs/common";
-import * as argon2 from "argon2";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { hashPassword } from "../../common/crypto/password";
 import { RolesService } from "../roles/roles.service";
 import type { AdminUserDto } from "@paxbook/types";
 import type { CreateAdminUserDto } from "./dto/create-admin-user.dto";
@@ -32,7 +32,7 @@ export class UsersService {
       });
     }
 
-    const passwordHash = await argon2.hash(dto.password);
+    const passwordHash = await hashPassword(dto.password);
     const created = await this.prisma.adminUser.create({
       data: {
         tenantId,

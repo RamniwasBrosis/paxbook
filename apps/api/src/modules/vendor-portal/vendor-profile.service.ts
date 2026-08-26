@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
-import * as argon2 from "argon2";
 import type { VendorCategoryType, VendorProfileDto, VendorStatus } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { hashPassword, verifyPassword } from "../../common/crypto/password";
 import type { UpdateVendorProfileDto } from "./dto/update-vendor-profile.dto";
 import type { ChangeVendorPasswordDto } from "./dto/change-vendor-password.dto";
 
@@ -25,11 +25,11 @@ export class VendorProfileService {
     if (!vendor.passwordHash) {
       throw new UnauthorizedException({ code: "PORTAL_ACCESS_NOT_ENABLED", message: "Portal access is not enabled for this vendor." });
     }
-    const matches = await argon2.verify(vendor.passwordHash, dto.currentPassword);
+    const matches = await verifyPassword(vendor.passwordHash, dto.currentPassword);
     if (!matches) {
       throw new UnauthorizedException({ code: "INVALID_CURRENT_PASSWORD", message: "Current password is incorrect." });
     }
-    await this.prisma.vendor.update({ where: { id: vendorId }, data: { passwordHash: await argon2.hash(dto.newPassword) } });
+    await this.prisma.vendor.update({ where: { id: vendorId }, data: { passwordHash: await hashPassword(dto.newPassword) } });
   }
 
   private async getOwned(tenantId: string, vendorId: string) {

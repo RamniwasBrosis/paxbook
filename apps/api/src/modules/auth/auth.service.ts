@@ -1,12 +1,12 @@
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
-import * as argon2 from "argon2";
 import { randomBytes } from "node:crypto";
 import type { PermissionKey } from "@paxbook/config";
 import type { AuthenticatedAdminDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { sha256Hex } from "../../common/crypto/hash";
+import { verifyPassword } from "../../common/crypto/password";
 import { UsersService } from "../users/users.service";
 import type { RequestAdmin } from "../../common/types/request-admin";
 
@@ -46,7 +46,7 @@ export class AuthService {
       throw new UnauthorizedException({ code: "TENANT_SUSPENDED", message: "This account's organization is currently suspended." });
     }
 
-    const passwordMatches = await argon2.verify(admin.passwordHash, password);
+    const passwordMatches = await verifyPassword(admin.passwordHash, password);
     if (!passwordMatches) return null;
 
     return {

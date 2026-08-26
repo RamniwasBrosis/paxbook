@@ -3,7 +3,7 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:
 /**
  * Reversible AES-256-GCM encryption for tenant-supplied third-party secrets
  * (Razorpay key secret, Twilio auth token) — these must be decryptable to make
- * live API calls, unlike passwords (argon2, one-way, see hash.ts). Keyed by
+ * live API calls, unlike passwords (bcrypt, one-way, see password.ts). Keyed by
  * INTEGRATION_ENCRYPTION_KEY; the key is stretched with scrypt so any string
  * length works as input, not just a raw 32-byte value.
  */

@@ -1,10 +1,10 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import * as argon2 from "argon2";
 import { randomBytes } from "node:crypto";
 import type { ProvisionPortalAccessResultDto, VendorCategoryType, VendorContractDto, VendorDetailDto, VendorDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { StorageService } from "../../common/storage/storage.service";
+import { hashPassword } from "../../common/crypto/password";
 import type { SaveVendorDto } from "./dto/save-vendor.dto";
 
 @Injectable()
@@ -74,7 +74,7 @@ export class VendorsService {
     try {
       await this.prisma.vendor.update({
         where: { id },
-        data: { email, passwordHash: await argon2.hash(temporaryPassword) },
+        data: { email, passwordHash: await hashPassword(temporaryPassword) },
       });
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -94,7 +94,7 @@ export class VendorsService {
       throw new BadRequestException({ code: "PORTAL_ACCESS_NOT_ENABLED", message: "Enable portal access first by setting an email." });
     }
     const temporaryPassword = generateTemporaryPassword();
-    await this.prisma.vendor.update({ where: { id }, data: { passwordHash: await argon2.hash(temporaryPassword) } });
+    await this.prisma.vendor.update({ where: { id }, data: { passwordHash: await hashPassword(temporaryPassword) } });
     return { temporaryPassword };
   }
 

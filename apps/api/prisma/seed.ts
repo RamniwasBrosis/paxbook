@@ -1,7 +1,7 @@
 import { PrismaClient } from "@prisma/client";
-import * as argon2 from "argon2";
 import { DEFAULT_TENANT_SLUG } from "@paxbook/config";
 import { seedTenantRolesAndPermissions } from "../src/common/tenant/seed-tenant-defaults";
+import { hashPassword } from "../src/common/crypto/password";
 
 const prisma = new PrismaClient();
 
@@ -17,7 +17,7 @@ async function main() {
   const superAdminRole = roleByName.get("SuperAdmin")!;
   const contentEditorRole = roleByName.get("ContentEditor")!;
 
-  const superAdminPasswordHash = await argon2.hash("PaxbookAdmin@123");
+  const superAdminPasswordHash = await hashPassword("PaxbookAdmin@123");
   await prisma.adminUser.upsert({
     where: { email: "admin@paxbook.test" },
     update: { isPlatformOwner: true },
@@ -31,7 +31,7 @@ async function main() {
     },
   });
 
-  const editorPasswordHash = await argon2.hash("PaxbookEditor@123");
+  const editorPasswordHash = await hashPassword("PaxbookEditor@123");
   await prisma.adminUser.upsert({
     where: { email: "editor@paxbook.test" },
     update: {},

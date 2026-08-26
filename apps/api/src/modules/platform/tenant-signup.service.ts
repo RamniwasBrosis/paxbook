@@ -1,8 +1,8 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { Prisma } from "@prisma/client";
-import * as argon2 from "argon2";
 import { DEFAULT_TENANT_SLUG } from "@paxbook/config";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { hashPassword } from "../../common/crypto/password";
 import { seedTenantRolesAndPermissions } from "../../common/tenant/seed-tenant-defaults";
 import { AuthService, type IssuedTokens } from "../auth/auth.service";
 import type { SignupTenantDto } from "./dto/signup-tenant.dto";
@@ -40,7 +40,7 @@ export class TenantSignupService {
         throw new Error("SuperAdmin role was not seeded for the new tenant.");
       }
 
-      const passwordHash = await argon2.hash(dto.ownerPassword);
+      const passwordHash = await hashPassword(dto.ownerPassword);
       const owner = await this.prisma.adminUser.create({
         data: {
           tenantId: tenant.id,

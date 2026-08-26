@@ -2,12 +2,12 @@ import { BadRequestException, ConflictException, Injectable, UnauthorizedExcepti
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { Prisma, type Customer } from "@prisma/client";
-import * as argon2 from "argon2";
 import { randomBytes, randomInt } from "node:crypto";
 import type { AuthenticatedCustomerDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { SmsService } from "../../common/sms/sms.service";
 import { sha256Hex } from "../../common/crypto/hash";
+import { hashPassword, verifyPassword } from "../../common/crypto/password";
 import { decryptSecret } from "../../common/crypto/encryption";
 import type { RequestCustomer } from "../../common/types/request-customer";
 import type { RegisterCustomerDto } from "./dto/register-customer.dto";
@@ -47,7 +47,7 @@ export class CustomerAuthService {
     }
 
     const code = String(randomInt(100000, 1000000));
-    const codeHash = await argon2.hash(code);
+    const codeHash = await hashPassword(code);
     const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
     await this.prisma.otpCode.create({
@@ -72,7 +72,7 @@ export class CustomerAuthService {
     if (!otp || otp.expiresAt < new Date()) {
       throw new UnauthorizedException({ code: "OTP_EXPIRED", message: "This code has expired. Please request a new one." });
     }
-    const matches = await argon2.verify(otp.codeHash, code);
+    const matches = await verifyPassword(otp.codeHash, code);
     if (!matches) {
       throw new UnauthorizedException({ code: "OTP_INVALID", message: "Incorrect code." });
     }
@@ -97,7 +97,7 @@ export class CustomerAuthService {
   }
 
   async register(tenantId: string, dto: RegisterCustomerDto): Promise<IssuedCustomerTokens> {
-    const passwordHash = await argon2.hash(dto.password);
+    const passwordHash = await hashPassword(dto.password);
     try {
       const customer = await this.prisma.customer.create({
         data: { tenantId, name: dto.name, email: dto.email, phone: dto.phone, passwordHash },
@@ -116,7 +116,7 @@ export class CustomerAuthService {
     if (!customer || !customer.passwordHash) {
       throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Incorrect email or password." });
     }
-    const matches = await argon2.verify(customer.passwordHash, password);
+    const matches = await verifyPassword(customer.passwordHash, password);
     if (!matches) {
       throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Incorrect email or password." });
     }
