@@ -11,6 +11,7 @@ const ENTITY_TYPE = "package";
 const PACKAGE_LIST_INCLUDE = {
   destination: true,
   galleryImages: { orderBy: { sortOrder: "asc" }, take: 1 },
+  categoryLinks: { include: { category: true } },
 } satisfies Prisma.PackageInclude;
 
 const PACKAGE_DETAIL_INCLUDE = {
@@ -22,6 +23,7 @@ const PACKAGE_DETAIL_INCLUDE = {
   seasonalRates: true,
   galleryImages: { orderBy: { sortOrder: "asc" } },
   routeMapPoints: { orderBy: { sortOrder: "asc" } },
+  categoryLinks: { include: { category: true } },
 } satisfies Prisma.PackageInclude;
 
 type PackageListRow = Prisma.PackageGetPayload<{ include: typeof PACKAGE_LIST_INCLUDE }>;
@@ -104,6 +106,7 @@ export class PackagesService {
         await tx.seasonalRate.deleteMany({ where: { packageId: id } });
         await tx.packageGalleryImage.deleteMany({ where: { packageId: id } });
         await tx.packageRouteMapPoint.deleteMany({ where: { packageId: id } });
+        await tx.packageCategoryMap.deleteMany({ where: { packageId: id } });
 
         await tx.package.update({
           where: { id },
@@ -235,6 +238,9 @@ export class PackagesService {
           label: point.label,
         })),
       },
+      categoryLinks: {
+        create: (dto.categoryIds ?? []).map((categoryId) => ({ categoryId })),
+      },
     };
   }
 
@@ -278,6 +284,8 @@ export class PackagesService {
       inclusions: pkg.inclusions,
       createdAt: pkg.createdAt.toISOString(),
       updatedAt: pkg.updatedAt.toISOString(),
+      categoryIds: pkg.categoryLinks.map((link) => link.categoryId),
+      categoryNames: pkg.categoryLinks.map((link) => link.category.name),
     };
   }
 

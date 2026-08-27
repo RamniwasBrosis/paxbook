@@ -17,14 +17,15 @@ import {
   useBookings,
   useProvisionVendorPortalAccess,
   useResetVendorPortalPassword,
+  useCategories,
 } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
 import type { VendorCategoryType, VendorStatus } from "@paxbook/types";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Select } from "@paxbook/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, CheckboxGroup, Input, Select } from "@paxbook/ui";
 
 const CATEGORY_OPTIONS: VendorCategoryType[] = ["HOTEL", "TRANSPORT", "GUIDE", "ACTIVITY"];
 
-export default function VendorDetailPage() {
+export default function InventoryDetailPage() {
   const params = useParams<{ id: string }>();
   const { hasPermission } = useSession();
   const canRead = hasPermission(PERMISSIONS.VENDORS_READ);
@@ -49,8 +50,8 @@ export default function VendorDetailPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <Link href="/vendors" className="text-xs text-slate-500 hover:underline">
-          ← All vendors
+        <Link href="/inventory" className="text-xs text-slate-500 hover:underline">
+          ← All inventory
         </Link>
         <div className="mt-1 flex items-center gap-3">
           <h1 className="text-xl font-semibold text-slate-900">{vendor.name}</h1>
@@ -72,11 +73,18 @@ function BasicInfoCard({
   canWrite,
 }: {
   vendorId: string;
-  initial: { name: string; categoryType: VendorCategoryType; contactInfo: string | null; status: VendorStatus };
+  initial: { name: string; categoryType: VendorCategoryType; contactInfo: string | null; status: VendorStatus; categoryIds: string[] };
   canWrite: boolean;
 }) {
   const updateVendor = useUpdateVendor();
-  const [form, setForm] = React.useState({ name: initial.name, categoryType: initial.categoryType, contactInfo: initial.contactInfo ?? "", status: initial.status });
+  const categoriesQuery = useCategories();
+  const [form, setForm] = React.useState({
+    name: initial.name,
+    categoryType: initial.categoryType,
+    contactInfo: initial.contactInfo ?? "",
+    status: initial.status,
+    categoryIds: initial.categoryIds,
+  });
   const [error, setError] = React.useState<string | null>(null);
   const [saved, setSaved] = React.useState(false);
 
@@ -85,7 +93,16 @@ function BasicInfoCard({
     setError(null);
     setSaved(false);
     try {
-      await updateVendor.mutateAsync({ id: vendorId, payload: { name: form.name, categoryType: form.categoryType, contactInfo: form.contactInfo || undefined, status: form.status } });
+      await updateVendor.mutateAsync({
+        id: vendorId,
+        payload: {
+          name: form.name,
+          categoryType: form.categoryType,
+          contactInfo: form.contactInfo || undefined,
+          status: form.status,
+          categoryIds: form.categoryIds,
+        },
+      });
       setSaved(true);
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Could not save vendor.");
@@ -112,6 +129,15 @@ function BasicInfoCard({
             <option value="ACTIVE">Active</option>
             <option value="INACTIVE">Inactive</option>
           </Select>
+          <div className="sm:col-span-4">
+            <CheckboxGroup
+              label="Tags"
+              disabled={!canWrite}
+              options={categoriesQuery.data ?? []}
+              selectedIds={form.categoryIds}
+              onChange={(categoryIds) => setForm((f) => ({ ...f, categoryIds }))}
+            />
+          </div>
           {canWrite ? (
             <div className="sm:col-span-4">
               {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}

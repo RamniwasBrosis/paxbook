@@ -5,22 +5,14 @@ import Link from "next/link";
 import type { PackageSummaryDto } from "@paxbook/types";
 import { SectionHeading } from "@/components/SectionHeading";
 
-const STYLES = [
-  { label: "Honeymoon", subtitle: "Private villas, slow mornings and dinners that matter." },
-  { label: "Family", subtitle: "Easy pacing, connecting rooms and things kids actually enjoy." },
-  { label: "Adventure", subtitle: "Treks, dives and days built around your adrenaline." },
-  { label: "Luxury", subtitle: "Five-star stays and experiences with nothing left to chance." },
-  { label: "Budget", subtitle: "Real value trips that never feel like you skimped." },
-  { label: "Seasonal", subtitle: "Trips timed to the best weather window for each destination." },
-];
-
 export function PackagesByStyleSection({ packages }: { packages: PackageSummaryDto[] }) {
   const [active, setActive] = useState(0);
-  if (packages.length === 0) return null;
 
-  const style = STYLES[active]!;
-  const filtered = packages.filter((p) => p.categoryNames?.includes(style.label));
-  const shown = filtered.length > 0 ? filtered : packages.slice(0, 6);
+  const styles = Array.from(new Set(packages.flatMap((p) => p.categoryNames))).sort();
+  if (styles.length === 0) return null;
+
+  const activeStyle = styles[Math.min(active, styles.length - 1)]!;
+  const shown = packages.filter((p) => p.categoryNames.includes(activeStyle));
 
   return (
     <section className="bg-mist py-16 lg:py-20">
@@ -31,20 +23,19 @@ export function PackagesByStyleSection({ packages }: { packages: PackageSummaryD
           subtitle="Same destination, very different holiday. Pick the style and we'll shape the pace, stays and add-ons accordingly."
         />
         <div className="mb-6 flex flex-wrap gap-2">
-          {STYLES.map((s, i) => (
+          {styles.map((label, i) => (
             <button
-              key={s.label}
+              key={label}
               type="button"
               onClick={() => setActive(i)}
               className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
                 i === active ? "bg-brand text-white shadow-sm" : "bg-white text-slate-600 hover:bg-slate-100"
               }`}
             >
-              {s.label}
+              {label}
             </button>
           ))}
         </div>
-        <p className="mb-6 max-w-xl text-sm text-slate-500">{style.subtitle}</p>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {shown.slice(0, 6).map((pkg) => (

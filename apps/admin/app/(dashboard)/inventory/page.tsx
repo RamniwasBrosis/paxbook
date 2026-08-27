@@ -10,7 +10,7 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle, DataTable, Inp
 
 const CATEGORY_OPTIONS: VendorCategoryType[] = ["HOTEL", "TRANSPORT", "GUIDE", "ACTIVITY"];
 
-export default function VendorsPage() {
+export default function InventoryPage() {
   const { hasPermission } = useSession();
   const canRead = hasPermission(PERMISSIONS.VENDORS_READ);
   const canWrite = hasPermission(PERMISSIONS.VENDORS_WRITE);
@@ -27,15 +27,15 @@ export default function VendorsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-xl font-semibold text-slate-900">Vendors</h1>
-        <p className="text-sm text-slate-500">Hotels, transport, guides, and activity providers.</p>
+        <h1 className="text-xl font-semibold text-slate-900">Inventory</h1>
+        <p className="text-sm text-slate-500">Hotels, transport, guides, and activity providers that packages draw from.</p>
       </div>
-      <VendorsContent canWrite={canWrite} />
+      <InventoryContent canWrite={canWrite} />
     </div>
   );
 }
 
-function VendorsContent({ canWrite }: { canWrite: boolean }) {
+function InventoryContent({ canWrite }: { canWrite: boolean }) {
   const vendorsQuery = useVendors();
   const createVendor = useCreateVendor();
 
@@ -60,19 +60,20 @@ function VendorsContent({ canWrite }: { canWrite: boolean }) {
           {
             header: "Name",
             cell: (v: VendorDto) => (
-              <Link href={`/vendors/${v.id}`} className="text-slate-900 hover:underline">
+              <Link href={`/inventory/${v.id}`} className="text-slate-900 hover:underline">
                 {v.name}
               </Link>
             ),
           },
-          { header: "Category", cell: (v: VendorDto) => v.categoryType },
+          { header: "Type", cell: (v: VendorDto) => v.categoryType },
+          { header: "Tags", cell: (v: VendorDto) => v.categoryNames.join(", ") || "—" },
           { header: "Contact", cell: (v: VendorDto) => v.contactInfo ?? "—" },
           { header: "Status", cell: (v: VendorDto) => <Badge tone={v.status === "ACTIVE" ? "success" : "neutral"}>{v.status}</Badge> },
         ]}
         rows={vendorsQuery.data ?? []}
         rowKey={(v) => v.id}
         isLoading={vendorsQuery.isLoading}
-        emptyMessage="No vendors yet."
+        emptyMessage="Nothing in inventory yet."
       />
 
       {canWrite ? (

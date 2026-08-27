@@ -3,7 +3,6 @@ import { Prisma } from "@prisma/client";
 import type {
   CountryDto,
   DestinationActivityDto,
-  DestinationCategoryDto,
   DestinationDto,
   DestinationHighlightDto,
   DestinationHotelSuggestionDto,
@@ -37,10 +36,6 @@ export class DestinationsService {
 
   async listCountries(): Promise<CountryDto[]> {
     return this.prisma.country.findMany({ orderBy: { name: "asc" } });
-  }
-
-  async listCategories(): Promise<DestinationCategoryDto[]> {
-    return this.prisma.destinationCategory.findMany({ orderBy: { name: "asc" } });
   }
 
   async findAll(tenantId: string): Promise<DestinationDto[]> {

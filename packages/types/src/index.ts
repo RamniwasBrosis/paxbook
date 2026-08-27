@@ -1,6 +1,7 @@
 export * from "./api-envelope.js";
 export * from "./auth.js";
 export * from "./admin-user.js";
+export * from "./category.js";
 export * from "./destination.js";
 export * from "./package.js";
 export * from "./cms.js";

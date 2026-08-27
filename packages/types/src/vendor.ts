@@ -9,6 +9,8 @@ export interface VendorDto {
   contactInfo: string | null;
   status: VendorStatus;
   email: string | null;
+  categoryIds: string[];
+  categoryNames: string[];
 }
 
 export interface ProvisionVendorPortalAccessDto {
@@ -39,6 +41,7 @@ export interface SaveVendorDto {
   categoryType: VendorCategoryType;
   contactInfo?: string;
   status?: VendorStatus;
+  categoryIds?: string[];
 }
 
 export interface SaveVendorContractDto {

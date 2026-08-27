@@ -7,6 +7,8 @@ import { StorageService } from "../../common/storage/storage.service";
 import { hashPassword } from "../../common/crypto/password";
 import type { SaveVendorDto } from "./dto/save-vendor.dto";
 
+const VENDOR_CATEGORY_INCLUDE = { categoryLinks: { include: { category: true } } } satisfies Prisma.VendorInclude;
+
 @Injectable()
 export class VendorsService {
   constructor(
@@ -18,12 +20,16 @@ export class VendorsService {
     const vendors = await this.prisma.vendor.findMany({
       where: { tenantId, categoryType },
       orderBy: { name: "asc" },
+      include: VENDOR_CATEGORY_INCLUDE,
     });
     return vendors.map(toDto);
   }
 
   async findOne(tenantId: string, id: string): Promise<VendorDetailDto> {
-    const vendor = await this.prisma.vendor.findFirst({ where: { id, tenantId }, include: { contracts: true } });
+    const vendor = await this.prisma.vendor.findFirst({
+      where: { id, tenantId },
+      include: { contracts: true, ...VENDOR_CATEGORY_INCLUDE },
+    });
     if (!vendor) {
       throw new NotFoundException({ code: "VENDOR_NOT_FOUND", message: "Vendor does not exist." });
     }
@@ -32,16 +38,34 @@ export class VendorsService {
 
   async create(tenantId: string, dto: SaveVendorDto): Promise<VendorDto> {
     const created = await this.prisma.vendor.create({
-      data: { tenantId, name: dto.name, categoryType: dto.categoryType, contactInfo: dto.contactInfo, status: dto.status ?? "ACTIVE" },
+      data: {
+        tenantId,
+        name: dto.name,
+        categoryType: dto.categoryType,
+        contactInfo: dto.contactInfo,
+        status: dto.status ?? "ACTIVE",
+        categoryLinks: { create: (dto.categoryIds ?? []).map((categoryId) => ({ categoryId })) },
+      },
+      include: VENDOR_CATEGORY_INCLUDE,
     });
     return toDto(created);
   }
 
   async update(tenantId: string, id: string, dto: SaveVendorDto): Promise<VendorDto> {
     await this.assertOwned(tenantId, id);
+    if (dto.categoryIds) {
+      await this.prisma.vendorCategoryMap.deleteMany({ where: { vendorId: id } });
+    }
     const updated = await this.prisma.vendor.update({
       where: { id },
-      data: { name: dto.name, categoryType: dto.categoryType, contactInfo: dto.contactInfo, status: dto.status },
+      data: {
+        name: dto.name,
+        categoryType: dto.categoryType,
+        contactInfo: dto.contactInfo,
+        status: dto.status,
+        categoryLinks: dto.categoryIds ? { create: dto.categoryIds.map((categoryId) => ({ categoryId })) } : undefined,
+      },
+      include: VENDOR_CATEGORY_INCLUDE,
     });
     return toDto(updated);
   }
@@ -125,8 +149,18 @@ function toDto(vendor: {
   contactInfo: string | null;
   status: "ACTIVE" | "INACTIVE";
   email: string | null;
+  categoryLinks: { categoryId: string; category: { name: string } }[];
 }): VendorDto {
-  return { id: vendor.id, name: vendor.name, categoryType: vendor.categoryType, contactInfo: vendor.contactInfo, status: vendor.status, email: vendor.email };
+  return {
+    id: vendor.id,
+    name: vendor.name,
+    categoryType: vendor.categoryType,
+    contactInfo: vendor.contactInfo,
+    status: vendor.status,
+    email: vendor.email,
+    categoryIds: vendor.categoryLinks.map((link) => link.categoryId),
+    categoryNames: vendor.categoryLinks.map((link) => link.category.name),
+  };
 }
 
 function generateTemporaryPassword(): string {

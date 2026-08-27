@@ -7,6 +7,8 @@
 export const PERMISSIONS = {
   CMS_READ: "cms.read",
   CMS_WRITE: "cms.write",
+  CATEGORIES_READ: "categories.read",
+  CATEGORIES_WRITE: "categories.write",
   DESTINATIONS_READ: "destinations.read",
   DESTINATIONS_WRITE: "destinations.write",
   PACKAGES_READ: "packages.read",
@@ -62,6 +64,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     PERMISSIONS.VENDORS_READ,
     PERMISSIONS.VENDORS_WRITE,
     PERMISSIONS.REPORTS_READ,
+    PERMISSIONS.CATEGORIES_READ,
+    PERMISSIONS.CATEGORIES_WRITE,
   ],
   ContentEditor: [
     PERMISSIONS.CMS_READ,
@@ -74,6 +78,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     PERMISSIONS.TESTIMONIALS_WRITE,
     PERMISSIONS.REVIEWS_READ,
     PERMISSIONS.REVIEWS_WRITE,
+    PERMISSIONS.CATEGORIES_READ,
+    PERMISSIONS.CATEGORIES_WRITE,
   ],
   Consultant: [
     PERMISSIONS.CRM_READ,

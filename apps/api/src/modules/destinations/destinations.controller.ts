@@ -25,17 +25,11 @@ export class DestinationsController {
     return this.destinationsService.findAll(admin.tenantId);
   }
 
-  // Registered before ":id" so "countries"/"categories" aren't parsed as a destination id.
+  // Registered before ":id" so "countries" isn't parsed as a destination id.
   @Get("countries")
   @RequirePermissions(PERMISSIONS.DESTINATIONS_READ)
   listCountries() {
     return this.destinationsService.listCountries();
-  }
-
-  @Get("categories")
-  @RequirePermissions(PERMISSIONS.DESTINATIONS_READ)
-  listCategories() {
-    return this.destinationsService.listCategories();
   }
 
   @Get(":id")

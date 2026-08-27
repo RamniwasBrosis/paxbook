@@ -24,6 +24,7 @@ import { RolesModule } from "./modules/roles/roles.module";
 import { UsersModule } from "./modules/users/users.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { UploadsModule } from "./modules/uploads/uploads.module";
+import { CategoriesModule } from "./modules/categories/categories.module";
 import { DestinationsModule } from "./modules/destinations/destinations.module";
 import { PackagesModule } from "./modules/packages/packages.module";
 import { TestimonialsModule } from "./modules/testimonials/testimonials.module";
@@ -67,6 +68,7 @@ import { PlatformModule } from "./modules/platform/platform.module";
     UsersModule,
     AuthModule,
     UploadsModule,
+    CategoriesModule,
     DestinationsModule,
     PackagesModule,
     TestimonialsModule,

@@ -20,11 +20,6 @@ export interface CountryDto {
   region: string | null;
 }
 
-export interface DestinationCategoryDto {
-  id: string;
-  name: string;
-}
-
 export interface DestinationHighlightDto {
   id: string;
   title: string;

@@ -12,6 +12,7 @@ export interface NavItem {
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard" },
   { href: "/cms", label: "CMS", permission: PERMISSIONS.CMS_READ },
+  { href: "/categories", label: "Categories", permission: PERMISSIONS.CATEGORIES_READ },
   { href: "/destinations", label: "Destinations", permission: PERMISSIONS.DESTINATIONS_READ },
   { href: "/packages", label: "Packages", permission: PERMISSIONS.PACKAGES_READ },
   { href: "/testimonials", label: "Testimonials", permission: PERMISSIONS.TESTIMONIALS_READ },
@@ -21,7 +22,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/bookings", label: "Bookings", permission: PERMISSIONS.BOOKINGS_READ },
   { href: "/crm", label: "CRM", permission: PERMISSIONS.CRM_READ },
   { href: "/finance", label: "Finance", permission: PERMISSIONS.FINANCE_READ },
-  { href: "/vendors", label: "Vendors", permission: PERMISSIONS.VENDORS_READ },
+  { href: "/inventory", label: "Inventory", permission: PERMISSIONS.VENDORS_READ },
   { href: "/reports", label: "Reports", permission: PERMISSIONS.REPORTS_READ },
 ];
 

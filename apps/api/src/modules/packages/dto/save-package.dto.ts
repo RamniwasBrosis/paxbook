@@ -64,6 +64,11 @@ export class SavePackageDto {
   @IsString({ each: true })
   inclusions?: string[];
 
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  categoryIds?: string[];
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ItineraryDayInputDto)

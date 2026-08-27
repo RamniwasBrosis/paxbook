@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, MinLength } from "class-validator";
+import { IsArray, IsIn, IsOptional, IsString, IsUUID, MinLength } from "class-validator";
 
 export class SaveVendorDto {
   @IsString()
@@ -15,4 +15,9 @@ export class SaveVendorDto {
   @IsOptional()
   @IsIn(["ACTIVE", "INACTIVE"])
   status?: "ACTIVE" | "INACTIVE";
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID(undefined, { each: true })
+  categoryIds?: string[];
 }

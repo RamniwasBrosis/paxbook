@@ -6,7 +6,7 @@ import {
   useSession,
   useDestinations,
   useCountries,
-  useDestinationCategories,
+  useCategories,
   useCreateDestination,
   useUpdateDestination,
   useDeleteDestination,
@@ -14,7 +14,7 @@ import {
 } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
 import type { DestinationDto } from "@paxbook/types";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, DataTable, ImageUploadField, Input, Select } from "@paxbook/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, CheckboxGroup, DataTable, ImageUploadField, Input, Select } from "@paxbook/ui";
 import { DestinationContentEditor } from "./DestinationContentEditor";
 
 const EMPTY_FORM = {
@@ -59,7 +59,7 @@ export default function DestinationsPage() {
 function DestinationsContent({ canWrite }: { canWrite: boolean }) {
   const destinationsQuery = useDestinations();
   const countriesQuery = useCountries();
-  const categoriesQuery = useDestinationCategories();
+  const categoriesQuery = useCategories();
   const createDestination = useCreateDestination();
   const updateDestination = useUpdateDestination();
   const deleteDestination = useDeleteDestination();
@@ -128,15 +128,6 @@ function DestinationsContent({ canWrite }: { canWrite: boolean }) {
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Upload failed.");
     }
-  }
-
-  function toggleCategory(categoryId: string) {
-    setForm((f) => ({
-      ...f,
-      categoryIds: f.categoryIds.includes(categoryId)
-        ? f.categoryIds.filter((id) => id !== categoryId)
-        : [...f.categoryIds, categoryId],
-    }));
   }
 
   return (
@@ -266,20 +257,13 @@ function DestinationsContent({ canWrite }: { canWrite: boolean }) {
                 />
               </div>
 
-              <div className="sm:col-span-2 flex flex-col gap-1.5">
-                <span className="text-sm font-medium text-slate-700">Theme categories</span>
-                <div className="flex flex-wrap gap-3">
-                  {categoriesQuery.data?.map((category) => (
-                    <label key={category.id} className="flex items-center gap-1.5 text-sm text-slate-600">
-                      <input
-                        type="checkbox"
-                        checked={form.categoryIds.includes(category.id)}
-                        onChange={() => toggleCategory(category.id)}
-                      />
-                      {category.name}
-                    </label>
-                  ))}
-                </div>
+              <div className="sm:col-span-2">
+                <CheckboxGroup
+                  label="Theme categories"
+                  options={categoriesQuery.data ?? []}
+                  selectedIds={form.categoryIds}
+                  onChange={(categoryIds) => setForm((f) => ({ ...f, categoryIds }))}
+                />
               </div>
 
               <div className="sm:col-span-2">

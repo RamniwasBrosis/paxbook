@@ -78,7 +78,7 @@ async function main() {
     "Corporate",
   ];
   for (const name of destinationCategories) {
-    await prisma.destinationCategory.upsert({ where: { name }, update: {}, create: { name } });
+    await prisma.category.upsert({ where: { name }, update: {}, create: { name } });
   }
 
   const plans = [

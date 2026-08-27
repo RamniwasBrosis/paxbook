@@ -6,3 +6,4 @@ export * from "./badge";
 export * from "./data-table";
 export * from "./image-upload-field";
 export * from "./video-upload-field";
+export * from "./checkbox-group";

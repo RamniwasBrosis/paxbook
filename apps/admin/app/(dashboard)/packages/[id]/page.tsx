@@ -11,6 +11,7 @@ import {
   useDestinations,
   useUploadFile,
   useVendors,
+  useCategories,
 } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
 import type {
@@ -25,7 +26,7 @@ import type {
   SavePackageDto,
   SeasonalRateDto,
 } from "@paxbook/types";
-import { Button, Card, CardContent, CardHeader, CardTitle, ImageUploadField, Input, Select } from "@paxbook/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, CheckboxGroup, ImageUploadField, Input, Select } from "@paxbook/ui";
 
 export default function PackageBuilderPage() {
   const params = useParams<{ id: string }>();
@@ -63,6 +64,7 @@ interface FormState {
   basePrice: number;
   status: "DRAFT" | "PENDING_REVIEW" | "PUBLISHED";
   templateHintSlug: string;
+  categoryIds: string[];
   itineraryDays: ItineraryDayDto[];
   hotels: PackageHotelDto[];
   flights: PackageFlightDto[];
@@ -86,6 +88,7 @@ function toFormState(pkg: PackageDetailDto | null): FormState {
       basePrice: 0,
       status: "DRAFT",
       templateHintSlug: "",
+      categoryIds: [],
       itineraryDays: [],
       hotels: [],
       flights: [],
@@ -107,6 +110,7 @@ function toFormState(pkg: PackageDetailDto | null): FormState {
     basePrice: pkg.basePrice,
     status: pkg.status,
     templateHintSlug: pkg.templateHintSlug ?? "",
+    categoryIds: pkg.categoryIds,
     itineraryDays: pkg.itineraryDays,
     hotels: pkg.hotels,
     flights: pkg.flights,
@@ -131,6 +135,7 @@ function PackageBuilderForm({
 }) {
   const router = useRouter();
   const destinationsQuery = useDestinations();
+  const categoriesQuery = useCategories();
   const createPackage = useCreatePackage();
   const updatePackage = useUpdatePackage();
   const uploadFile = useUploadFile();
@@ -151,6 +156,7 @@ function PackageBuilderForm({
       basePrice: Number(form.basePrice),
       status: form.status,
       templateHintSlug: form.templateHintSlug || undefined,
+      categoryIds: form.categoryIds,
       itineraryDays: form.itineraryDays,
       hotels: form.hotels,
       flights: form.flights,
@@ -261,6 +267,14 @@ function PackageBuilderForm({
             value={form.templateHintSlug}
             onChange={(e) => setForm((f) => ({ ...f, templateHintSlug: e.target.value }))}
           />
+          <div className="sm:col-span-2">
+            <CheckboxGroup
+              label="Categories"
+              options={categoriesQuery.data ?? []}
+              selectedIds={form.categoryIds}
+              onChange={(categoryIds) => setForm((f) => ({ ...f, categoryIds }))}
+            />
+          </div>
         </CardContent>
       </Card>
 

@@ -331,24 +331,48 @@ model DestinationHotelSuggestion {
   @@map("destination_hotel_suggestions")
 }
 
-/// Theme / Honeymoon / Family / Adventure / Seasonal / Budget / Luxury tags.
-model DestinationCategory {
+/// Shared tag vocabulary (Theme / Honeymoon / Family / Adventure / Seasonal / Budget / Luxury) —
+/// usable across Destinations, Packages, and Vendors. Table name kept as the original
+/// destination-only name to avoid a physical rename on the live, already-seeded database.
+model Category {
   id   String @id @default(uuid())
   name String @unique
 
   destinationLinks DestinationCategoryMap[]
+  packageLinks     PackageCategoryMap[]
+  vendorLinks      VendorCategoryMap[]
 
   @@map("destination_categories")
 }
 
 model DestinationCategoryMap {
   destinationId String
-  destination   Destination         @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
   categoryId    String
-  category      DestinationCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category      Category    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([destinationId, categoryId])
   @@map("destination_category_map")
+}
+
+model PackageCategoryMap {
+  packageId  String
+  package    Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([packageId, categoryId])
+  @@map("package_category_map")
+}
+
+model VendorCategoryMap {
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([vendorId, categoryId])
+  @@map("vendor_category_map")
 }
 
 enum PackageStatus {
@@ -396,6 +420,7 @@ model Package {
   wishlistedBy  WishlistItem[]
   leads         Lead[]
   testimonials  Testimonial[]
+  categoryLinks PackageCategoryMap[]
 
   @@unique([tenantId, slug])
   @@index([tenantId])
@@ -1160,6 +1185,7 @@ model Vendor {
   hotelPackages    PackageHotel[]
   activityPackages PackageActivity[]
   refreshTokens    VendorRefreshToken[]
+  categoryLinks    VendorCategoryMap[]
 
   @@unique([tenantId, email])
   @@index([tenantId])

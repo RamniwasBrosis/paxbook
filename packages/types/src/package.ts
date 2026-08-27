@@ -93,8 +93,8 @@ export interface PackageSummaryDto {
   inclusions: string[];
   createdAt: string;
   updatedAt: string;
-  /** Only populated by the public API (destination's theme tags) — admin summaries leave this unset. */
-  categoryNames?: string[];
+  categoryIds: string[];
+  categoryNames: string[];
   /** Only populated by the public API — computed from approved Reviews at request time, not stored. */
   avgRating?: number | null;
   reviewCount?: number;
@@ -122,6 +122,7 @@ export interface SavePackageDto {
   status?: PackageStatus;
   templateHintSlug?: string;
   inclusions?: string[];
+  categoryIds?: string[];
   itineraryDays: ItineraryDayDto[];
   hotels: PackageHotelDto[];
   flights: PackageFlightDto[];

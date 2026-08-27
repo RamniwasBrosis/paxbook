@@ -1,6 +1,7 @@
 export * from "./session";
 export * from "./admin-users";
 export * from "./upload";
+export * from "./categories";
 export * from "./destinations";
 export * from "./packages";
 export * from "./testimonials";

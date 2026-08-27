@@ -24,18 +24,19 @@ const DESTINATION_INCLUDE = {
 } satisfies Prisma.DestinationInclude;
 
 const PACKAGE_SUMMARY_INCLUDE = {
-  destination: { include: { categoryLinks: { include: { category: true } } } },
+  destination: true,
   galleryImages: { orderBy: { sortOrder: "asc" }, take: 1 },
   reviews: { where: { status: "APPROVED" as const }, select: { rating: true } },
+  categoryLinks: { include: { category: true } },
 } satisfies Prisma.PackageInclude;
 
 const RECENT_BOOKING_INCLUDE = {
   customer: true,
-  package: { include: { destination: { include: { categoryLinks: { include: { category: true } } } }, galleryImages: { orderBy: { sortOrder: "asc" }, take: 1 } } },
+  package: { include: { destination: true, galleryImages: { orderBy: { sortOrder: "asc" }, take: 1 }, categoryLinks: { include: { category: true } } } },
 } satisfies Prisma.BookingInclude;
 
 const PACKAGE_DETAIL_INCLUDE = {
-  destination: { include: { categoryLinks: { include: { category: true } } } },
+  destination: true,
   reviews: { where: { status: "APPROVED" as const }, select: { rating: true } },
   itineraryDays: { include: { activities: true }, orderBy: { dayNumber: "asc" } },
   hotels: true,
@@ -44,6 +45,7 @@ const PACKAGE_DETAIL_INCLUDE = {
   seasonalRates: true,
   galleryImages: { orderBy: { sortOrder: "asc" } },
   routeMapPoints: { orderBy: { sortOrder: "asc" } },
+  categoryLinks: { include: { category: true } },
 } satisfies Prisma.PackageInclude;
 
 const TESTIMONIAL_SUMMARY_INCLUDE = {
@@ -221,8 +223,8 @@ export class PublicService {
                 { name: { contains: filters.destination, mode: "insensitive" } },
               ]
             : undefined,
-          categoryLinks: filters.category ? { some: { category: { name: filters.category } } } : undefined,
         },
+        categoryLinks: filters.category ? { some: { category: { name: filters.category } } } : undefined,
         durationDays: { gte: filters.minDuration, lte: filters.maxDuration },
         basePrice: { gte: filters.minPrice, lte: filters.maxPrice },
       },
@@ -402,7 +404,8 @@ export class PublicService {
       inclusions: pkg.inclusions,
       createdAt: pkg.createdAt.toISOString(),
       updatedAt: pkg.updatedAt.toISOString(),
-      categoryNames: pkg.destination.categoryLinks.map((l) => l.category.name),
+      categoryIds: pkg.categoryLinks.map((l) => l.categoryId),
+      categoryNames: pkg.categoryLinks.map((l) => l.category.name),
       avgRating: pkg.reviews.length ? Math.round((pkg.reviews.reduce((sum, r) => sum + r.rating, 0) / pkg.reviews.length) * 10) / 10 : null,
       reviewCount: pkg.reviews.length,
     };
@@ -470,7 +473,7 @@ export class PublicService {
       packageTitle: b.package.title,
       packageSlug: b.package.slug,
       destinationName: b.package.destination.name,
-      categoryName: b.package.destination.categoryLinks[0]?.category.name ?? null,
+      categoryName: b.package.categoryLinks[0]?.category.name ?? null,
       coverImageUrl: this.storage.buildPublicUrl(b.package.galleryImages[0]?.storageKey),
       price: b.totalAmount.toNumber(),
       durationNights: b.package.durationNights,

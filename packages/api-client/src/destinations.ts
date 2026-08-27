@@ -4,7 +4,6 @@ import type {
   CountryDto,
   CreateDestinationDto,
   DestinationActivityDto,
-  DestinationCategoryDto,
   DestinationDto,
   DestinationHighlightDto,
   DestinationHotelSuggestionDto,
@@ -25,14 +24,6 @@ export function useCountries() {
   return useQuery({
     queryKey: ["destinations", "countries"],
     queryFn: () => apiFetch<CountryDto[]>("/destinations/countries"),
-    staleTime: Infinity,
-  });
-}
-
-export function useDestinationCategories() {
-  return useQuery({
-    queryKey: ["destinations", "categories"],
-    queryFn: () => apiFetch<DestinationCategoryDto[]>("/destinations/categories"),
     staleTime: Infinity,
   });
 }
