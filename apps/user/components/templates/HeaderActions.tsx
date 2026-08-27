@@ -46,7 +46,7 @@ export function HeaderActions({
         title="Welcome to Paxbook"
         subtitle="Log in to unlock prices, save itineraries and track your bookings."
       >
-        <LoginForm nextPath="/account" embedded googleEnabled={googleEnabled} />
+        <LoginForm nextPath="/account" embedded googleEnabled={googleEnabled} onSuccess={() => setLoginOpen(false)} />
       </Modal>
 
       <Modal

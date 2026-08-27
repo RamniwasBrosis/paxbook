@@ -18,3 +18,13 @@ apps/api/uploads/
 
 # Portable local Postgres/Redis binaries + data (machine-specific, not committed)
 .local-infra/
+
+# Local-only exports, dumps, and credential notes — never commit these
+*.zip
+paxbook_db_dump_*.sql
+backups/*.sql
+Paxbook-Platform-Feature-Overview.pdf
+rzp-test-key.csv
+user access.txt
+*.tsbuildinfo
+.claude/scheduled_tasks.lock

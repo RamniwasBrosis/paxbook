@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { useRouter } from "next/navigation";
 import Script from "next/script";
 
 interface PaymentOrder {
@@ -20,7 +19,6 @@ declare global {
 }
 
 export function BookingPaymentPanel({ bookingId, outstanding, currency }: { bookingId: string; outstanding: number; currency: string }) {
-  const router = useRouter();
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -75,10 +73,11 @@ export function BookingPaymentPanel({ bookingId, outstanding, currency }: { book
       if (!res.ok || json.success === false) {
         throw new Error(json?.error?.message ?? "Payment could not be verified.");
       }
-      router.refresh();
+      // A hard reload guarantees the confirmed status is visible immediately — router.refresh()
+      // re-fetches in the background and can lag a moment behind the Razorpay modal closing.
+      window.location.reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment could not be verified.");
-    } finally {
       setBusy(false);
     }
   }

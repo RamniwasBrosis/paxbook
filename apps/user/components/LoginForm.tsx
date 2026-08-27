@@ -22,7 +22,17 @@ const pillButtonPrimary =
 const pillButtonOutline =
   "flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:border-brand hover:text-brand";
 
-export function LoginForm({ nextPath, embedded, googleEnabled }: { nextPath: string; embedded?: boolean; googleEnabled?: boolean }) {
+export function LoginForm({
+  nextPath,
+  embedded,
+  googleEnabled,
+  onSuccess,
+}: {
+  nextPath: string;
+  embedded?: boolean;
+  googleEnabled?: boolean;
+  onSuccess?: () => void;
+}) {
   const router = useRouter();
   const [mode, setMode] = React.useState<"login" | "register">("login");
   const [tab, setTab] = React.useState<Tab>("otp");
@@ -44,6 +54,7 @@ export function LoginForm({ nextPath, embedded, googleEnabled }: { nextPath: str
   const [registerForm, setRegisterForm] = React.useState({ name: "", email: "", password: "", phone: "" });
 
   function goNext() {
+    onSuccess?.();
     router.push(nextPath);
     router.refresh();
   }
