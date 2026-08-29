@@ -14,6 +14,8 @@ import { RequestOtpDto } from "./dto/request-otp.dto";
 import { VerifyOtpDto } from "./dto/verify-otp.dto";
 import { RegisterCustomerDto } from "./dto/register-customer.dto";
 import { LoginCustomerDto } from "./dto/login-customer.dto";
+import { RequestPasswordResetDto } from "./dto/request-password-reset.dto";
+import { ResetPasswordDto } from "./dto/reset-password.dto";
 
 const REFRESH_COOKIE_NAME = "paxbook_customer_refresh_token";
 const REFRESH_COOKIE_PATH = "/api/v1/customer-auth";
@@ -58,6 +60,20 @@ export class CustomerAuthController {
     const tokens = await this.customerAuthService.login(tenant.id, dto.email, dto.password);
     this.setRefreshCookie(res, tokens.refreshTokenRaw, tokens.refreshTokenExpiresAt);
     return { accessToken: tokens.accessToken, accessTokenExpiresAt: tokens.accessTokenExpiresAt, customer: tokens.customer };
+  }
+
+  @SkipAudit()
+  @Post("password/forgot")
+  async forgotPassword(@CurrentTenant() tenant: ResolvedTenant, @Body() dto: RequestPasswordResetDto) {
+    await this.customerAuthService.requestPasswordReset(tenant.id, dto.email);
+    return { sent: true };
+  }
+
+  @SkipAudit()
+  @Post("password/reset")
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.customerAuthService.resetPassword(dto.token, dto.newPassword);
+    return { reset: true };
   }
 
   @SkipAudit()

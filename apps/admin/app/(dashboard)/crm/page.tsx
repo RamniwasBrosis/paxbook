@@ -139,9 +139,14 @@ function LeadsTab({ canWrite }: { canWrite: boolean }) {
   const leadsQuery = useLeads();
   const createLead = useCreateLead();
   const [view, setView] = React.useState<"board" | "list">("board");
+  const [sourceFilter, setSourceFilter] = React.useState("");
 
   const [form, setForm] = React.useState({ name: "", email: "", phone: "", source: "", destinationInterest: "" });
   const [error, setError] = React.useState<string | null>(null);
+
+  const allLeads = leadsQuery.data ?? [];
+  const sources = Array.from(new Set(allLeads.map((l) => l.source).filter((s): s is string => Boolean(s)))).sort();
+  const filteredLeads = sourceFilter ? allLeads.filter((l) => l.source === sourceFilter) : allLeads;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -162,25 +167,35 @@ function LeadsTab({ canWrite }: { canWrite: boolean }) {
 
   return (
     <>
-      <div className="flex justify-end gap-1">
-        <button
-          type="button"
-          onClick={() => setView("board")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium ${view === "board" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}
-        >
-          Pipeline board
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("list")}
-          className={`rounded-md px-3 py-1.5 text-xs font-medium ${view === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}
-        >
-          List
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Select label="Source" value={sourceFilter} onChange={(e) => setSourceFilter(e.target.value)} className="w-52">
+          <option value="">All sources ({allLeads.length})</option>
+          {sources.map((s) => (
+            <option key={s} value={s}>
+              {s} ({allLeads.filter((l) => l.source === s).length})
+            </option>
+          ))}
+        </Select>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setView("board")}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${view === "board" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}
+          >
+            Pipeline board
+          </button>
+          <button
+            type="button"
+            onClick={() => setView("list")}
+            className={`rounded-md px-3 py-1.5 text-xs font-medium ${view === "list" ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}
+          >
+            List
+          </button>
+        </div>
       </div>
 
       {view === "board" ? (
-        <LeadsPipelineBoard leads={leadsQuery.data ?? []} canWrite={canWrite} />
+        <LeadsPipelineBoard leads={filteredLeads} canWrite={canWrite} />
       ) : (
         <DataTable
           columns={[
@@ -193,11 +208,12 @@ function LeadsTab({ canWrite }: { canWrite: boolean }) {
               ),
             },
             { header: "Contact", cell: (l: LeadSummaryDto) => l.email ?? l.phone ?? "—" },
+            { header: "Source", cell: (l: LeadSummaryDto) => (l.source ? <Badge tone={l.source === "View Price" ? "info" : "neutral"}>{l.source}</Badge> : "—") },
             { header: "Interest", cell: (l: LeadSummaryDto) => l.destinationInterest ?? "—" },
             { header: "Consultant", cell: (l: LeadSummaryDto) => l.assignedConsultantName ?? "Unassigned" },
             { header: "Status", cell: (l: LeadSummaryDto) => <Badge tone={LEAD_STATUS_TONE[l.status]}>{l.status}</Badge> },
           ]}
-          rows={leadsQuery.data ?? []}
+          rows={filteredLeads}
           rowKey={(l) => l.id}
           isLoading={leadsQuery.isLoading}
           emptyMessage="No leads yet."

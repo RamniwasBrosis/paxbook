@@ -8,11 +8,16 @@ const nextConfig = {
     "@paxbook/auth-client",
     "@paxbook/api-client",
   ],
-  // Constrained to 1 worker: the deployment host's CloudLinux LVE caps
-  // concurrent processes per account low enough that Next's default
-  // one-worker-per-CPU static-generation pool hits EAGAIN on spawn.
   experimental: {
+    // Constrained to 1 worker: the deployment host's CloudLinux LVE caps
+    // concurrent processes per account low enough that Next's default
+    // one-worker-per-CPU static-generation pool hits EAGAIN on spawn.
     cpus: 1,
+    // Matches apps/user — any server-rendered dynamic page here should always
+    // read fresh data on navigation rather than serve Next's client Router Cache.
+    staleTimes: {
+      dynamic: 0,
+    },
   },
 };
 

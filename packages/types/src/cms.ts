@@ -6,18 +6,26 @@ export interface BannerDto {
   id: string;
   imageKey: string;
   imageUrl: string;
+  title: string | null;
+  description: string | null;
+  ctaText: string | null;
   linkUrl: string | null;
   placement: string;
   sortOrder: number;
+  isActive: boolean;
   activeFrom: string | null;
   activeTo: string | null;
 }
 
 export interface SaveBannerDto {
   imageKey: string;
+  title?: string;
+  description?: string;
+  ctaText?: string;
   linkUrl?: string;
   placement: string;
   sortOrder?: number;
+  isActive?: boolean;
   activeFrom?: string;
   activeTo?: string;
 }

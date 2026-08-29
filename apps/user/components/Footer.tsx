@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Phone, Mail } from "lucide-react";
 import { NewsletterForm } from "@/components/NewsletterForm";
+import { getBranding } from "@/lib/branding";
 
 function FacebookIcon() {
   return (
@@ -21,14 +22,19 @@ function InstagramIcon() {
 }
 
 export async function Footer() {
+  const branding = await getBranding();
   return (
     <footer className="border-t border-white/10 bg-brand">
       <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
         <div>
           <div className="inline-flex rounded-xl bg-white px-3 py-2">
-            <span className="text-lg font-extrabold tracking-tight text-brand">
-              Pax<span className="text-accent">Book</span>
-            </span>
+            {branding.logoUrl ? (
+              <img src={branding.logoUrl} alt={branding.siteName} className="h-9 w-auto" />
+            ) : (
+              <span className="text-lg font-extrabold tracking-tight text-brand">
+                Pax<span className="text-accent">Book</span>
+              </span>
+            )}
           </div>
           <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-accent">Travel | Explore | Experience</p>
           <p className="mt-3 max-w-xs text-sm text-white/70">

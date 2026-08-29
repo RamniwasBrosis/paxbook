@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import type { TestimonialDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { StorageService } from "../../common/storage/storage.service";
+import { CacheService } from "../../common/cache/cache.service";
 import type { SaveTestimonialDto } from "./dto/save-testimonial.dto";
 
 const TESTIMONIAL_INCLUDE = {
@@ -17,6 +18,7 @@ export class TestimonialsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly cache: CacheService,
   ) {}
 
   async findAll(tenantId: string): Promise<TestimonialDto[]> {
@@ -67,6 +69,7 @@ export class TestimonialsService {
       throw this.mapWriteError(err);
     }
 
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return this.findOne(tenantId, created.id);
   }
 
@@ -106,6 +109,7 @@ export class TestimonialsService {
       throw this.mapWriteError(err);
     }
 
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return this.findOne(tenantId, id);
   }
 
@@ -118,12 +122,14 @@ export class TestimonialsService {
         publishedAt: published ? new Date() : null,
       },
     });
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return this.findOne(tenantId, id);
   }
 
   async remove(tenantId: string, id: string): Promise<void> {
     await this.getOwned(tenantId, id);
     await this.prisma.testimonial.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
   }
 
   private async getOwned(tenantId: string, id: string): Promise<TestimonialRow> {

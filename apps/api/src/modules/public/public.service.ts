@@ -86,7 +86,8 @@ export class PublicService {
       this.prisma.banner.findMany({
         where: {
           tenantId,
-          placement: { in: ["homepage_hero", "homepage_strip"] },
+          placement: { in: ["homepage_hero", "homepage_strip", "homepage_bottom"] },
+          isActive: true,
           OR: [{ activeFrom: null }, { activeFrom: { lte: now } }],
         },
         orderBy: { sortOrder: "asc" },
@@ -532,14 +533,30 @@ export class PublicService {
     return { ...configJson, items };
   }
 
-  private toBannerDto(b: { id: string; imageKey: string; linkUrl: string | null; placement: string; sortOrder: number; activeFrom: Date | null; activeTo: Date | null }): BannerDto {
+  private toBannerDto(b: {
+    id: string;
+    imageKey: string;
+    title: string | null;
+    description: string | null;
+    ctaText: string | null;
+    linkUrl: string | null;
+    placement: string;
+    sortOrder: number;
+    isActive: boolean;
+    activeFrom: Date | null;
+    activeTo: Date | null;
+  }): BannerDto {
     return {
       id: b.id,
       imageKey: b.imageKey,
       imageUrl: this.storage.buildPublicUrl(b.imageKey) ?? "",
+      title: b.title,
+      description: b.description,
+      ctaText: b.ctaText,
       linkUrl: b.linkUrl,
       placement: b.placement,
       sortOrder: b.sortOrder,
+      isActive: b.isActive,
       activeFrom: b.activeFrom?.toISOString() ?? null,
       activeTo: b.activeTo?.toISOString() ?? null,
     };

@@ -24,8 +24,7 @@ export function RegisterForm() {
       if (!res.ok || json.success === false) {
         throw new Error(json?.error?.message ?? "Could not create your account.");
       }
-      router.push("/account");
-      router.refresh();
+      router.push("/login?registered=1");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create your account.");
     } finally {

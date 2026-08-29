@@ -85,7 +85,14 @@ export default function CmsPage() {
   );
 }
 
-const PLACEMENTS = ["homepage_hero", "homepage_strip", "destination_page", "package_page"];
+const PLACEMENTS = ["homepage_hero", "homepage_strip", "homepage_bottom", "destination_page", "package_page"];
+const PLACEMENT_LABELS: Record<string, string> = {
+  homepage_hero: "Homepage — Hero",
+  homepage_strip: "Homepage — Strip",
+  homepage_bottom: "Homepage — Bottom CTA / Posters",
+  destination_page: "Destination page",
+  package_page: "Package page",
+};
 
 function BannersTab({ canWrite }: { canWrite: boolean }) {
   const listQuery = useBanners();
@@ -94,14 +101,34 @@ function BannersTab({ canWrite }: { canWrite: boolean }) {
   const remove = useDeleteBanner();
   const uploadFile = useUploadFile();
 
-  const empty = { id: null as string | null, imageKey: "", imageUrl: "" as string | null, linkUrl: "", placement: PLACEMENTS[0]!, sortOrder: 0 };
+  const empty = {
+    id: null as string | null,
+    imageKey: "",
+    imageUrl: "" as string | null,
+    title: "",
+    description: "",
+    ctaText: "",
+    linkUrl: "",
+    placement: PLACEMENTS[0]!,
+    sortOrder: 0,
+    isActive: true,
+  };
   const [form, setForm] = React.useState(empty);
   const [error, setError] = React.useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    const payload = { imageKey: form.imageKey, linkUrl: form.linkUrl || undefined, placement: form.placement, sortOrder: form.sortOrder };
+    const payload = {
+      imageKey: form.imageKey,
+      title: form.title || undefined,
+      description: form.description || undefined,
+      ctaText: form.ctaText || undefined,
+      linkUrl: form.linkUrl || undefined,
+      placement: form.placement,
+      sortOrder: form.sortOrder,
+      isActive: form.isActive,
+    };
     try {
       if (form.id) await update.mutateAsync({ id: form.id, payload });
       else await create.mutateAsync(payload);
@@ -115,42 +142,78 @@ function BannersTab({ canWrite }: { canWrite: boolean }) {
     <>
       <DataTable
         columns={[
-          { header: "Placement", cell: (b: BannerDto) => b.placement },
-          { header: "Link", cell: (b: BannerDto) => b.linkUrl ?? "—" },
+          { header: "Placement", cell: (b: BannerDto) => PLACEMENT_LABELS[b.placement] ?? b.placement },
+          { header: "Title", cell: (b: BannerDto) => b.title ?? "—" },
+          { header: "CTA", cell: (b: BannerDto) => b.ctaText ?? "—" },
           { header: "Order", cell: (b: BannerDto) => b.sortOrder },
+          { header: "Status", cell: (b: BannerDto) => <Badge tone={b.isActive ? "success" : "neutral"}>{b.isActive ? "Active" : "Inactive"}</Badge> },
           ...(canWrite
             ? [{ header: "", cell: (b: BannerDto) => <DeleteButton onClick={() => remove.mutateAsync(b.id)} /> }]
             : []),
         ]}
         rows={listQuery.data ?? []}
         rowKey={(b) => b.id}
-        onRowClick={canWrite ? (b) => setForm({ id: b.id, imageKey: b.imageKey, imageUrl: b.imageUrl, linkUrl: b.linkUrl ?? "", placement: b.placement, sortOrder: b.sortOrder }) : undefined}
+        onRowClick={
+          canWrite
+            ? (b) =>
+                setForm({
+                  id: b.id,
+                  imageKey: b.imageKey,
+                  imageUrl: b.imageUrl,
+                  title: b.title ?? "",
+                  description: b.description ?? "",
+                  ctaText: b.ctaText ?? "",
+                  linkUrl: b.linkUrl ?? "",
+                  placement: b.placement,
+                  sortOrder: b.sortOrder,
+                  isActive: b.isActive,
+                })
+            : undefined
+        }
         isLoading={listQuery.isLoading}
       />
       {canWrite ? (
         <Card>
           <CardHeader>
-            <CardTitle>{form.id ? "Edit banner" : "Add banner"}</CardTitle>
+            <CardTitle>{form.id ? "Edit banner / poster" : "Add banner / poster"}</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="grid grid-cols-1 gap-4 sm:grid-cols-2" onSubmit={handleSubmit}>
               <Select label="Placement" value={form.placement} onChange={(e) => setForm((f) => ({ ...f, placement: e.target.value }))}>
                 {PLACEMENTS.map((p) => (
                   <option key={p} value={p}>
-                    {p}
+                    {PLACEMENT_LABELS[p] ?? p}
                   </option>
                 ))}
               </Select>
-              <Input label="Link URL" value={form.linkUrl} onChange={(e) => setForm((f) => ({ ...f, linkUrl: e.target.value }))} />
               <Input
                 label="Sort order"
                 type="number"
                 value={form.sortOrder}
                 onChange={(e) => setForm((f) => ({ ...f, sortOrder: Number(e.target.value) }))}
               />
+              <Input label="Title (optional)" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
+              <Input label="CTA button text (optional)" placeholder="Explore Now" value={form.ctaText} onChange={(e) => setForm((f) => ({ ...f, ctaText: e.target.value }))} />
+              <Input
+                label="Description (optional)"
+                className="sm:col-span-2"
+                value={form.description}
+                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              />
+              <Input
+                label="Redirect / link URL"
+                className="sm:col-span-2"
+                placeholder="/packages/europe-highlights or https://..."
+                value={form.linkUrl}
+                onChange={(e) => setForm((f) => ({ ...f, linkUrl: e.target.value }))}
+              />
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />
+                Active / published (visible on the site)
+              </label>
               <div className="sm:col-span-2">
                 <ImageUploadField
-                  label="Banner image"
+                  label="Image"
                   imageUrl={form.imageUrl}
                   isUploading={uploadFile.isPending}
                   onFileSelected={async (file) => {
@@ -159,6 +222,25 @@ function BannersTab({ canWrite }: { canWrite: boolean }) {
                   }}
                 />
               </div>
+
+              {form.imageUrl ? (
+                <div className="sm:col-span-2">
+                  <p className="mb-2 text-xs font-medium text-slate-500">Preview</p>
+                  <div className="relative overflow-hidden rounded-xl border border-slate-200">
+                    <img src={form.imageUrl} alt="" className="h-40 w-full object-cover" />
+                    {form.title || form.description || form.ctaText ? (
+                      <div className="absolute inset-0 flex flex-col justify-end bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4 text-white">
+                        {form.title ? <p className="text-sm font-bold">{form.title}</p> : null}
+                        {form.description ? <p className="text-xs text-white/80">{form.description}</p> : null}
+                        {form.ctaText ? (
+                          <span className="mt-2 inline-block w-fit rounded-full bg-accent px-3 py-1 text-xs font-bold text-navy-deep">{form.ctaText}</span>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+
               <div className="sm:col-span-2">
                 {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}
                 <Button type="submit" isLoading={create.isPending || update.isPending} disabled={!form.imageKey}>

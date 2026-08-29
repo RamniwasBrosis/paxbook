@@ -5,9 +5,8 @@ import Redis from "ioredis";
 /**
  * Thin read-through cache for expensive, frequently-hit PUBLIC endpoints (homepage, destination/package
  * lists) — a real Redis connection when REDIS_URL is set, and a silent, always-empty no-op when it isn't.
- * TTL-only, no manual invalidation: an admin's edit is visible within `ttlSeconds` rather than instantly,
- * which is the right trade for read-heavy public traffic and avoids threading cache-busting through every
- * admin write path.
+ * TTL is a safety-net upper bound only; admin write paths that affect a cached key call `invalidate()`
+ * so edits are visible immediately rather than waiting out the TTL.
  */
 @Injectable()
 export class CacheService implements OnModuleDestroy {
@@ -33,6 +32,14 @@ export class CacheService implements OnModuleDestroy {
     const value = await load();
     this.client.set(key, JSON.stringify(value), "EX", ttlSeconds).catch(() => {});
     return value;
+  }
+
+  /** Explicit invalidation for the handful of admin-write paths where a 60s-stale homepage/listing is unacceptable. */
+  async invalidate(key: string | string[]): Promise<void> {
+    if (!this.client || this.client.status !== "ready") return;
+    const keys = Array.isArray(key) ? key : [key];
+    if (keys.length === 0) return;
+    await this.client.del(...keys).catch(() => {});
   }
 
   onModuleDestroy() {

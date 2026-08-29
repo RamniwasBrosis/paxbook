@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import type { PackageDetailDto, PackageSummaryDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { StorageService } from "../../common/storage/storage.service";
+import { CacheService } from "../../common/cache/cache.service";
 import { upsertSeoMeta } from "../../common/seo/upsert-seo-meta";
 import type { SavePackageDto } from "./dto/save-package.dto";
 
@@ -34,6 +35,7 @@ export class PackagesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly cache: CacheService,
   ) {}
 
   async findAll(tenantId: string): Promise<PackageSummaryDto[]> {
@@ -85,6 +87,7 @@ export class PackagesService {
     if (dto.status === "PUBLISHED") {
       await this.upsertSitemapEntry(dto.slug);
     }
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return this.findOne(tenantId, created.id);
   }
 
@@ -137,6 +140,7 @@ export class PackagesService {
       await this.removeSitemapEntry(existing.slug);
     }
 
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return this.findOne(tenantId, id);
   }
 
@@ -156,6 +160,7 @@ export class PackagesService {
       await this.removeSitemapEntry(existing.slug);
     }
 
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return this.findOne(tenantId, id);
   }
 
@@ -165,6 +170,7 @@ export class PackagesService {
     if (existing.status === "PUBLISHED") {
       await this.removeSitemapEntry(existing.slug);
     }
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
   }
 
   private buildChildrenCreateInput(dto: SavePackageDto) {

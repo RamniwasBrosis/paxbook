@@ -85,6 +85,12 @@ export class LeadsService {
         destinationInterest: dto.destinationInterest,
         customerId: dto.customerId,
         assignedConsultantId: newConsultantId,
+        travellerType: dto.travellerType,
+        interests: dto.interests ?? existing.interests,
+        tripDuration: dto.tripDuration,
+        departureCity: dto.departureCity,
+        departureDate: dto.departureDate ? new Date(dto.departureDate) : undefined,
+        packageId: dto.packageId,
       },
       include: SUMMARY_INCLUDE,
     });

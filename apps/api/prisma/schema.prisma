@@ -609,9 +609,13 @@ model Banner {
   tenantId   String
   tenant     Tenant    @relation(fields: [tenantId], references: [id])
   imageKey   String
+  title      String?
+  description String?
+  ctaText    String?
   linkUrl    String?
   placement  String
   sortOrder  Int       @default(0)
+  isActive   Boolean   @default(true)
   activeFrom DateTime?
   activeTo   DateTime?
 
@@ -786,6 +790,7 @@ model Customer {
   bookings             Booking[]
   reviews              Review[]
   refreshTokens        CustomerRefreshToken[]
+  passwordResetTokens  CustomerPasswordResetToken[]
   wishlistItems        WishlistItem[]
   notifications        Notification[]
   cancellationRequests CancellationRequest[]
@@ -810,6 +815,19 @@ model CustomerRefreshToken {
 
   @@index([customerId])
   @@map("customer_refresh_tokens")
+}
+
+model CustomerPasswordResetToken {
+  id         String    @id @default(uuid())
+  customerId String
+  customer   Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  usedAt     DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@index([customerId])
+  @@map("customer_password_reset_tokens")
 }
 
 model WishlistItem {

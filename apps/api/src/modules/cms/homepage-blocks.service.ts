@@ -2,11 +2,15 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import type { HomepageBlockDto } from "@paxbook/types";
 import { Prisma } from "@prisma/client";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { CacheService } from "../../common/cache/cache.service";
 import type { SaveHomepageBlockDto } from "./dto/save-homepage-block.dto";
 
 @Injectable()
 export class HomepageBlocksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly cache: CacheService,
+  ) {}
 
   async findAll(tenantId: string): Promise<HomepageBlockDto[]> {
     const blocks = await this.prisma.homepageBlock.findMany({ where: { tenantId }, orderBy: { sortOrder: "asc" } });
@@ -22,6 +26,7 @@ export class HomepageBlocksService {
         sortOrder: dto.sortOrder ?? 0,
       },
     });
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return { id: created.id, type: created.type, configJson: created.configJson as Record<string, unknown>, sortOrder: created.sortOrder };
   }
 
@@ -35,12 +40,14 @@ export class HomepageBlocksService {
         sortOrder: dto.sortOrder,
       },
     });
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
     return { id: updated.id, type: updated.type, configJson: updated.configJson as Record<string, unknown>, sortOrder: updated.sortOrder };
   }
 
   async remove(tenantId: string, id: string): Promise<void> {
     await this.assertOwned(tenantId, id);
     await this.prisma.homepageBlock.delete({ where: { id } });
+    await this.cache.invalidate(`public:homepage:${tenantId}`);
   }
 
   private async assertOwned(tenantId: string, id: string): Promise<void> {

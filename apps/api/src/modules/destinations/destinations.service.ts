@@ -9,6 +9,7 @@ import type {
 } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { StorageService } from "../../common/storage/storage.service";
+import { CacheService } from "../../common/cache/cache.service";
 import { upsertSeoMeta } from "../../common/seo/upsert-seo-meta";
 import type { CreateDestinationDto } from "./dto/create-destination.dto";
 import type { UpdateDestinationDto } from "./dto/update-destination.dto";
@@ -32,7 +33,12 @@ export class DestinationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
+    private readonly cache: CacheService,
   ) {}
+
+  private invalidateCaches(tenantId: string): Promise<void> {
+    return this.cache.invalidate([`public:homepage:${tenantId}`, `public:destinations:${tenantId}`]);
+  }
 
   async listCountries(): Promise<CountryDto[]> {
     return this.prisma.country.findMany({ orderBy: { name: "asc" } });
@@ -82,6 +88,7 @@ export class DestinationsService {
     }
 
     await upsertSeoMeta(this.prisma, ENTITY_TYPE, created.id, dto.seo);
+    await this.invalidateCaches(tenantId);
     return this.findOne(tenantId, created.id);
   }
 
@@ -118,12 +125,14 @@ export class DestinationsService {
     }
 
     await upsertSeoMeta(this.prisma, ENTITY_TYPE, id, dto.seo);
+    await this.invalidateCaches(tenantId);
     return this.findOne(tenantId, id);
   }
 
   async remove(tenantId: string, id: string): Promise<void> {
     await this.getOwned(tenantId, id);
     await this.prisma.destination.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.invalidateCaches(tenantId);
   }
 
   // --- Highlights ("things to do") ---

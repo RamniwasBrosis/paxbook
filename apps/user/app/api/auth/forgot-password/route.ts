@@ -3,20 +3,13 @@ import { getTenantHeader } from "@/lib/tenant";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
-/**
- * Creates the account but deliberately does NOT establish a session (no cookies set) — the
- * customer should land on the login page and log in explicitly, not be auto-logged-in.
- */
 export async function POST(req: Request) {
   const payload = await req.json();
-  const res = await fetch(`${API_BASE_URL}/customer-auth/register`, {
+  const res = await fetch(`${API_BASE_URL}/customer-auth/password/forgot`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...getTenantHeader() },
     body: JSON.stringify(payload),
   });
   const data = await res.json();
-  return NextResponse.json(
-    res.ok && data.success !== false ? { success: true, data: { customer: data.data.customer } } : data,
-    { status: res.status },
-  );
+  return NextResponse.json(data, { status: res.status });
 }

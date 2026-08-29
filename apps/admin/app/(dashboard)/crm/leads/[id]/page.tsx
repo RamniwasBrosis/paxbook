@@ -56,7 +56,7 @@ export default function LeadDetailPage() {
       </div>
 
       <DetailsCard lead={lead} canWrite={canWrite} />
-      <TripPreferencesCard lead={lead} />
+      <TripPreferencesCard lead={lead} canWrite={canWrite} />
       <FollowUpsCard lead={lead} canWrite={canWrite} />
     </div>
   );
@@ -158,10 +158,46 @@ function DetailsCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite: boolea
   );
 }
 
-function TripPreferencesCard({ lead }: { lead: LeadDetailDto }) {
+function TripPreferencesCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite: boolean }) {
+  const updateLead = useUpdateLead();
   const hasAny =
     lead.travellerType || lead.interests.length > 0 || lead.tripDuration || lead.departureCity || lead.departureDate || lead.packageId;
-  if (!hasAny) return null;
+  if (!hasAny && !canWrite) return null;
+
+  const [form, setForm] = React.useState({
+    travellerType: lead.travellerType ?? "",
+    tripDuration: lead.tripDuration ?? "",
+    departureCity: lead.departureCity ?? "",
+    departureDate: lead.departureDate ? lead.departureDate.slice(0, 10) : "",
+    interests: lead.interests.join(", "),
+  });
+  const [error, setError] = React.useState<string | null>(null);
+  const [saved, setSaved] = React.useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    try {
+      await updateLead.mutateAsync({
+        id: lead.id,
+        payload: {
+          name: lead.name,
+          travellerType: form.travellerType || undefined,
+          tripDuration: form.tripDuration || undefined,
+          departureCity: form.departureCity || undefined,
+          departureDate: form.departureDate || undefined,
+          interests: form.interests
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean),
+        },
+      });
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : "Could not save trip preferences.");
+    }
+  }
 
   return (
     <Card>
@@ -170,50 +206,78 @@ function TripPreferencesCard({ lead }: { lead: LeadDetailDto }) {
       </CardHeader>
       <CardContent>
         <p className="mb-4 text-xs text-slate-500">Collected from the customer&apos;s step-by-step trip customizer.</p>
-        <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {lead.travellerType ? (
-            <div>
-              <dt className="text-xs text-slate-400">Traveller type</dt>
-              <dd className="text-sm font-medium text-slate-900">{lead.travellerType}</dd>
+        {canWrite ? (
+          <form className="grid grid-cols-1 gap-4 sm:grid-cols-3" onSubmit={handleSubmit}>
+            <Input label="Traveller type" value={form.travellerType} onChange={(e) => setForm((f) => ({ ...f, travellerType: e.target.value }))} />
+            <Input label="Duration" value={form.tripDuration} onChange={(e) => setForm((f) => ({ ...f, tripDuration: e.target.value }))} />
+            <Input label="Departure city" value={form.departureCity} onChange={(e) => setForm((f) => ({ ...f, departureCity: e.target.value }))} />
+            <Input label="Departure date" type="date" value={form.departureDate} onChange={(e) => setForm((f) => ({ ...f, departureDate: e.target.value }))} />
+            <Input
+              label="Interests (comma-separated)"
+              className="sm:col-span-2"
+              value={form.interests}
+              onChange={(e) => setForm((f) => ({ ...f, interests: e.target.value }))}
+            />
+            {lead.packageTitle ? (
+              <div>
+                <dt className="text-xs text-slate-400">Selected package</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.packageTitle}</dd>
+              </div>
+            ) : null}
+            <div className="sm:col-span-3">
+              {error ? <p className="mb-2 text-sm text-red-600">{error}</p> : null}
+              {saved ? <p className="mb-2 text-sm text-emerald-600">Saved.</p> : null}
+              <Button type="submit" isLoading={updateLead.isPending}>
+                Save
+              </Button>
             </div>
-          ) : null}
-          {lead.tripDuration ? (
-            <div>
-              <dt className="text-xs text-slate-400">Duration</dt>
-              <dd className="text-sm font-medium text-slate-900">{lead.tripDuration}</dd>
-            </div>
-          ) : null}
-          {lead.departureCity ? (
-            <div>
-              <dt className="text-xs text-slate-400">Departure city</dt>
-              <dd className="text-sm font-medium text-slate-900">{lead.departureCity}</dd>
-            </div>
-          ) : null}
-          {lead.departureDate ? (
-            <div>
-              <dt className="text-xs text-slate-400">Departure date</dt>
-              <dd className="text-sm font-medium text-slate-900">{new Date(lead.departureDate).toLocaleDateString()}</dd>
-            </div>
-          ) : null}
-          {lead.packageTitle ? (
-            <div>
-              <dt className="text-xs text-slate-400">Selected package</dt>
-              <dd className="text-sm font-medium text-slate-900">{lead.packageTitle}</dd>
-            </div>
-          ) : null}
-          {lead.interests.length > 0 ? (
-            <div className="col-span-2 sm:col-span-3">
-              <dt className="text-xs text-slate-400">Interests</dt>
-              <dd className="mt-1 flex flex-wrap gap-1.5">
-                {lead.interests.map((i) => (
-                  <span key={i} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
-                    {i}
-                  </span>
-                ))}
-              </dd>
-            </div>
-          ) : null}
-        </dl>
+          </form>
+        ) : (
+          <dl className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+            {lead.travellerType ? (
+              <div>
+                <dt className="text-xs text-slate-400">Traveller type</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.travellerType}</dd>
+              </div>
+            ) : null}
+            {lead.tripDuration ? (
+              <div>
+                <dt className="text-xs text-slate-400">Duration</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.tripDuration}</dd>
+              </div>
+            ) : null}
+            {lead.departureCity ? (
+              <div>
+                <dt className="text-xs text-slate-400">Departure city</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.departureCity}</dd>
+              </div>
+            ) : null}
+            {lead.departureDate ? (
+              <div>
+                <dt className="text-xs text-slate-400">Departure date</dt>
+                <dd className="text-sm font-medium text-slate-900">{new Date(lead.departureDate).toLocaleDateString()}</dd>
+              </div>
+            ) : null}
+            {lead.packageTitle ? (
+              <div>
+                <dt className="text-xs text-slate-400">Selected package</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.packageTitle}</dd>
+              </div>
+            ) : null}
+            {lead.interests.length > 0 ? (
+              <div className="col-span-2 sm:col-span-3">
+                <dt className="text-xs text-slate-400">Interests</dt>
+                <dd className="mt-1 flex flex-wrap gap-1.5">
+                  {lead.interests.map((i) => (
+                    <span key={i} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700">
+                      {i}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        )}
       </CardContent>
     </Card>
   );

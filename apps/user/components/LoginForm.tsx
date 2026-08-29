@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Phone, Mail, Lock, KeyRound } from "lucide-react";
 
@@ -38,6 +39,7 @@ export function LoginForm({
   const [tab, setTab] = React.useState<Tab>("otp");
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
+  const [justRegistered, setJustRegistered] = React.useState(false);
 
   // OTP tab state
   const [phone, setPhone] = React.useState("");
@@ -65,7 +67,11 @@ export function LoginForm({
     setBusy(true);
     try {
       await postJson("/api/auth/register", { ...registerForm, phone: registerForm.phone || undefined });
-      goNext();
+      // Deliberately not logged in automatically — send them to the Login tab to sign in themselves.
+      setEmail(registerForm.email);
+      setTab("email");
+      setMode("login");
+      setJustRegistered(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create your account.");
     } finally {
@@ -126,17 +132,29 @@ export function LoginForm({
         </>
       )}
 
+      {justRegistered ? (
+        <p className="mt-4 rounded-xl bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
+          Your registration was successful. Please login to access your profile.
+        </p>
+      ) : null}
+
       <div className={`flex rounded-full bg-mist-strong p-1 text-sm font-semibold ${embedded ? "" : "mt-6"}`}>
         <button
           type="button"
-          onClick={() => setMode("login")}
+          onClick={() => {
+            setJustRegistered(false);
+            setMode("login");
+          }}
           className={`flex-1 rounded-full border py-2 transition-colors ${mode === "login" ? "border-brand bg-white text-brand" : "border-transparent text-slate-500"}`}
         >
           Login
         </button>
         <button
           type="button"
-          onClick={() => setMode("register")}
+          onClick={() => {
+            setJustRegistered(false);
+            setMode("register");
+          }}
           className={`flex-1 rounded-full border py-2 text-center transition-colors ${mode === "register" ? "border-brand bg-white text-brand" : "border-transparent text-slate-500"}`}
         >
           Register
@@ -276,6 +294,11 @@ export function LoginForm({
               onChange={(e) => setPassword(e.target.value)}
               className={pillInput}
             />
+          </div>
+          <div className="-mt-1 text-right">
+            <Link href="/forgot-password" className="text-xs font-semibold text-slate-500 hover:text-brand">
+              Forgot password?
+            </Link>
           </div>
           <button type="submit" disabled={busy} className={pillButtonPrimary}>
             {busy ? "Logging in…" : "Log in"}

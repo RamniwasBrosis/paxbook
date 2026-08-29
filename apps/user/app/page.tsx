@@ -18,6 +18,7 @@ import { PackagesByDurationSection } from "@/components/PackagesByDurationSectio
 import { ChooseDestinationSection } from "@/components/ChooseDestinationSection";
 import { AiPlannerMock } from "@/components/AiPlannerMock";
 import { PromoBannerStrip } from "@/components/PromoBannerStrip";
+import { PromotionalPosters } from "@/components/PromotionalPosters";
 
 export const metadata: Metadata = {
   title: "Paxbook — Travel, Explore, Experience",
@@ -118,6 +119,8 @@ export default async function HomePage() {
           </a>
         </div>
       </section>
+
+      <PromotionalPosters posters={home.banners.filter((b) => b.placement === "homepage_bottom")} />
     </div>
   );
 }
