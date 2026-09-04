@@ -64,30 +64,35 @@ export function FlightSearchForm({ compact }: { compact?: boolean }) {
   return (
     <form onSubmit={handleSubmit} className={`flat-card ${compact ? "p-4" : "p-5 sm:p-6"}`}>
       <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-600">
-        <label className="flex items-center gap-1.5">
-          <input type="radio" checked={tripType === 0} onChange={() => setTripType(0)} className="accent-brand" />
-          One way
-        </label>
-        <label className={`flex items-center gap-1.5 ${serType === 1 ? "opacity-40" : ""}`} title={serType === 1 ? "Round trip is only available for international routes right now — book your return separately for domestic trips." : undefined}>
-          <input type="radio" checked={tripType === 1} disabled={serType === 1} onChange={() => setTripType(1)} className="accent-brand" />
-          Round trip
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input
-            type="radio"
-            checked={serType === 1}
-            onChange={() => {
-              setServType(1);
-              if (tripType === 1) setTripType(0);
-            }}
-            className="accent-brand"
-          />
-          Domestic
-        </label>
-        <label className="flex items-center gap-1.5">
-          <input type="radio" checked={serType === 2} onChange={() => setServType(2)} className="accent-brand" />
-          International
-        </label>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-1.5">
+            <input type="radio" checked={tripType === 0} onChange={() => setTripType(0)} className="accent-brand" />
+            One way
+          </label>
+          <label className={`flex items-center gap-1.5 ${serType === 1 ? "opacity-40" : ""}`}>
+            <input type="radio" checked={tripType === 1} disabled={serType === 1} onChange={() => setTripType(1)} className="accent-brand" />
+            Round trip
+          </label>
+        </div>
+        <span aria-hidden className="hidden h-4 w-px bg-slate-200 sm:block" />
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-1.5">
+            <input
+              type="radio"
+              checked={serType === 1}
+              onChange={() => {
+                setServType(1);
+                if (tripType === 1) setTripType(0);
+              }}
+              className="accent-brand"
+            />
+            Domestic
+          </label>
+          <label className="flex items-center gap-1.5">
+            <input type="radio" checked={serType === 2} onChange={() => setServType(2)} className="accent-brand" />
+            International
+          </label>
+        </div>
       </div>
       {serType === 1 ? <p className="mt-1 text-xs text-slate-400">Round trip booking for domestic routes is coming soon — search and book your return as a separate one-way trip for now.</p> : null}
 

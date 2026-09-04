@@ -9,18 +9,18 @@ export default function FlightsLandingPage() {
     <div>
       <div className="relative bg-navy-deep">
         <div className="hero-scrim absolute inset-0" />
-        <div className="shell relative py-14 sm:py-20">
+        <div className="shell relative py-8 sm:py-20">
           <p className="eyebrow on-dark-muted flex items-center gap-1.5">
             <Plane className="h-3.5 w-3.5" strokeWidth={2.5} /> Flight Booking
           </p>
-          <h1 className="display-xl on-dark mt-2 max-w-2xl text-3xl sm:text-4xl">Search, compare and book flights in minutes</h1>
-          <p className="on-dark-muted mt-3 max-w-xl text-sm sm:text-base">
+          <h1 className="display-xl on-dark mt-2 max-w-2xl text-2xl sm:text-4xl">Search, compare and book flights in minutes</h1>
+          <p className="on-dark-muted mt-2 max-w-xl text-sm sm:mt-3 sm:text-base">
             Live fares across airlines, transparent baggage &amp; fare rules, and instant PNR confirmation.
           </p>
         </div>
       </div>
 
-      <div className="shell -mt-8 pb-12 sm:-mt-10">
+      <div className="shell -mt-4 pb-12 sm:-mt-10">
         <div className="mx-auto max-w-4xl">
           <FlightSearchForm />
         </div>
