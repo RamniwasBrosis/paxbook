@@ -6,6 +6,7 @@ import { DestinationsMegaMenu } from "../DestinationsMegaMenu";
 import { MobileNavMenu } from "../MobileNavMenu";
 
 const NAV_LINKS = [
+  { href: "/flights", label: "Flights" },
   { href: "/packages", label: "Holiday Packages" },
   { href: "/destinations", label: "Destinations" },
   { href: "/visa-guide", label: "Visa" },

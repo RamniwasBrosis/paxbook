@@ -47,6 +47,7 @@ import { VendorAuthModule } from "./modules/vendor-auth/vendor-auth.module";
 import { VendorAuthController } from "./modules/vendor-auth/vendor-auth.controller";
 import { VendorPortalModule } from "./modules/vendor-portal/vendor-portal.module";
 import { PlatformModule } from "./modules/platform/platform.module";
+import { FlightsModule } from "./modules/flights/flights.module";
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { PlatformModule } from "./modules/platform/platform.module";
     VendorAuthModule,
     VendorPortalModule,
     PlatformModule,
+    FlightsModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

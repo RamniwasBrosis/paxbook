@@ -18,4 +18,5 @@ export * from "./platform";
 export * from "./branding";
 export * from "./billing";
 export * from "./integrations";
+export * from "./flights";
 export { configureAuthClient, ApiRequestError } from "@paxbook/auth-client";

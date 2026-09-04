@@ -40,6 +40,14 @@ export const apiEnvSchema = z.object({
   RAZORPAY_WEBHOOK_SECRET: z.string().optional(),
   INTEGRATION_ENCRYPTION_KEY: z.string().optional(),
 
+  FTD_BASE_URL: z.string().optional(),
+  FTD_AGENT_ID: z.string().optional(),
+  FTD_USERNAME: z.string().optional(),
+  FTD_PASSWORD: z.string().optional(),
+  FTD_API_KEY_TEST: z.string().optional(),
+  FTD_API_KEY_LIVE: z.string().optional(),
+  FTD_MODE: z.string().default("0"),
+
   CORS_ORIGINS: z.string().default("http://localhost:3000"),
 });
 

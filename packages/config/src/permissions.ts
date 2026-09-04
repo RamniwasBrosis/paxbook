@@ -27,6 +27,8 @@ export const PERMISSIONS = {
   CRM_WRITE: "crm.write",
   BOOKINGS_READ: "bookings.read",
   BOOKINGS_WRITE: "bookings.write",
+  FLIGHTS_READ: "flights.read",
+  FLIGHTS_WRITE: "flights.write",
   VENDORS_READ: "vendors.read",
   VENDORS_WRITE: "vendors.write",
   FINANCE_READ: "finance.read",
@@ -66,6 +68,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionKey[]> = {
     PERMISSIONS.REPORTS_READ,
     PERMISSIONS.CATEGORIES_READ,
     PERMISSIONS.CATEGORIES_WRITE,
+    PERMISSIONS.FLIGHTS_READ,
+    PERMISSIONS.FLIGHTS_WRITE,
   ],
   ContentEditor: [
     PERMISSIONS.CMS_READ,

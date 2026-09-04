@@ -20,6 +20,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/offers", label: "Offers & Coupons", permission: PERMISSIONS.OFFERS_READ },
   { href: "/customers", label: "Customers", permission: PERMISSIONS.CUSTOMERS_READ },
   { href: "/bookings", label: "Bookings", permission: PERMISSIONS.BOOKINGS_READ },
+  { href: "/flights", label: "Flights", permission: PERMISSIONS.FLIGHTS_READ },
   { href: "/crm", label: "CRM", permission: PERMISSIONS.CRM_READ },
   { href: "/finance", label: "Finance", permission: PERMISSIONS.FINANCE_READ },
   { href: "/inventory", label: "Inventory", permission: PERMISSIONS.VENDORS_READ },

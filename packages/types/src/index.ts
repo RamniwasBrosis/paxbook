@@ -23,5 +23,6 @@ export * from "./platform.js";
 export * from "./branding.js";
 export * from "./billing.js";
 export * from "./integrations.js";
+export * from "./flights.js";
 export { PERMISSIONS, ALL_PERMISSION_KEYS } from "@paxbook/config";
 export type { PermissionKey } from "@paxbook/config";

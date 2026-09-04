@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { LayoutGrid, Luggage, Heart, Bell, User } from "lucide-react";
+import { LayoutGrid, Luggage, Plane, Heart, Bell, User } from "lucide-react";
 import { LogoutButton } from "@/components/LogoutButton";
 
 const NAV = [
   { href: "/account", label: "Overview", icon: LayoutGrid },
   { href: "/account/bookings", label: "My Trips", icon: Luggage },
+  { href: "/account/flight-bookings", label: "My Flights", icon: Plane },
   { href: "/account/wishlist", label: "Wishlist", icon: Heart },
   { href: "/account/notifications", label: "Notifications", icon: Bell },
   { href: "/account/profile", label: "Profile", icon: User },
