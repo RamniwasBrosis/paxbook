@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plane, Loader2, Luggage, ShieldCheck, ShieldOff } from "lucide-react";
+import { Plane, Loader2, Luggage, ShieldCheck, ShieldOff, Utensils, Info } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
 
@@ -114,16 +114,26 @@ export function FlightFareSelector() {
   );
 }
 
+const GST_LABELS: Record<number, string> = { 0: "GST not applicable", 1: "GST mandatory for this fare", 2: "GST invoice available on request" };
+
 function FareCard({ option, refId, query }: { option: FlightOptionDto; refId: string; query: string }) {
   return (
     <div className="flat-card flex flex-col gap-3 p-5">
       <div>
-        <p className="font-bold text-navy-deep">{option.fare.fareTypeLabel || "Standard fare"}</p>
+        <p className="flex items-center gap-1.5 font-bold text-navy-deep">
+          {option.fare.fareTypeLabel || "Standard fare"}
+          {option.validation.isLowCostCarrier ? <span className="rounded-full bg-mist px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">LCC</span> : null}
+        </p>
         <p className="text-2xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
         <p className="text-xs text-slate-400">
           Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
         </p>
       </div>
+      {option.fare.popupMessage ? (
+        <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} /> {option.fare.popupMessage}
+        </p>
+      ) : null}
       <div className="flex flex-col gap-1.5 text-xs text-slate-600">
         <span className="flex items-center gap-1.5">
           <Luggage className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} /> Check-in: {option.fare.baggageCheckIn || "—"} · Cabin: {option.fare.baggageCabin || "—"}
@@ -136,7 +146,14 @@ function FareCard({ option, refId, query }: { option: FlightOptionDto; refId: st
           )}
           {option.fare.refundable ? "Refundable" : "Non-refundable"}
         </span>
+        {option.validation.freeMeal ? (
+          <span className="flex items-center gap-1.5">
+            <Utensils className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} /> Free meal included
+          </span>
+        ) : null}
         <span>Seats left: {option.fare.seatsAvailable || "—"}</span>
+        {GST_LABELS[option.validation.gstIndicator] ? <span className="text-slate-400">{GST_LABELS[option.validation.gstIndicator]}</span> : null}
+        {option.validation.remarks ? <span className="text-slate-400">{option.validation.remarks}</span> : null}
       </div>
       <Link
         href={`/flights/passengers?flightId=${option.id}&refId=${encodeURIComponent(refId)}&${query}`}

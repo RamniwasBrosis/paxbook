@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Plane, ArrowLeftRight, Calendar, Users, Loader2 } from "lucide-react";
 import { CABIN_LABELS, FARE_TYPE_LABELS, searchContextToQuery, toYyyymmdd } from "@/lib/flights";
+import { AirportAutocomplete } from "@/components/AirportAutocomplete";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -97,16 +98,7 @@ export function FlightSearchForm({ compact }: { compact?: boolean }) {
       {serType === 1 ? <p className="mt-1 text-xs text-slate-400">Round trip booking for domestic routes is coming soon — search and book your return as a separate one-way trip for now.</p> : null}
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr]">
-        <label className="rounded-xl border border-slate-200 px-4 py-2.5">
-          <span className="block text-[11px] font-semibold uppercase text-slate-400">From</span>
-          <input
-            value={depCity}
-            onChange={(e) => setDepCity(e.target.value.toUpperCase())}
-            maxLength={3}
-            placeholder="DEL"
-            className="w-full text-lg font-bold uppercase text-navy-deep outline-none"
-          />
-        </label>
+        <AirportAutocomplete label="From" value={depCity} onChange={setDepCity} placeholder="City or airport" />
         <button
           type="button"
           onClick={swapCities}
@@ -115,16 +107,7 @@ export function FlightSearchForm({ compact }: { compact?: boolean }) {
         >
           <ArrowLeftRight className="h-4 w-4" strokeWidth={2} />
         </button>
-        <label className="rounded-xl border border-slate-200 px-4 py-2.5">
-          <span className="block text-[11px] font-semibold uppercase text-slate-400">To</span>
-          <input
-            value={arrCity}
-            onChange={(e) => setArrCity(e.target.value.toUpperCase())}
-            maxLength={3}
-            placeholder="BOM"
-            className="w-full text-lg font-bold uppercase text-navy-deep outline-none"
-          />
-        </label>
+        <AirportAutocomplete label="To" value={arrCity} onChange={setArrCity} placeholder="City or airport" />
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">

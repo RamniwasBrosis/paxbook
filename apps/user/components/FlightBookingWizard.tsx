@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Plane, ShieldCheck, ShieldOff } from "lucide-react";
+import { Loader2, Plane, ShieldCheck, ShieldOff, AlertTriangle } from "lucide-react";
 import type { CreateFlightBookingRequestDto, FlightPassengerInputDto, FlightPriceCheckDto } from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
@@ -30,6 +30,7 @@ interface PassengerForm {
   ppIss: string;
   ppExp: string;
   ppNat: string;
+  documentId: string;
 }
 
 interface PaymentOrder {
@@ -60,6 +61,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const [passengers, setPassengers] = React.useState<PassengerForm[]>([]);
   const [mobile, setMobile] = React.useState("");
   const [email, setEmail] = React.useState("");
+  const [panNo, setPanNo] = React.useState("");
   const [wantsGst, setWantsGst] = React.useState(false);
   const [gst, setGst] = React.useState({ number: "", email: "", mobile: "", address: "", company: "" });
   const [formError, setFormError] = React.useState<string | null>(null);
@@ -102,6 +104,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         setPassengers(parsed.passengers);
         setMobile(parsed.mobile ?? "");
         setEmail(parsed.email ?? "");
+        setPanNo(parsed.panNo ?? "");
         return;
       } catch {
         // fall through to fresh slots
@@ -111,27 +114,36 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
       ...Array.from({ length: searchContext.adt }, () => ({ pType: "A" as const })),
       ...Array.from({ length: searchContext.chd }, () => ({ pType: "C" as const })),
       ...Array.from({ length: searchContext.inf }, () => ({ pType: "I" as const })),
-    ].map((slot) => ({ title: "Mr", fName: "", lName: "", pType: slot.pType, gender: "M" as const, dobIso: "", ppNo: "", ppIss: "", ppExp: "", ppNat: "" }));
+    ].map((slot) => ({ title: "Mr", fName: "", lName: "", pType: slot.pType, gender: "M" as const, dobIso: "", ppNo: "", ppIss: "", ppExp: "", ppNat: "", documentId: "" }));
     setPassengers(slots);
   }, [searchContext, flightId, refId]);
 
   // Persist in-progress entries so a login-modal round trip (or accidental refresh) doesn't lose typed data.
   React.useEffect(() => {
     if (!flightId || !refId || passengers.length === 0) return;
-    window.sessionStorage.setItem(storageKey(flightId, refId), JSON.stringify({ passengers, mobile, email }));
-  }, [passengers, mobile, email, flightId, refId]);
+    window.sessionStorage.setItem(storageKey(flightId, refId), JSON.stringify({ passengers, mobile, email, panNo }));
+  }, [passengers, mobile, email, panNo, flightId, refId]);
 
   function updatePassenger(idx: number, patch: Partial<PassengerForm>) {
     setPassengers((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
   }
 
+  const validation = priceCheck?.option.validation;
+  // Baggage/meal/seat selection isn't wired into the booking flow yet (the backend's create-booking
+  // payload has no slot for it) — if the fare requires one of these to be chosen, we can't safely
+  // fulfil the booking, so block here rather than risk a payment succeeding and the provider booking
+  // failing (or silently ignoring a mandatory requirement) afterwards.
+  const unsupportedMandatory = Boolean(validation?.seatMandatory || validation?.mealMandatory || validation?.baggageMandatory);
+
   function validatePassengers(): string | null {
     for (const [idx, p] of passengers.entries()) {
       if (!p.fName.trim() || !p.lName.trim()) return `Enter the full name for passenger ${idx + 1}.`;
       if (!p.dobIso) return `Enter date of birth for passenger ${idx + 1}.`;
+      if (validation?.docMandatory && !p.documentId.trim()) return `Enter the ID proof number for passenger ${idx + 1} (required for this fare).`;
     }
     if (!/^\d{10,15}$/.test(mobile.replace(/\D/g, ""))) return "Enter a valid mobile number.";
     if (!/^\S+@\S+\.\S+$/.test(email)) return "Enter a valid email address.";
+    if (validation?.panMandatory && !panNo.trim()) return "PAN number is required for this fare.";
     if (wantsGst && (!gst.number || !gst.email || !gst.mobile || !gst.address || !gst.company)) return "Fill in all GST details, or turn off GST billing.";
     return null;
   }
@@ -167,10 +179,12 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               gender: p.gender,
               dob: isoToDdMmYyyy(p.dobIso),
               ...(p.ppNo ? { ppNo: p.ppNo, ppIss: p.ppIss, ppExp: p.ppExp, ppNat: p.ppNat } : {}),
+              ...(p.documentId ? { documentId: p.documentId } : {}),
             }),
           ),
           mobile,
           email,
+          ...(panNo ? { firstPaxPanNo: panNo } : {}),
           webCheckin: false,
           ...(wantsGst ? { gst } : {}),
           searchContext,
@@ -279,10 +293,28 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           <span className={step === "review" ? "text-brand" : ""}>2. Review &amp; pay</span>
         </div>
 
-        {step === "passengers" ? (
+        {unsupportedMandatory ? (
+          <div className="flat-card flex items-start gap-3 border border-amber-200 bg-amber-50 p-5">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" strokeWidth={2} />
+            <div>
+              <p className="font-bold text-navy-deep">This fare needs a seat, meal, or baggage selection we don&apos;t support online yet</p>
+              <p className="mt-1 text-sm text-slate-600">Please go back and choose a different fare, or contact our travel desk to complete this booking manually.</p>
+              <Link href={`/flights/fare?flightId=${flightId}&refId=${encodeURIComponent(refId)}&${new URLSearchParams(Array.from(params.entries()).filter(([k]) => k !== "flightId")).toString()}`} className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">
+                ← Choose a different fare
+              </Link>
+            </div>
+          </div>
+        ) : step === "passengers" ? (
           <form onSubmit={goToReview} className="flex flex-col gap-4">
             {passengers.map((p, idx) => (
-              <PassengerFieldset key={idx} index={idx} passenger={p} international={searchContext.serType === 2} onChange={(patch) => updatePassenger(idx, patch)} />
+              <PassengerFieldset
+                key={idx}
+                index={idx}
+                passenger={p}
+                international={searchContext.serType === 2}
+                docMandatory={Boolean(validation?.docMandatory)}
+                onChange={(patch) => updatePassenger(idx, patch)}
+              />
             ))}
 
             <div className="flat-card p-5">
@@ -303,6 +335,13 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand"
+                />
+                <input
+                  required={Boolean(validation?.panMandatory)}
+                  placeholder={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
+                  value={panNo}
+                  onChange={(e) => setPanNo(e.target.value.toUpperCase())}
+                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-2"
                 />
               </div>
               <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
@@ -384,8 +423,24 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             {option.fare.refundable ? "Refundable fare" : "Non-refundable fare"}
           </p>
           <p className="mt-1">Baggage: {option.fare.baggageCheckIn || "As per airline"} check-in, {option.fare.baggageCabin || "—"} cabin</p>
-          {ssr?.webCheckinEnabled ? <p className="mt-1">Web check-in included</p> : null}
         </div>
+
+        {ssr && (ssr.onward.baggage.length > 0 || ssr.onward.meals.length > 0) ? (
+          <div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
+            <p className="mb-1 font-semibold uppercase text-slate-400">Extras available on this flight</p>
+            {ssr.onward.baggage.slice(0, 2).map((b) => (
+              <p key={b.id}>
+                {b.description}: ₹{b.amount.toLocaleString("en-IN")}
+              </p>
+            ))}
+            {ssr.onward.meals.slice(0, 2).map((m) => (
+              <p key={m.id}>
+                {m.description}: ₹{m.amount.toLocaleString("en-IN")}
+              </p>
+            ))}
+            <p className="mt-1 italic">To add extra baggage or meals, contact our travel desk after booking.</p>
+          </div>
+        ) : null}
 
         <div className="mt-3 border-t border-slate-100 pt-3 text-sm">
           <div className="flex justify-between text-slate-500">
@@ -421,11 +476,13 @@ function PassengerFieldset({
   index,
   passenger,
   international,
+  docMandatory,
   onChange,
 }: {
   index: number;
   passenger: PassengerForm;
   international: boolean;
+  docMandatory: boolean;
   onChange: (patch: Partial<PassengerForm>) => void;
 }) {
   const typeLabel = passenger.pType === "A" ? "Adult" : passenger.pType === "C" ? "Child" : "Infant";
@@ -462,6 +519,17 @@ function PassengerFieldset({
             <input type="date" value={passenger.ppExp ? passenger.ppExp : ""} onChange={(e) => onChange({ ppExp: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
           </label>
           <input placeholder="Nationality" value={passenger.ppNat} onChange={(e) => onChange({ ppNat: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+        </div>
+      ) : null}
+      {docMandatory ? (
+        <div className="mt-3">
+          <input
+            required
+            placeholder="ID proof number (required for this fare)"
+            value={passenger.documentId}
+            onChange={(e) => onChange({ documentId: e.target.value })}
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:max-w-xs"
+          />
         </div>
       ) : null}
     </div>
