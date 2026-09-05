@@ -114,6 +114,7 @@ export class FlightsService {
             pType: p.pType,
             gender: p.gender,
             dob: p.dob,
+            documentId: p.documentId,
             ppNo: p.ppNo,
             ppIss: p.ppIss,
             ppExp: p.ppExp,
@@ -189,6 +190,7 @@ export class FlightsService {
         pType: p.pType,
         gender: p.gender,
         dob: p.dob,
+        ...(p.documentId ? { document_id: p.documentId } : {}),
         ...(p.ppNo ? { ppNo: p.ppNo, ppIss: p.ppIss, ppExp: p.ppExp, ppNat: p.ppNat } : {}),
       })),
       refID: booking.refId,
@@ -283,7 +285,7 @@ export class FlightsService {
     return booking;
   }
 
-  private toDto(b: { id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null; createdAt: Date; updatedAt: Date; passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }> }): FlightBookingDto {
+  private toDto(b: { id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null; createdAt: Date; updatedAt: Date; passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }> }): FlightBookingDto {
     return {
       id: b.id,
       clientId: b.clientId,
@@ -313,6 +315,7 @@ export class FlightsService {
         pType: p.pType,
         gender: p.gender,
         dob: p.dob,
+        documentId: p.documentId,
         ppNo: p.ppNo,
         ppNat: p.ppNat,
         paxId: p.paxId,

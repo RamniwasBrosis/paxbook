@@ -1161,6 +1161,7 @@ model FlightPassenger {
   pType           String
   gender          String
   dob             String
+  documentId      String?
   ppNo            String?
   ppIss           String?
   ppExp           String?

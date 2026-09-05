@@ -33,7 +33,7 @@ export class AdminFlightBookingsService {
     adt: number; chd: number; inf: number; cabin: string; totalAmount: { toNumber(): number }; currency: string; status: string;
     paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null; createdAt: Date; updatedAt: Date;
     customer?: { name: string; email: string } | null;
-    passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
+    passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
   }): FlightBookingDto {
     return {
       id: b.id,
@@ -60,7 +60,7 @@ export class AdminFlightBookingsService {
       customerEmail: b.customer?.email,
       passengers: b.passengers.map((p) => ({
         id: p.id, title: p.title, fName: p.fName, lName: p.lName, pType: p.pType, gender: p.gender, dob: p.dob,
-        ppNo: p.ppNo, ppNat: p.ppNat, paxId: p.paxId, pnr: p.pnr, ticketNo: p.ticketNo,
+        documentId: p.documentId, ppNo: p.ppNo, ppNat: p.ppNat, paxId: p.paxId, pnr: p.pnr, ticketNo: p.ticketNo,
       })),
     };
   }

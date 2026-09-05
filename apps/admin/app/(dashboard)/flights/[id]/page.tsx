@@ -87,6 +87,7 @@ export default function FlightBookingDetailPage() {
                 <th className="px-5 py-2 font-medium">Type</th>
                 <th className="px-5 py-2 font-medium">Gender</th>
                 <th className="px-5 py-2 font-medium">DOB</th>
+                <th className="px-5 py-2 font-medium">ID proof</th>
                 <th className="px-5 py-2 font-medium">PNR</th>
                 <th className="px-5 py-2 font-medium">Ticket no.</th>
               </tr>
@@ -100,13 +101,14 @@ export default function FlightBookingDetailPage() {
                   <td className="px-5 py-3">{p.pType}</td>
                   <td className="px-5 py-3">{p.gender}</td>
                   <td className="px-5 py-3">{p.dob}</td>
+                  <td className="px-5 py-3">{p.documentId ?? p.ppNo ?? "—"}</td>
                   <td className="px-5 py-3">{p.pnr ?? "—"}</td>
                   <td className="px-5 py-3">{p.ticketNo ?? "—"}</td>
                 </tr>
               ))}
               {booking.passengers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-6 text-center text-slate-400">
+                  <td colSpan={7} className="px-5 py-6 text-center text-slate-400">
                     No passengers on this booking.
                   </td>
                 </tr>

@@ -173,6 +173,7 @@ export interface FlightPassengerDto {
   pType: string;
   gender: string;
   dob: string;
+  documentId: string | null;
   ppNo: string | null;
   ppNat: string | null;
   paxId: string | null;
