@@ -4,6 +4,7 @@ import type {
   CreateFlightBookingRequestDto,
   FlightApiStatusDto,
   FlightBookingDto,
+  FlightOptionDto,
   FlightPaymentOrderDto,
   FlightPriceCheckDto,
   FlightSearchResultDto,
@@ -12,6 +13,7 @@ import type {
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { RazorpayService } from "../customer-portal/razorpay.service";
 import { FtdClientService } from "./ftd-client.service";
+import { FlightPricingService } from "./flight-pricing.service";
 import { mapBookingResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
@@ -22,7 +24,21 @@ export class FlightsService {
     private readonly prisma: PrismaService,
     private readonly ftd: FtdClientService,
     private readonly razorpay: RazorpayService,
+    private readonly pricing: FlightPricingService,
   ) {}
+
+  /** Applies our margin/discount in place, keyed off the leg data actually returned (not the search
+   * request), so a connecting flight's true origin/destination decides which route rule applies. */
+  private async applyMarginToOptions(options: FlightOptionDto[]): Promise<FlightOptionDto[]> {
+    return Promise.all(
+      options.map(async (option) => {
+        const depCity = option.legs[0]?.depCode ?? "";
+        const arrCity = option.legs[option.legs.length - 1]?.arrCode ?? "";
+        const margin = await this.pricing.getEffectiveMargin(depCity, arrCity);
+        return { ...option, fare: this.pricing.applyMargin(option.fare, margin) };
+      }),
+    );
+  }
 
   async apiStatus(): Promise<FlightApiStatusDto> {
     const configured = await this.ftd.isConfigured();
@@ -39,17 +55,31 @@ export class FlightsService {
 
   async search(dto: SearchFlightDto): Promise<FlightSearchResultDto> {
     const raw = await this.ftd.search({ ...dto, reDate: dto.reDate ?? "", refID: dto.refID ?? "" });
-    return mapSearchOrFareDetails(raw);
+    const mapped = mapSearchOrFareDetails(raw);
+    return { ...mapped, options: await this.applyMarginToOptions(mapped.options) };
   }
 
   async fareDetails(flightID: number, refID: string): Promise<FlightSearchResultDto> {
     const raw = await this.ftd.fareDetails(flightID, refID);
-    return mapSearchOrFareDetails(raw);
+    const mapped = mapSearchOrFareDetails(raw);
+    return { ...mapped, options: await this.applyMarginToOptions(mapped.options) };
+  }
+
+  /** Returns both the customer-facing (margin-applied) DTO and the provider's own total, the
+   * latter needed only internally by createDraftBooking to record the real fare for transparency. */
+  private async priceCheckInternal(flightID: number, refID: string): Promise<{ dto: FlightPriceCheckDto; providerTotal: number }> {
+    const raw = await this.ftd.priceCheck(flightID, refID);
+    const mapped = mapPriceCheck(raw);
+    const providerTotal = mapped.option.fare.total;
+    const depCity = mapped.option.legs[0]?.depCode ?? "";
+    const arrCity = mapped.option.legs[mapped.option.legs.length - 1]?.arrCode ?? "";
+    const margin = await this.pricing.getEffectiveMargin(depCity, arrCity);
+    mapped.option = { ...mapped.option, fare: this.pricing.applyMargin(mapped.option.fare, margin) };
+    return { dto: mapped, providerTotal };
   }
 
   async priceCheck(flightID: number, refID: string): Promise<FlightPriceCheckDto> {
-    const raw = await this.ftd.priceCheck(flightID, refID);
-    return mapPriceCheck(raw);
+    return (await this.priceCheckInternal(flightID, refID)).dto;
   }
 
   async fareRules(flightID: number): Promise<Record<string, unknown>> {
@@ -72,7 +102,7 @@ export class FlightsService {
         message: "Domestic round trips must be booked as two separate one-way flights. Please search and book your return trip separately.",
       });
     }
-    const priceCheck = await this.priceCheck(dto.flightID, dto.refID);
+    const { dto: priceCheck, providerTotal } = await this.priceCheckInternal(dto.flightID, dto.refID);
     if (!priceCheck.option.id) {
       throw new BadRequestException({ code: "FLIGHT_UNAVAILABLE", message: "This flight is no longer available. Please search again." });
     }
@@ -98,6 +128,7 @@ export class FlightsService {
         adt: searchContext.adt,
         chd: searchContext.chd,
         inf: searchContext.inf,
+        providerFareAmount: providerTotal,
         cabin: searchContext.cabin,
         fareType: searchContext.fareType,
         searchSnapshot: searchContext as unknown as object,
@@ -285,7 +316,7 @@ export class FlightsService {
     return booking;
   }
 
-  private toDto(b: { id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null; createdAt: Date; updatedAt: Date; passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }> }): FlightBookingDto {
+  private toDto(b: { id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string; providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null; createdAt: Date; updatedAt: Date; passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }> }): FlightBookingDto {
     return {
       id: b.id,
       clientId: b.clientId,
@@ -298,6 +329,7 @@ export class FlightsService {
       chd: b.chd,
       inf: b.inf,
       cabin: b.cabin,
+      providerFareAmount: b.providerFareAmount ? b.providerFareAmount.toNumber() : null,
       totalAmount: b.totalAmount.toNumber(),
       currency: b.currency,
       status: b.status as FlightBookingDto["status"],

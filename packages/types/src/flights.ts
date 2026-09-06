@@ -193,6 +193,8 @@ export interface FlightBookingDto {
   chd: number;
   inf: number;
   cabin: string;
+  /** The provider's own fare total before our margin/discount was applied — null for bookings made before this was tracked. */
+  providerFareAmount: number | null;
   totalAmount: number;
   currency: string;
   status: FlightBookingStatus;
@@ -205,6 +207,40 @@ export interface FlightBookingDto {
   passengers: FlightPassengerDto[];
   customerName?: string;
   customerEmail?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Admin — pricing (margin/discount over the provider's fares)
+// ---------------------------------------------------------------------------
+
+export interface FlightPricingSettingDto {
+  marginPercent: number;
+  marginFlat: number;
+  updatedAt: string;
+}
+
+export interface UpdateFlightPricingSettingDto {
+  marginPercent: number;
+  marginFlat: number;
+}
+
+export interface FlightRoutePricingRuleDto {
+  id: string;
+  depCity: string;
+  arrCity: string;
+  marginPercent: number;
+  marginFlat: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SaveFlightRoutePricingRuleDto {
+  depCity: string;
+  arrCity: string;
+  marginPercent: number;
+  marginFlat: number;
+  isActive?: boolean;
 }
 
 export interface FlightPaymentOrderDto {

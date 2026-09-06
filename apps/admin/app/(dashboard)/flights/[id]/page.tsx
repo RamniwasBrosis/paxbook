@@ -68,10 +68,24 @@ export default function FlightBookingDetailPage() {
           <Field label="Provider status" value={booking.providerStatus ?? "—"} />
           <Field label="Cabin" value={booking.cabin} />
           <Field label="Passengers" value={`${booking.adt} adult(s), ${booking.chd} child(ren), ${booking.inf} infant(s)`} />
-          <Field label="Amount" value={`${booking.currency} ${booking.totalAmount.toLocaleString("en-IN")}`} />
           <Field label="Customer email" value={booking.customerEmail ?? "—"} />
           <Field label="Created" value={new Date(booking.createdAt).toLocaleString("en-IN")} />
           {booking.errorMessage ? <Field label="Error" value={booking.errorMessage} className="text-red-600 sm:col-span-3" /> : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Pricing</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
+          <Field label="Provider fare (real cost)" value={booking.providerFareAmount != null ? `${booking.currency} ${booking.providerFareAmount.toLocaleString("en-IN")}` : "—"} />
+          <Field label="Customer paid" value={`${booking.currency} ${booking.totalAmount.toLocaleString("en-IN")}`} />
+          <Field
+            label="Your margin"
+            value={booking.providerFareAmount != null ? `${booking.currency} ${(booking.totalAmount - booking.providerFareAmount).toLocaleString("en-IN")}` : "—"}
+            className={booking.providerFareAmount != null && booking.totalAmount - booking.providerFareAmount < 0 ? "text-red-600" : "text-emerald-600"}
+          />
         </CardContent>
       </Card>
 

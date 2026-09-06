@@ -42,9 +42,14 @@ export default function FlightsPage() {
           <h1 className="text-xl font-semibold text-slate-900">Flight bookings</h1>
           <p className="text-sm text-slate-500">Bookings, passengers, fares, and provider status for the flight module.</p>
         </div>
-        <Link href="/flights/api-tool" className="text-sm font-medium text-brand hover:underline">
-          Flight API test tool →
-        </Link>
+        <div className="flex items-center gap-4">
+          <Link href="/flights/pricing" className="text-sm font-medium text-brand hover:underline">
+            Flight pricing (margin &amp; discounts) →
+          </Link>
+          <Link href="/flights/api-tool" className="text-sm font-medium text-brand hover:underline">
+            Flight API test tool →
+          </Link>
+        </div>
       </div>
 
       <Card>
@@ -74,6 +79,14 @@ export default function FlightsPage() {
           { header: "Travel date", cell: (b: FlightBookingDto) => b.onDate },
           { header: "PNR", cell: (b: FlightBookingDto) => b.pnr ?? "—" },
           { header: "Amount", cell: (b: FlightBookingDto) => `${b.currency} ${b.totalAmount.toLocaleString("en-IN")}` },
+          {
+            header: "Margin",
+            cell: (b: FlightBookingDto) => {
+              if (b.providerFareAmount == null) return <span className="text-slate-400">—</span>;
+              const margin = b.totalAmount - b.providerFareAmount;
+              return <span className={margin >= 0 ? "text-emerald-600" : "text-red-600"}>{margin >= 0 ? "+" : ""}₹{margin.toLocaleString("en-IN")}</span>;
+            },
+          },
           { header: "Status", cell: (b: FlightBookingDto) => <Badge tone={STATUS_TONE[b.status]}>{b.status.replace(/_/g, " ")}</Badge> },
           { header: "Payment", cell: (b: FlightBookingDto) => <Badge tone={PAYMENT_TONE[b.paymentStatus]}>{b.paymentStatus}</Badge> },
         ]}

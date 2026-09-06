@@ -7,8 +7,12 @@ import type {
   FlightBookingDto,
   FlightPaymentOrderDto,
   FlightPriceCheckDto,
+  FlightPricingSettingDto,
+  FlightRoutePricingRuleDto,
   FlightSearchResultDto,
+  SaveFlightRoutePricingRuleDto,
   SearchFlightRequestDto,
+  UpdateFlightPricingSettingDto,
   VerifyFlightPaymentDto,
 } from "@paxbook/types";
 
@@ -157,5 +161,54 @@ export function useAdminFlightBooking(id: string | null) {
     queryKey: ["admin-flight-bookings", "detail", id],
     queryFn: () => apiFetch<FlightBookingDto>(`/admin/flights/bookings/${id}`),
     enabled: Boolean(id),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Admin — pricing (margin/discount over the provider's fares)
+// ---------------------------------------------------------------------------
+
+export function useFlightPricingSetting() {
+  return useQuery({ queryKey: ["admin-flight-pricing-setting"], queryFn: () => apiFetch<FlightPricingSettingDto>("/admin/flights/pricing/settings") });
+}
+
+export function useUpdateFlightPricingSetting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UpdateFlightPricingSettingDto) => apiFetch<FlightPricingSettingDto>("/admin/flights/pricing/settings", { method: "PATCH", body: payload }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-flight-pricing-setting"] }),
+  });
+}
+
+export function useFlightRoutePricingRules() {
+  return useQuery({ queryKey: ["admin-flight-pricing-routes"], queryFn: () => apiFetch<FlightRoutePricingRuleDto[]>("/admin/flights/pricing/routes") });
+}
+
+function invalidateRoutePricingRules(queryClient: ReturnType<typeof useQueryClient>) {
+  queryClient.invalidateQueries({ queryKey: ["admin-flight-pricing-routes"] });
+}
+
+export function useCreateFlightRoutePricingRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SaveFlightRoutePricingRuleDto) => apiFetch<FlightRoutePricingRuleDto>("/admin/flights/pricing/routes", { method: "POST", body: payload }),
+    onSuccess: () => invalidateRoutePricingRules(queryClient),
+  });
+}
+
+export function useUpdateFlightRoutePricingRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<SaveFlightRoutePricingRuleDto> }) =>
+      apiFetch<FlightRoutePricingRuleDto>(`/admin/flights/pricing/routes/${id}`, { method: "PATCH", body: payload }),
+    onSuccess: () => invalidateRoutePricingRules(queryClient),
+  });
+}
+
+export function useDeleteFlightRoutePricingRule() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<{ id: string }>(`/admin/flights/pricing/routes/${id}`, { method: "DELETE" }),
+    onSuccess: () => invalidateRoutePricingRules(queryClient),
   });
 }

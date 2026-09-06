@@ -1132,6 +1132,9 @@ model FlightBooking {
   fareType       String
   searchSnapshot Json?
   fareSnapshot   Json?
+  /// The provider's own fare total at the moment of booking, before our margin/discount was applied —
+  /// kept separately from totalAmount (what the customer actually paid) so admin can see the margin.
+  providerFareAmount Decimal?        @db.Decimal(12, 2)
   totalAmount    Decimal             @db.Decimal(12, 2)
   currency       String              @default("INR")
   status         FlightBookingStatus @default(DRAFT)
@@ -1204,6 +1207,35 @@ model FlightBookingStatusHistory {
   changedAt       DateTime      @default(now())
 
   @@map("flight_booking_status_history")
+}
+
+/// Global (not per-tenant) — the FTD provider integration itself is a single shared account
+/// configured via env vars, not a per-tenant credential, so the margin applied on top of its
+/// prices is a single platform-wide setting too, with optional per-route overrides below.
+/// A fixed singleton row (id "default") rather than a real settings table with multiple rows.
+model FlightPricingSetting {
+  id            String   @id @default("default")
+  marginPercent Decimal  @db.Decimal(6, 3) @default(0) // e.g. 3.5 = +3.5% added to the provider's fare; negative = blanket discount
+  marginFlat    Decimal  @db.Decimal(10, 2) @default(0) // flat rupee amount added per booking; negative = flat discount
+  updatedAt     DateTime @updatedAt
+
+  @@map("flight_pricing_settings")
+}
+
+/// Overrides the global margin for a specific depCity/arrCity pair (e.g. a lower margin on a
+/// competitive route, or a higher one on a route with less price sensitivity).
+model FlightRoutePricingRule {
+  id            String   @id @default(uuid())
+  depCity       String
+  arrCity       String
+  marginPercent Decimal  @db.Decimal(6, 3) @default(0)
+  marginFlat    Decimal  @db.Decimal(10, 2) @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([depCity, arrCity])
+  @@map("flight_route_pricing_rules")
 }
 
 /// Every call to the FTD Travel Air API, for the admin-facing live/debug view and error diagnosis.
