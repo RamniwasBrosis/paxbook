@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { Plane, Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle, X, ChevronDown, ChevronUp, PlaneTakeoff, PlaneLanding } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
+import { findAirport } from "@/lib/airports";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -137,6 +138,12 @@ export function FlightResultsList() {
   }, [result, sortKey, maxStops, airlineFilter, timeOfDay, maxPrice, refundableOnly]);
 
   const refundableCount = React.useMemo(() => (result?.options ?? []).filter((o) => o.fare.refundable).length, [result]);
+
+  // Prefer the real city name the airline/provider returned for this exact route; fall back to our
+  // static airport reference (for the loading state, before any result has come back yet).
+  const depCityLabel = result?.options[0]?.legs[0]?.depCityName || findAirport(searchContext?.depCity ?? "")?.city || searchContext?.depCity || "";
+  const arrCityLabel =
+    result?.options[0]?.legs[result.options[0].legs.length - 1]?.arrCityName || findAirport(searchContext?.arrCity ?? "")?.city || searchContext?.arrCity || "";
 
   const appliedFilters = React.useMemo(() => {
     const chips: { key: string; label: string; onRemove: () => void }[] = [];
@@ -287,9 +294,10 @@ export function FlightResultsList() {
         <div className="flat-card mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
           <div>
             <p className="font-bold text-navy-deep">
-              {searchContext.depCity} <ArrowRight className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {searchContext.arrCity}
+              Flights from {depCityLabel} <ArrowRight className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {arrCityLabel}
             </p>
             <p className="text-xs text-slate-400">
+              {searchContext.depCity} → {searchContext.arrCity} ·{" "}
               {result ? `${visibleOptions.length} of ${result.options.length} flight(s)` : "Searching…"}
               {polling ? " · still searching more airlines…" : ""}
             </p>
