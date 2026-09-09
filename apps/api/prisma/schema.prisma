@@ -1228,13 +1228,22 @@ model FlightRoutePricingRule {
   id            String   @id @default(uuid())
   depCity       String
   arrCity       String
+  /// "" (empty string, the default — not null, so the DB unique constraint stays meaningful) means
+  /// this rule applies to every flight on the route; set both to target one specific airline+flight
+  /// number (picked from a live search on the admin Pricing page), which takes priority over the
+  /// route-wide rule, which in turn takes priority over the global default in FlightPricingSetting.
+  airlineCode   String   @default("")
+  flightNo      String   @default("")
+  /// Optional internal note for admins, e.g. "Diwali sale on 6E-2314" — never shown to customers.
+  label         String?
   marginPercent Decimal  @db.Decimal(6, 3) @default(0)
   marginFlat    Decimal  @db.Decimal(10, 2) @default(0)
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@unique([depCity, arrCity])
+  @@unique([depCity, arrCity, airlineCode, flightNo])
+  @@index([depCity, arrCity])
   @@map("flight_route_pricing_rules")
 }
 

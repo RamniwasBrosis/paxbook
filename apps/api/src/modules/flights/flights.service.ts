@@ -34,7 +34,7 @@ export class FlightsService {
       options.map(async (option) => {
         const depCity = option.legs[0]?.depCode ?? "";
         const arrCity = option.legs[option.legs.length - 1]?.arrCode ?? "";
-        const margin = await this.pricing.getEffectiveMargin(depCity, arrCity);
+        const margin = await this.pricing.getEffectiveMargin(depCity, arrCity, option.legs[0]?.airlineCode, option.legs[0]?.flightNo);
         return { ...option, fare: this.pricing.applyMargin(option.fare, margin) };
       }),
     );
@@ -73,7 +73,7 @@ export class FlightsService {
     const providerTotal = mapped.option.fare.total;
     const depCity = mapped.option.legs[0]?.depCode ?? "";
     const arrCity = mapped.option.legs[mapped.option.legs.length - 1]?.arrCode ?? "";
-    const margin = await this.pricing.getEffectiveMargin(depCity, arrCity);
+    const margin = await this.pricing.getEffectiveMargin(depCity, arrCity, mapped.option.legs[0]?.airlineCode, mapped.option.legs[0]?.flightNo);
     mapped.option = { ...mapped.option, fare: this.pricing.applyMargin(mapped.option.fare, margin) };
     return { dto: mapped, providerTotal };
   }

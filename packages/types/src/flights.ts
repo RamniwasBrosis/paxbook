@@ -228,6 +228,11 @@ export interface FlightRoutePricingRuleDto {
   id: string;
   depCity: string;
   arrCity: string;
+  /** null = applies to every flight on the route; set = this exact airline+flight number only. */
+  airlineCode: string | null;
+  flightNo: string | null;
+  /** Internal note only, e.g. "Diwali sale on 6E-2314" — never shown to customers. */
+  label: string | null;
   marginPercent: number;
   marginFlat: number;
   isActive: boolean;
@@ -238,6 +243,9 @@ export interface FlightRoutePricingRuleDto {
 export interface SaveFlightRoutePricingRuleDto {
   depCity: string;
   arrCity: string;
+  airlineCode?: string;
+  flightNo?: string;
+  label?: string;
   marginPercent: number;
   marginFlat: number;
   isActive?: boolean;

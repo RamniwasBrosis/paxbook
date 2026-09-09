@@ -1,4 +1,4 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Matches, Max, Min } from "class-validator";
+import { IsBoolean, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
 
 export class SaveFlightRoutePricingRuleDto {
   @IsString()
@@ -8,6 +8,21 @@ export class SaveFlightRoutePricingRuleDto {
   @IsString()
   @Matches(/^[A-Za-z]{3}$/)
   arrCity!: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  airlineCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  flightNo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  label?: string;
 
   @IsNumber()
   @Min(-100)
@@ -34,6 +49,21 @@ export class UpdateFlightRoutePricingRuleDto {
   @IsString()
   @Matches(/^[A-Za-z]{3}$/)
   arrCity?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  airlineCode?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(10)
+  flightNo?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  label?: string;
 
   @IsOptional()
   @IsNumber()

@@ -34,7 +34,7 @@ export class AdminFlightPricingController {
   @Post("routes")
   @RequirePermissions(PERMISSIONS.FLIGHTS_WRITE)
   createRoute(@Body() dto: SaveFlightRoutePricingRuleDto) {
-    return this.pricing.createRoute(dto.depCity, dto.arrCity, dto.marginPercent, dto.marginFlat, dto.isActive ?? true);
+    return this.pricing.createRoute(dto.depCity, dto.arrCity, dto.marginPercent, dto.marginFlat, dto.isActive ?? true, dto.airlineCode, dto.flightNo, dto.label);
   }
 
   @Patch("routes/:id")
