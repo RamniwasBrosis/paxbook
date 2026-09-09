@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plane, Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle } from "lucide-react";
+import { Plane, Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle, X, ChevronDown, ChevronUp, PlaneTakeoff, PlaneLanding } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
 
@@ -40,6 +40,7 @@ export function FlightResultsList() {
   const [airlineFilter, setAirlineFilter] = React.useState<string | null>(null);
   const [timeOfDay, setTimeOfDay] = React.useState<TimeBucket | null>(null);
   const [maxPrice, setMaxPrice] = React.useState<number | null>(null);
+  const [refundableOnly, setRefundableOnly] = React.useState(false);
 
   const MAX_POLL_ATTEMPTS = 8;
 
@@ -127,12 +128,34 @@ export function FlightResultsList() {
     if (airlineFilter) options = options.filter((o) => o.legs[0]?.airlineName === airlineFilter);
     if (timeOfDay) options = options.filter((o) => o.legs[0] && timeBucketOf(o.legs[0].depDateTime) === timeOfDay);
     if (maxPrice !== null) options = options.filter((o) => o.fare.total <= maxPrice);
+    if (refundableOnly) options = options.filter((o) => o.fare.refundable);
     const sorted = [...options];
     if (sortKey === "price") sorted.sort((a, b) => a.fare.total - b.fare.total);
     if (sortKey === "duration") sorted.sort((a, b) => a.durationTotalMinutes - b.durationTotalMinutes);
     if (sortKey === "departure") sorted.sort((a, b) => new Date(a.legs[0]?.depDateTime ?? 0).getTime() - new Date(b.legs[0]?.depDateTime ?? 0).getTime());
     return sorted;
-  }, [result, sortKey, maxStops, airlineFilter, timeOfDay, maxPrice]);
+  }, [result, sortKey, maxStops, airlineFilter, timeOfDay, maxPrice, refundableOnly]);
+
+  const refundableCount = React.useMemo(() => (result?.options ?? []).filter((o) => o.fare.refundable).length, [result]);
+
+  const appliedFilters = React.useMemo(() => {
+    const chips: { key: string; label: string; onRemove: () => void }[] = [];
+    if (maxStops === 0) chips.push({ key: "stops", label: "Non-stop", onRemove: () => setMaxStops(null) });
+    if (maxStops === 1) chips.push({ key: "stops", label: "1 stop or fewer", onRemove: () => setMaxStops(null) });
+    if (timeOfDay) chips.push({ key: "time", label: TIME_BUCKETS.find((b) => b.key === timeOfDay)?.label ?? "", onRemove: () => setTimeOfDay(null) });
+    if (airlineFilter) chips.push({ key: "airline", label: airlineFilter, onRemove: () => setAirlineFilter(null) });
+    if (maxPrice !== null) chips.push({ key: "price", label: `Up to ₹${maxPrice.toLocaleString("en-IN")}`, onRemove: () => setMaxPrice(null) });
+    if (refundableOnly) chips.push({ key: "refundable", label: "Refundable only", onRemove: () => setRefundableOnly(false) });
+    return chips;
+  }, [maxStops, timeOfDay, airlineFilter, maxPrice, refundableOnly]);
+
+  function clearAllFilters() {
+    setMaxStops(null);
+    setAirlineFilter(null);
+    setTimeOfDay(null);
+    setMaxPrice(null);
+    setRefundableOnly(false);
+  }
 
   if (!searchContext) {
     return (
@@ -148,19 +171,28 @@ export function FlightResultsList() {
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
       <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
-        {(maxStops !== null || airlineFilter || timeOfDay || maxPrice !== null) ? (
-          <button
-            type="button"
-            onClick={() => {
-              setMaxStops(null);
-              setAirlineFilter(null);
-              setTimeOfDay(null);
-              setMaxPrice(null);
-            }}
-            className="self-start text-xs font-semibold text-brand hover:underline"
-          >
-            Clear all filters
-          </button>
+        {appliedFilters.length > 0 ? (
+          <div className="flat-card p-3">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold uppercase text-slate-400">Applied filters</span>
+              <button type="button" onClick={clearAllFilters} className="text-xs font-semibold text-brand hover:underline">
+                Clear all
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {appliedFilters.map((chip) => (
+                <button
+                  key={chip.key}
+                  type="button"
+                  onClick={chip.onRemove}
+                  className="flex items-center gap-1 rounded-full border border-brand/30 bg-brand/5 px-2.5 py-1 text-xs font-medium text-brand"
+                >
+                  {chip.label}
+                  <X className="h-3 w-3" strokeWidth={2.5} />
+                </button>
+              ))}
+            </div>
+          </div>
         ) : null}
 
         <div className="flat-card p-4">
@@ -185,6 +217,15 @@ export function FlightResultsList() {
               <span className="text-xs text-slate-400">{stopsCounts.oneOrFewer}</span>
             </label>
           </div>
+          {refundableCount > 0 ? (
+            <label className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-sm">
+              <span className="flex items-center gap-2">
+                <input type="checkbox" checked={refundableOnly} onChange={(e) => setRefundableOnly(e.target.checked)} className="accent-brand" />
+                Refundable fares
+              </span>
+              <span className="text-xs text-slate-400">{refundableCount}</span>
+            </label>
+          ) : null}
         </div>
 
         {priceBounds.max > priceBounds.min ? (
@@ -313,67 +354,113 @@ function lowestSeatCount(seatsAvailable: string): number | null {
 }
 
 function FlightOptionCard({ option, query, refId }: { option: FlightOptionDto; query: string; refId: string }) {
+  const [detailsOpen, setDetailsOpen] = React.useState(false);
   const firstLeg = option.legs[0];
   const lastLeg = option.legs[option.legs.length - 1];
   if (!firstLeg || !lastLeg) return null;
   const seats = lowestSeatCount(option.fare.seatsAvailable);
 
   return (
-    <div className="flat-card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
-          <Plane className="h-5 w-5" strokeWidth={1.75} />
+    <div className="flat-card p-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
+            <Plane className="h-5 w-5" strokeWidth={1.75} />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-navy-deep">
+              {firstLeg.airlineName} · {firstLeg.flightNo}
+              {option.validation.isLowCostCarrier ? <span className="ml-1.5 text-xs font-normal text-slate-400">LCC</span> : null}
+            </p>
+            <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
+              <span className="font-bold text-navy-deep">{formatTime(firstLeg.depDateTime)}</span>
+              <span>{firstLeg.depCode}</span>
+              <span className="text-slate-300">—— {formatMinutes(option.durationTotalMinutes)} ——</span>
+              <span className="font-bold text-navy-deep">{formatTime(lastLeg.arrDateTime)}</span>
+              <span>{lastLeg.arrCode}</span>
+            </div>
+            <p className="mt-0.5 text-xs text-slate-400">
+              {option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`} · {option.fare.baggageCheckIn || "Baggage per airline policy"} check-in
+              {option.fare.baggageCabin ? `, ${option.fare.baggageCabin} cabin` : ""}
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+              <span className="rounded-full bg-mist px-2 py-0.5 text-[11px] font-semibold text-slate-600">{option.fare.fareTypeLabel}</span>
+              <span className={`flex items-center gap-1 text-[11px] font-semibold ${option.fare.refundable ? "text-emerald-600" : "text-slate-400"}`}>
+                {option.fare.refundable ? <ShieldCheck className="h-3 w-3" /> : <ShieldOff className="h-3 w-3" />}
+                {option.fare.refundable ? "Refundable" : "Non-refundable"}
+              </span>
+              {option.validation.freeMeal ? (
+                <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
+                  <Utensils className="h-3 w-3" /> Free meal
+                </span>
+              ) : null}
+              {seats !== null && seats <= 5 ? (
+                <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
+                  <AlertTriangle className="h-3 w-3" /> Only {seats} seat{seats === 1 ? "" : "s"} left
+                </span>
+              ) : null}
+            </div>
+          </div>
         </div>
-        <div>
-          <p className="text-sm font-semibold text-navy-deep">
-            {firstLeg.airlineName} · {firstLeg.flightNo}
-            {option.validation.isLowCostCarrier ? <span className="ml-1.5 text-xs font-normal text-slate-400">LCC</span> : null}
-          </p>
-          <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-            <span className="font-bold text-navy-deep">{formatTime(firstLeg.depDateTime)}</span>
-            <span>{firstLeg.depCode}</span>
-            <span className="text-slate-300">—— {formatMinutes(option.durationTotalMinutes)} ——</span>
-            <span className="font-bold text-navy-deep">{formatTime(lastLeg.arrDateTime)}</span>
-            <span>{lastLeg.arrCode}</span>
+
+        <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-1">
+          <div className="text-right">
+            <p className="text-xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+            <p className="text-[11px] text-slate-400">
+              Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
+            </p>
           </div>
-          <p className="mt-0.5 text-xs text-slate-400">
-            {option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`} · {option.fare.baggageCheckIn || "Baggage per airline policy"} check-in
-            {option.fare.baggageCabin ? `, ${option.fare.baggageCabin} cabin` : ""}
-          </p>
-          <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="rounded-full bg-mist px-2 py-0.5 text-[11px] font-semibold text-slate-600">{option.fare.fareTypeLabel}</span>
-            <span className={`flex items-center gap-1 text-[11px] font-semibold ${option.fare.refundable ? "text-emerald-600" : "text-slate-400"}`}>
-              {option.fare.refundable ? <ShieldCheck className="h-3 w-3" /> : <ShieldOff className="h-3 w-3" />}
-              {option.fare.refundable ? "Refundable" : "Non-refundable"}
-            </span>
-            {option.validation.freeMeal ? (
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                <Utensils className="h-3 w-3" /> Free meal
-              </span>
-            ) : null}
-            {seats !== null && seats <= 5 ? (
-              <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
-                <AlertTriangle className="h-3 w-3" /> Only {seats} seat{seats === 1 ? "" : "s"} left
-              </span>
-            ) : null}
-          </div>
+          <Link
+            href={`/flights/fare?flightId=${option.id}&refId=${encodeURIComponent(refId)}&${query}`}
+            className="rounded-full bg-accent px-5 py-2 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+          >
+            Select
+          </Link>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-1">
-        <div className="text-right">
-          <p className="text-xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
-          <p className="text-[11px] text-slate-400">
-            Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
-          </p>
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((v) => !v)}
+        className="mt-3 flex items-center gap-1 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500 hover:text-brand"
+      >
+        Flight details {detailsOpen ? <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.5} /> : <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} />}
+      </button>
+
+      {detailsOpen ? (
+        <div className="mt-3 flex flex-col gap-3">
+          {option.legs.map((leg, idx) => {
+            const prevLeg = idx > 0 ? option.legs[idx - 1] : undefined;
+            return (
+            <React.Fragment key={idx}>
+              {prevLeg ? (
+                <div className="ml-4 flex items-center gap-2 border-l-2 border-dashed border-slate-200 pl-3 text-xs text-slate-400">
+                  Layover at {leg.depCityName || leg.depCode}
+                  {` · ${formatMinutes(Math.max(0, Math.round((new Date(leg.depDateTime).getTime() - new Date(prevLeg.arrDateTime).getTime()) / 60000)))} wait`}
+                </div>
+              ) : null}
+              <div className="rounded-lg bg-mist/60 p-3 text-xs text-slate-600">
+                <p className="mb-1.5 font-semibold text-navy-deep">
+                  {leg.airlineName} {leg.flightNo} · {leg.cabin} ({leg.fareClass}){leg.aircraftType ? ` · ${leg.aircraftType}` : ""}
+                </p>
+                <div className="flex items-center gap-2">
+                  <PlaneTakeoff className="h-3.5 w-3.5 shrink-0 text-slate-400" strokeWidth={2} />
+                  <span>
+                    {formatTime(leg.depDateTime)} · {leg.depAirportName || leg.depCode} ({leg.depCode}){leg.depTerminal ? `, Terminal ${leg.depTerminal}` : ""}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center gap-2">
+                  <PlaneLanding className="h-3.5 w-3.5 shrink-0 text-slate-400" strokeWidth={2} />
+                  <span>
+                    {formatTime(leg.arrDateTime)} · {leg.arrAirportName || leg.arrCode} ({leg.arrCode}){leg.arrTerminal ? `, Terminal ${leg.arrTerminal}` : ""}
+                  </span>
+                </div>
+              </div>
+            </React.Fragment>
+            );
+          })}
         </div>
-        <Link
-          href={`/flights/fare?flightId=${option.id}&refId=${encodeURIComponent(refId)}&${query}`}
-          className="rounded-full bg-accent px-5 py-2 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
-        >
-          Select
-        </Link>
-      </div>
+      ) : null}
     </div>
   );
 }
