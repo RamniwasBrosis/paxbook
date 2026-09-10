@@ -7,6 +7,7 @@ import { Plane, Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
 import { findAirport } from "@/lib/airports";
+import { FlightDateStrip } from "@/components/FlightDateStrip";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -176,7 +177,10 @@ export function FlightResultsList() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
+    <div>
+      <FlightDateStrip searchContext={searchContext} />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
       <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
         {appliedFilters.length > 0 ? (
           <div className="flat-card p-3">
@@ -348,6 +352,7 @@ export function FlightResultsList() {
             ))}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
