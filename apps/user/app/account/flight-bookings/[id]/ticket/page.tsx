@@ -5,6 +5,7 @@ import type { FlightBookingDto, FlightLegDto } from "@paxbook/types";
 import { customerFetch, CustomerApiError } from "@/lib/customer-api";
 import { formatDateTimeLong, formatMinutes } from "@/lib/flights";
 import { PrintButton } from "@/components/PrintButton";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 export const metadata: Metadata = { title: "E-Ticket" };
 
@@ -118,7 +119,8 @@ function TicketSection({ title, legs }: { title: string; legs: FlightLegDto[] })
         {legs.map((leg, idx) => (
           <div key={idx} className="rounded-xl bg-mist p-4">
             <div className="flex items-center justify-between text-sm">
-              <p className="font-semibold text-navy-deep">
+              <p className="flex items-center gap-1.5 font-semibold text-navy-deep">
+                <AirlineLogo code={leg.airlineCode} size={20} />
                 {leg.airlineName} {leg.airlineCode}-{leg.flightNo}
               </p>
               <p className="text-slate-500">{formatMinutes(leg.durationMinutes)}</p>

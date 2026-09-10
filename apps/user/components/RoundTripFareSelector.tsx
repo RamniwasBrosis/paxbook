@@ -3,10 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plane, Luggage, ShieldCheck, ShieldOff, Info } from "lucide-react";
+import { Luggage, ShieldCheck, ShieldOff, Info } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto, SearchFlightRequestDto } from "@paxbook/types";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader } from "@/lib/flights";
 import { FlightLoader } from "@/components/FlightLoader";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -146,9 +147,7 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
           <div className="flex flex-col gap-2">
             {legs.map((flightLeg, idx) => (
               <div key={idx} className="flex items-start gap-3">
-                <div className="mt-1 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
-                  <Plane className="h-3.5 w-3.5" strokeWidth={1.75} />
-                </div>
+                <AirlineLogo code={flightLeg.airlineCode} size={28} className="mt-1" />
                 <div className="text-sm">
                   <p className="font-semibold text-navy-deep">
                     {flightLeg.airlineName} {flightLeg.flightNo} · {flightLeg.cabin}

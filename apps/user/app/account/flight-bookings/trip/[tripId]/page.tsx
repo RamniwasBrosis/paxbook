@@ -5,6 +5,7 @@ import { CheckCircle2, Plane, Ticket, XCircle } from "lucide-react";
 import type { FlightBookingDto, FlightLegDto, FlightTripDto } from "@paxbook/types";
 import { customerFetch, CustomerApiError } from "@/lib/customer-api";
 import { formatDateTimeLong, formatMinutes } from "@/lib/flights";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 export const metadata: Metadata = { title: "Round Trip Booking" };
 
@@ -105,7 +106,8 @@ function FlightLegRow({ leg }: { leg: FlightLegDto }) {
   return (
     <div className="rounded-xl bg-mist p-4 text-sm">
       <div className="flex items-center justify-between">
-        <p className="font-semibold text-navy-deep">
+        <p className="flex items-center gap-1.5 font-semibold text-navy-deep">
+          <AirlineLogo code={leg.airlineCode} size={20} />
           {leg.airlineName} {leg.airlineCode}-{leg.flightNo}
         </p>
         <p className="text-slate-500">{formatMinutes(leg.durationMinutes)}</p>

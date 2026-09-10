@@ -8,6 +8,7 @@ import { formatDateTimeLong, formatMinutes } from "@/lib/flights";
 import { FlightBookingPaymentPanel } from "@/components/FlightBookingPaymentPanel";
 import { RefreshFlightStatusButton } from "@/components/RefreshFlightStatusButton";
 import { CancelFlightBookingButton } from "@/components/CancelFlightBookingButton";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 export const metadata: Metadata = { title: "Flight Booking Details" };
 
@@ -192,7 +193,8 @@ function FlightLegRows({ legs }: { legs: FlightLegDto[] }) {
       {legs.map((leg, idx) => (
         <div key={idx} className="rounded-xl bg-mist p-4 text-sm">
           <div className="flex items-center justify-between">
-            <p className="font-semibold text-navy-deep">
+            <p className="flex items-center gap-1.5 font-semibold text-navy-deep">
+              <AirlineLogo code={leg.airlineCode} size={20} />
               {leg.airlineName} {leg.airlineCode}-{leg.flightNo}
             </p>
             <p className="text-slate-500">{formatMinutes(leg.durationMinutes)}</p>

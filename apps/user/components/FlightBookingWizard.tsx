@@ -9,6 +9,7 @@ import type { CreateFlightBookingRequestDto, FlightPassengerInputDto, FlightPric
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
+import { AirlineLogo } from "@/components/AirlineLogo";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -415,14 +416,17 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           <Plane className="h-3.5 w-3.5" /> Trip summary
         </p>
         {option.legs.map((leg, idx) => (
-          <div key={idx} className="mb-2 text-sm">
-            <p className="font-semibold text-navy-deep">
-              {leg.depCode} → {leg.arrCode}
-            </p>
-            <p className="text-xs text-slate-500">{formatDateTimeLong(leg.depDateTime)}</p>
-            <p className="text-xs text-slate-400">
-              {leg.airlineName} {leg.flightNo} · {formatMinutes(leg.durationMinutes)}
-            </p>
+          <div key={idx} className="mb-2 flex items-start gap-2 text-sm">
+            <AirlineLogo code={leg.airlineCode} size={24} className="mt-0.5" />
+            <div>
+              <p className="font-semibold text-navy-deep">
+                {leg.depCode} → {leg.arrCode}
+              </p>
+              <p className="text-xs text-slate-500">{formatDateTimeLong(leg.depDateTime)}</p>
+              <p className="text-xs text-slate-400">
+                {leg.airlineName} {leg.flightNo} · {formatMinutes(leg.durationMinutes)}
+              </p>
+            </div>
           </div>
         ))}
 

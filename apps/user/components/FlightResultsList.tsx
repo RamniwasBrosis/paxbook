@@ -3,12 +3,13 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plane, Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle, X, ChevronDown, ChevronUp, PlaneTakeoff, PlaneLanding } from "lucide-react";
+import { Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle, X, ChevronDown, ChevronUp, PlaneTakeoff, PlaneLanding } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
 import { findAirport } from "@/lib/airports";
 import { FlightDateStrip } from "@/components/FlightDateStrip";
 import { FlightLoader } from "@/components/FlightLoader";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -102,10 +103,11 @@ export function FlightResultsList() {
   }, [runSearch]);
 
   const airlineCounts = React.useMemo(() => {
-    const counts = new Map<string, number>();
+    const counts = new Map<string, { code: string; count: number }>();
     (result?.options ?? []).forEach((o) => {
       const name = o.legs[0]?.airlineName;
-      if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
+      const code = o.legs[0]?.airlineCode ?? "";
+      if (name) counts.set(name, { code, count: (counts.get(name)?.count ?? 0) + 1 });
     });
     return counts;
   }, [result]);
@@ -281,10 +283,11 @@ export function FlightResultsList() {
               </label>
               {Array.from(airlineCounts.entries())
                 .sort((a, b) => a[0].localeCompare(b[0]))
-                .map(([name, count]) => (
+                .map(([name, { code, count }]) => (
                   <label key={name} className="flex items-center justify-between gap-2">
                     <span className="flex items-center gap-2">
                       <input type="radio" checked={airlineFilter === name} onChange={() => setAirlineFilter(name)} className="accent-brand" />
+                      <AirlineLogo code={code} size={18} />
                       {name}
                     </span>
                     <span className="text-xs text-slate-400">{count}</span>
@@ -381,9 +384,7 @@ function FlightOptionCard({ option, query, refId }: { option: FlightOptionDto; q
     <div className="flat-card p-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
-            <Plane className="h-5 w-5" strokeWidth={1.75} />
-          </div>
+          <AirlineLogo code={firstLeg.airlineCode} size={40} />
           <div>
             <p className="text-sm font-semibold text-navy-deep">
               {firstLeg.airlineName} · {firstLeg.flightNo}
@@ -457,7 +458,8 @@ function FlightOptionCard({ option, query, refId }: { option: FlightOptionDto; q
                 </div>
               ) : null}
               <div className="rounded-lg bg-mist/60 p-3 text-xs text-slate-600">
-                <p className="mb-1.5 font-semibold text-navy-deep">
+                <p className="mb-1.5 flex items-center gap-1.5 font-semibold text-navy-deep">
+                  <AirlineLogo code={leg.airlineCode} size={18} />
                   {leg.airlineName} {leg.flightNo} · {leg.cabin} ({leg.fareClass}){leg.aircraftType ? ` · ${leg.aircraftType}` : ""}
                 </p>
                 <div className="flex items-center gap-2">

@@ -3,10 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plane, Luggage, ShieldCheck, ShieldOff, Utensils, Info } from "lucide-react";
+import { Luggage, ShieldCheck, ShieldOff, Utensils, Info } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
 import { FlightLoader } from "@/components/FlightLoader";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -89,9 +90,7 @@ export function FlightFareSelector() {
         <div className="flex flex-col gap-3">
           {legs.map((leg, idx) => (
             <div key={idx} className="flex items-start gap-3">
-              <div className="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
-                <Plane className="h-4 w-4" strokeWidth={1.75} />
-              </div>
+              <AirlineLogo code={leg.airlineCode} size={32} className="mt-1" />
               <div className="text-sm">
                 <p className="font-semibold text-navy-deep">
                   {leg.airlineName} {leg.flightNo} · {leg.cabin}

@@ -8,6 +8,7 @@ import type { FlightOptionDto, FlightSearchResultDto, SearchFlightRequestDto } f
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
 import { findAirport } from "@/lib/airports";
 import { FlightLoader } from "@/components/FlightLoader";
+import { AirlineLogo } from "@/components/AirlineLogo";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const MAX_POLL_ATTEMPTS = 8;
@@ -237,7 +238,8 @@ function LegOptionCard({ option, selected, onSelect }: { option: FlightOptionDto
           {selected ? <CheckCircle2 className="h-5 w-5 text-brand" strokeWidth={2} /> : <Plane className="h-4 w-4" strokeWidth={1.75} />}
         </div>
         <div>
-          <p className="text-xs font-semibold text-slate-500">
+          <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
+            <AirlineLogo code={firstLeg.airlineCode} size={16} />
             {firstLeg.airlineName} {firstLeg.airlineCode}-{firstLeg.flightNo}
           </p>
           <div className="flex items-center gap-2 text-sm">

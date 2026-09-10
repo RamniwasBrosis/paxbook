@@ -9,6 +9,7 @@ import type { FlightPassengerInputDto, FlightPriceCheckDto, SearchFlightRequestD
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
+import { AirlineLogo } from "@/components/AirlineLogo";
 import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -420,15 +421,18 @@ function TripLegSummary({ label, option }: { label: string; option: FlightPriceC
   const lastLeg = option.legs[option.legs.length - 1];
   if (!firstLeg || !lastLeg) return null;
   return (
-    <div className="mb-2 text-sm">
-      <p className="text-[10px] font-semibold uppercase text-slate-400">{label}</p>
-      <p className="font-semibold text-navy-deep">
-        {firstLeg.depCode} → {lastLeg.arrCode}
-      </p>
-      <p className="text-xs text-slate-500">{formatDateTimeLong(firstLeg.depDateTime)}</p>
-      <p className="text-xs text-slate-400">
-        {firstLeg.airlineName} {firstLeg.flightNo}
-      </p>
+    <div className="mb-2 flex items-start gap-2 text-sm">
+      <AirlineLogo code={firstLeg.airlineCode} size={24} className="mt-0.5" />
+      <div>
+        <p className="text-[10px] font-semibold uppercase text-slate-400">{label}</p>
+        <p className="font-semibold text-navy-deep">
+          {firstLeg.depCode} → {lastLeg.arrCode}
+        </p>
+        <p className="text-xs text-slate-500">{formatDateTimeLong(firstLeg.depDateTime)}</p>
+        <p className="text-xs text-slate-400">
+          {firstLeg.airlineName} {firstLeg.flightNo}
+        </p>
+      </div>
     </div>
   );
 }
