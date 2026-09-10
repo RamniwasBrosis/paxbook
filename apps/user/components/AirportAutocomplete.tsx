@@ -2,7 +2,47 @@
 
 import * as React from "react";
 import { Plane } from "lucide-react";
-import { searchAirports, type AirportEntry } from "@/lib/airports";
+import type { AirportDto } from "@paxbook/types";
+import { searchAirports as searchStaticAirports, type AirportEntry } from "@/lib/airports";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
+
+/** Admin-managed airport list (see admin's Flights → Airports page), fetched once per page load and
+ * filtered client-side — small enough (under a few hundred rows) that this stays instant. Falls back
+ * to the bundled static reference list only if that fetch fails, so the search box never goes empty. */
+function useAirportDirectory(): AirportEntry[] {
+  const [airports, setAirports] = React.useState<AirportEntry[] | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/public/flights/airports`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (cancelled) return;
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          setAirports((json.data as AirportDto[]).map((a) => ({ code: a.code, city: a.city, name: a.name, country: a.country })));
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return airports ?? [];
+}
+
+function searchDirectory(airports: AirportEntry[], query: string, limit = 8): AirportEntry[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const scored = airports.filter((a) => a.code.toLowerCase().startsWith(q) || a.city.toLowerCase().includes(q) || a.name.toLowerCase().includes(q));
+  scored.sort((a, b) => {
+    const aCode = a.code.toLowerCase() === q ? 0 : a.code.toLowerCase().startsWith(q) ? 1 : 2;
+    const bCode = b.code.toLowerCase() === q ? 0 : b.code.toLowerCase().startsWith(q) ? 1 : 2;
+    return aCode - bCode;
+  });
+  return scored.slice(0, limit);
+}
 
 export function AirportAutocomplete({
   label,
@@ -19,12 +59,13 @@ export function AirportAutocomplete({
   const [open, setOpen] = React.useState(false);
   const [highlight, setHighlight] = React.useState(0);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const directory = useAirportDirectory();
 
   React.useEffect(() => {
     setQuery(value);
   }, [value]);
 
-  const results = React.useMemo(() => searchAirports(query), [query]);
+  const results = React.useMemo(() => (directory.length > 0 ? searchDirectory(directory, query) : searchStaticAirports(query)), [directory, query]);
 
   React.useEffect(() => {
     function onClickOutside(e: MouseEvent) {

@@ -1265,6 +1265,23 @@ model FlightRoutePricingRule {
   @@map("flight_route_pricing_rules")
 }
 
+/// Global (not per-tenant) reference data driving the customer-facing airport search autocomplete —
+/// airports are an objective geographic fact, not something that varies per travel agency. Seeded
+/// from the platform's original static reference list; admins can add/edit/disable from here on so a
+/// missing or stale airport no longer needs a code deploy to fix.
+model Airport {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  city      String
+  country   String   @default("India")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("airports")
+}
+
 /// Every call to the FTD Travel Air API, for the admin-facing live/debug view and error diagnosis.
 model FlightApiLog {
   id           String   @id @default(uuid())

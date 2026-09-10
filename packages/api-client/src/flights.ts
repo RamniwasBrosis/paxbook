@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@paxbook/auth-client";
 import type {
+  AirportDto,
   CreateFlightBookingRequestDto,
   FlightApiLogDto,
   FlightApiStatusDto,
@@ -11,6 +12,7 @@ import type {
   FlightPricingSettingDto,
   FlightRoutePricingRuleDto,
   FlightSearchResultDto,
+  SaveAirportDto,
   SaveFlightRoutePricingRuleDto,
   SearchFlightRequestDto,
   UpdateFlightPricingSettingDto,
@@ -190,6 +192,38 @@ export function useAdminCancelFlightBooking() {
 
 export function useFlightDashboard() {
   return useQuery({ queryKey: ["admin-flight-dashboard"], queryFn: () => apiFetch<FlightDashboardDto>("/admin/flights/dashboard") });
+}
+
+// ---------------------------------------------------------------------------
+// Admin — airport reference data
+// ---------------------------------------------------------------------------
+
+export function useAdminAirports() {
+  return useQuery({ queryKey: ["admin-airports"], queryFn: () => apiFetch<AirportDto[]>("/admin/flights/airports") });
+}
+
+export function useCreateAirport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: SaveAirportDto) => apiFetch<AirportDto>("/admin/flights/airports", { method: "POST", body: payload }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-airports"] }),
+  });
+}
+
+export function useUpdateAirport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<SaveAirportDto> }) => apiFetch<AirportDto>(`/admin/flights/airports/${id}`, { method: "PATCH", body: payload }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-airports"] }),
+  });
+}
+
+export function useDeleteAirport() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => apiFetch<{ id: string }>(`/admin/flights/airports/${id}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-airports"] }),
+  });
 }
 
 export function useAdminRefundFlightBooking() {

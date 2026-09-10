@@ -3,6 +3,7 @@ import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../../common/decorators/public.decorator";
 import { SkipAudit } from "../../common/decorators/skip-audit.decorator";
 import { FlightsService } from "./flights.service";
+import { AirportsService } from "./airports.service";
 import { SearchFlightDto } from "./dto/search-flight.dto";
 import { FareRulesLookupDto, FlightLookupDto } from "./dto/flight-lookup.dto";
 
@@ -12,7 +13,15 @@ import { FareRulesLookupDto, FlightLookupDto } from "./dto/flight-lookup.dto";
 @SkipAudit()
 @Controller({ path: "public/flights", version: "1" })
 export class PublicFlightsController {
-  constructor(private readonly flightsService: FlightsService) {}
+  constructor(
+    private readonly flightsService: FlightsService,
+    private readonly airportsService: AirportsService,
+  ) {}
+
+  @Get("airports")
+  airports() {
+    return this.airportsService.listActive();
+  }
 
   @Post("search")
   search(@Body() dto: SearchFlightDto) {

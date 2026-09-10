@@ -365,3 +365,26 @@ export interface FlightApiStatusDto {
   mode: number;
   balance: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Admin — airport reference data (drives the public search autocomplete)
+// ---------------------------------------------------------------------------
+
+export interface AirportDto {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SaveAirportDto {
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  isActive?: boolean;
+}

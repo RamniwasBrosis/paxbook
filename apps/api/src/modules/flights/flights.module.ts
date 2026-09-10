@@ -11,6 +11,8 @@ import { AdminFlightBookingsService } from "./admin-flight-bookings.service";
 import { AdminFlightPricingController } from "./admin-flight-pricing.controller";
 import { AdminFlightDashboardController } from "./admin-flight-dashboard.controller";
 import { AdminFlightDashboardService } from "./admin-flight-dashboard.service";
+import { AdminAirportsController } from "./admin-airports.controller";
+import { AirportsService } from "./airports.service";
 
 @Module({
   imports: [CustomerPortalModule],
@@ -21,7 +23,8 @@ import { AdminFlightDashboardService } from "./admin-flight-dashboard.service";
     AdminFlightBookingsController,
     AdminFlightPricingController,
     AdminFlightDashboardController,
+    AdminAirportsController,
   ],
-  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService, AdminFlightDashboardService],
+  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService, AdminFlightDashboardService, AirportsService],
 })
 export class FlightsModule {}
