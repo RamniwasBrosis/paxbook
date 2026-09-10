@@ -90,6 +90,8 @@ export interface AdminFlightOptionDto extends FlightOptionDto {
   providerFareTotal: number;
   effectiveMarginPercent: number;
   effectiveMarginFlat: number;
+  /** Which of the two margin numbers above is actually applied — only one ever takes effect. */
+  effectiveMarginType: "PERCENT" | "FLAT";
 }
 
 export interface AdminFlightSearchResultDto {
@@ -293,15 +295,22 @@ export interface ProcessFlightRefundDto {
 // Admin — pricing (margin/discount over the provider's fares)
 // ---------------------------------------------------------------------------
 
+/** "PERCENT" or "FLAT" — which margin number is actually applied. They used to always stack
+ * together, which made it impossible to tell what a rule would actually charge; now exactly one
+ * applies, and the unused number is just kept around so switching modes doesn't lose it. */
+export type FlightMarginType = "PERCENT" | "FLAT";
+
 export interface FlightPricingSettingDto {
   marginPercent: number;
   marginFlat: number;
+  marginType: FlightMarginType;
   updatedAt: string;
 }
 
 export interface UpdateFlightPricingSettingDto {
   marginPercent: number;
   marginFlat: number;
+  marginType: FlightMarginType;
 }
 
 export interface FlightRoutePricingRuleDto {
@@ -317,6 +326,7 @@ export interface FlightRoutePricingRuleDto {
   label: string | null;
   marginPercent: number;
   marginFlat: number;
+  marginType: FlightMarginType;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -331,6 +341,7 @@ export interface SaveFlightRoutePricingRuleDto {
   label?: string;
   marginPercent: number;
   marginFlat: number;
+  marginType: FlightMarginType;
   isActive?: boolean;
 }
 

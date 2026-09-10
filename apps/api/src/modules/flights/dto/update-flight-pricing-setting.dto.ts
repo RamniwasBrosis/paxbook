@@ -1,4 +1,4 @@
-import { IsNumber, Max, Min } from "class-validator";
+import { IsIn, IsNumber, Max, Min } from "class-validator";
 
 export class UpdateFlightPricingSettingDto {
   @IsNumber()
@@ -10,4 +10,8 @@ export class UpdateFlightPricingSettingDto {
   @Min(-100000)
   @Max(100000)
   marginFlat!: number;
+
+  /** Which of the two numbers above is actually applied — only one ever takes effect. */
+  @IsIn(["PERCENT", "FLAT"])
+  marginType!: "PERCENT" | "FLAT";
 }

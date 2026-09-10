@@ -55,7 +55,14 @@ export class FlightsService {
         const arrCity = option.legs[option.legs.length - 1]?.arrCode ?? "";
         const margin = await this.pricing.getEffectiveMargin(depCity, arrCity, option.legs[0]?.airlineCode, option.legs[0]?.flightNo, option.legs[0]?.cabin);
         const providerFareTotal = option.fare.total;
-        return { ...option, fare: this.pricing.applyMargin(option.fare, margin), providerFareTotal, effectiveMarginPercent: margin.marginPercent, effectiveMarginFlat: margin.marginFlat };
+        return {
+          ...option,
+          fare: this.pricing.applyMargin(option.fare, margin),
+          providerFareTotal,
+          effectiveMarginPercent: margin.marginPercent,
+          effectiveMarginFlat: margin.marginFlat,
+          effectiveMarginType: margin.marginType,
+        };
       }),
     );
     return { refId: mapped.refId, isComplete: mapped.isComplete, options };

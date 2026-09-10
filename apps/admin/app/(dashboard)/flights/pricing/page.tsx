@@ -14,7 +14,7 @@ import {
   useAdminPricingLiveSearch,
 } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
-import type { AdminFlightOptionDto, FlightRoutePricingRuleDto, SaveFlightRoutePricingRuleDto } from "@paxbook/types";
+import type { AdminFlightOptionDto, FlightMarginType, FlightRoutePricingRuleDto, SaveFlightRoutePricingRuleDto } from "@paxbook/types";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@paxbook/ui";
 
 const SAMPLE_FARE = 5000;
@@ -29,8 +29,32 @@ const CABIN_OPTIONS: { value: string; label: string }[] = [
 const CABIN_LABEL: Record<string, string> = { E: "Economy", P: "Premium Economy", B: "Business", F: "First" };
 const SEARCH_CABIN_OPTIONS = CABIN_OPTIONS.filter((c) => c.value !== "");
 
-function previewPrice(providerFare: number, marginPercent: number, marginFlat: number): number {
-  return Math.round((providerFare * (1 + marginPercent / 100) + marginFlat) * 100) / 100;
+/** Only one of marginPercent/marginFlat is ever applied — this always reflects that, so the
+ * preview shown next to any margin form matches exactly what FlightPricingService will charge. */
+function previewPrice(providerFare: number, marginPercent: number, marginFlat: number, marginType: FlightMarginType): number {
+  return marginType === "FLAT" ? Math.round((providerFare + marginFlat) * 100) / 100 : Math.round((providerFare * (1 + marginPercent / 100)) * 100) / 100;
+}
+
+function marginTypeLabel(marginType: FlightMarginType): string {
+  return marginType === "FLAT" ? "Flat amount" : "Percentage";
+}
+
+/** Shared radio pair for choosing which margin number is actually applied — used on the default
+ * margin form, the live-flight override form, and the route/flight override form, so all three
+ * behave identically instead of the old always-stacking percent+flat combination. */
+function MarginTypeRadio({ value, onChange, disabled, name }: { value: FlightMarginType; onChange: (v: FlightMarginType) => void; disabled?: boolean; name: string }) {
+  return (
+    <div className="flex items-center gap-4 text-sm font-medium text-slate-600">
+      <label className="flex items-center gap-1.5">
+        <input type="radio" name={name} disabled={disabled} checked={value === "PERCENT"} onChange={() => onChange("PERCENT")} className="accent-brand" />
+        Percentage
+      </label>
+      <label className="flex items-center gap-1.5">
+        <input type="radio" name={name} disabled={disabled} checked={value === "FLAT"} onChange={() => onChange("FLAT")} className="accent-brand" />
+        Flat amount
+      </label>
+    </div>
+  );
 }
 
 function toYyyymmdd(dateStr: string): string {
@@ -78,6 +102,7 @@ function GlobalMarginCard({ canWrite }: { canWrite: boolean }) {
   const updateSetting = useUpdateFlightPricingSetting();
   const [marginPercent, setMarginPercent] = React.useState(0);
   const [marginFlat, setMarginFlat] = React.useState(0);
+  const [marginType, setMarginType] = React.useState<FlightMarginType>("PERCENT");
   const [error, setError] = React.useState<string | null>(null);
   const [saved, setSaved] = React.useState(false);
 
@@ -85,6 +110,7 @@ function GlobalMarginCard({ canWrite }: { canWrite: boolean }) {
     if (settingQuery.data) {
       setMarginPercent(settingQuery.data.marginPercent);
       setMarginFlat(settingQuery.data.marginFlat);
+      setMarginType(settingQuery.data.marginType);
     }
   }, [settingQuery.data]);
 
@@ -93,12 +119,14 @@ function GlobalMarginCard({ canWrite }: { canWrite: boolean }) {
     setError(null);
     setSaved(false);
     try {
-      await updateSetting.mutateAsync({ marginPercent, marginFlat });
+      await updateSetting.mutateAsync({ marginPercent, marginFlat, marginType });
       setSaved(true);
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Could not save pricing settings.");
     }
   }
+
+  const preview = previewPrice(SAMPLE_FARE, marginPercent, marginFlat, marginType);
 
   return (
     <Card>
@@ -106,41 +134,44 @@ function GlobalMarginCard({ canWrite }: { canWrite: boolean }) {
         <CardTitle>Default margin (applies to every route unless overridden below)</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-4">
-          <Input
-            label="Margin %"
-            type="number"
-            step="0.1"
-            disabled={!canWrite}
-            value={marginPercent}
-            onChange={(e) => setMarginPercent(Number(e.target.value))}
-            className="max-w-[140px]"
-          />
-          <Input
-            label="Flat amount (₹)"
-            type="number"
-            step="1"
-            disabled={!canWrite}
-            value={marginFlat}
-            onChange={(e) => setMarginFlat(Number(e.target.value))}
-            className="max-w-[160px]"
-          />
-          {canWrite ? (
-            <Button type="submit" isLoading={updateSetting.isPending}>
-              Save
-            </Button>
-          ) : null}
-          {saved ? <span className="text-sm text-emerald-600">Saved.</span> : null}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <MarginTypeRadio value={marginType} onChange={setMarginType} disabled={!canWrite} name="global-margin-type" />
+          <div className="flex flex-wrap items-end gap-4">
+            <Input
+              label="Margin %"
+              type="number"
+              step="0.1"
+              disabled={!canWrite || marginType !== "PERCENT"}
+              value={marginPercent}
+              onChange={(e) => setMarginPercent(Number(e.target.value))}
+              className="max-w-[140px]"
+            />
+            <Input
+              label="Flat amount (₹)"
+              type="number"
+              step="1"
+              disabled={!canWrite || marginType !== "FLAT"}
+              value={marginFlat}
+              onChange={(e) => setMarginFlat(Number(e.target.value))}
+              className="max-w-[160px]"
+            />
+            {canWrite ? (
+              <Button type="submit" isLoading={updateSetting.isPending}>
+                Save
+              </Button>
+            ) : null}
+            {saved ? <span className="text-sm text-emerald-600">Saved.</span> : null}
+          </div>
         </form>
         {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
 
         <div className="mt-4 rounded-lg bg-mist p-3 text-sm text-slate-600">
-          Example: a flight the provider prices at <strong>₹{SAMPLE_FARE.toLocaleString("en-IN")}</strong> would show to customers as{" "}
-          <strong>₹{previewPrice(SAMPLE_FARE, marginPercent, marginFlat).toLocaleString("en-IN")}</strong>
-          {marginPercent !== 0 || marginFlat !== 0 ? (
+          Using <strong>{marginTypeLabel(marginType)}</strong>: a flight the provider prices at <strong>₹{SAMPLE_FARE.toLocaleString("en-IN")}</strong> would
+          show to customers as <strong>₹{preview.toLocaleString("en-IN")}</strong>
+          {preview !== SAMPLE_FARE ? (
             <>
               {" "}
-              (your margin: ₹{(previewPrice(SAMPLE_FARE, marginPercent, marginFlat) - SAMPLE_FARE).toLocaleString("en-IN")})
+              (your margin: ₹{(preview - SAMPLE_FARE).toLocaleString("en-IN")})
             </>
           ) : null}
           .
@@ -321,6 +352,7 @@ function LiveFlightRow({
   const lastLeg = option.legs[option.legs.length - 1];
   const [marginPercent, setMarginPercent] = React.useState(option.effectiveMarginPercent);
   const [marginFlat, setMarginFlat] = React.useState(option.effectiveMarginFlat);
+  const [marginType, setMarginType] = React.useState<FlightMarginType>(option.effectiveMarginType);
   const [label, setLabel] = React.useState("");
   const [cabin, setCabin] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -340,6 +372,7 @@ function LiveFlightRow({
         label: label || undefined,
         marginPercent,
         marginFlat,
+        marginType,
         isActive: true,
       });
     } catch (err) {
@@ -350,6 +383,7 @@ function LiveFlightRow({
   }
 
   const ourMargin = Math.round((option.fare.total - option.providerFareTotal) * 100) / 100;
+  const activeMarginAmount = option.effectiveMarginType === "FLAT" ? option.effectiveMarginFlat : option.effectiveMarginPercent;
 
   return (
     <>
@@ -363,10 +397,7 @@ function LiveFlightRow({
         <td className="px-4 py-2">{new Date(firstLeg.depDateTime).toLocaleString("en-IN")}</td>
         <td className="px-4 py-2">₹{option.providerFareTotal.toLocaleString("en-IN")}</td>
         <td className="px-4 py-2 text-slate-500">
-          {option.effectiveMarginPercent !== 0 ? `${option.effectiveMarginPercent}%` : null}
-          {option.effectiveMarginPercent !== 0 && option.effectiveMarginFlat !== 0 ? " + " : null}
-          {option.effectiveMarginFlat !== 0 ? `₹${option.effectiveMarginFlat.toLocaleString("en-IN")}` : null}
-          {option.effectiveMarginPercent === 0 && option.effectiveMarginFlat === 0 ? "None" : null}
+          {activeMarginAmount === 0 ? "None" : option.effectiveMarginType === "FLAT" ? `₹${option.effectiveMarginFlat.toLocaleString("en-IN")} flat` : `${option.effectiveMarginPercent}%`}
           <span className="ml-1 text-xs text-slate-400">(₹{ourMargin.toLocaleString("en-IN")})</span>
         </td>
         <td className="px-4 py-2 font-semibold">₹{option.fare.total.toLocaleString("en-IN")}</td>
@@ -381,27 +412,30 @@ function LiveFlightRow({
       {open ? (
         <tr className="border-b border-slate-50 bg-mist/50 last:border-0">
           <td colSpan={7} className="px-4 py-3">
-            <div className="flex flex-wrap items-end gap-3">
-              <Input label="Margin %" type="number" step="0.1" value={marginPercent} onChange={(e) => setMarginPercent(Number(e.target.value))} className="max-w-[120px]" />
-              <Input label="Flat (₹)" type="number" step="1" value={marginFlat} onChange={(e) => setMarginFlat(Number(e.target.value))} className="max-w-[120px]" />
-              <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-                Cabin
-                <select value={cabin} onChange={(e) => setCabin(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                  {CABIN_OPTIONS.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <Input label="Label (optional, internal)" value={label} onChange={(e) => setLabel(e.target.value)} className="max-w-[220px]" placeholder="e.g. Diwali sale" />
-              <Button onClick={handleSave} isLoading={busy}>
-                Save override for {firstLeg.airlineCode}-{firstLeg.flightNo}
-              </Button>
+            <div className="flex flex-col gap-3">
+              <MarginTypeRadio value={marginType} onChange={setMarginType} name={`override-margin-type-${option.id}`} />
+              <div className="flex flex-wrap items-end gap-3">
+                <Input label="Margin %" type="number" step="0.1" disabled={marginType !== "PERCENT"} value={marginPercent} onChange={(e) => setMarginPercent(Number(e.target.value))} className="max-w-[120px]" />
+                <Input label="Flat (₹)" type="number" step="1" disabled={marginType !== "FLAT"} value={marginFlat} onChange={(e) => setMarginFlat(Number(e.target.value))} className="max-w-[120px]" />
+                <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                  Cabin
+                  <select value={cabin} onChange={(e) => setCabin(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                    {CABIN_OPTIONS.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <Input label="Label (optional, internal)" value={label} onChange={(e) => setLabel(e.target.value)} className="max-w-[220px]" placeholder="e.g. Diwali sale" />
+                <Button onClick={handleSave} isLoading={busy}>
+                  Save override for {firstLeg.airlineCode}-{firstLeg.flightNo}
+                </Button>
+              </div>
             </div>
             <p className="mt-2 text-xs text-slate-400">
               Preview: provider ₹{option.providerFareTotal.toLocaleString("en-IN")} → customer would pay ₹
-              {previewPrice(option.providerFareTotal, marginPercent, marginFlat).toLocaleString("en-IN")}
+              {previewPrice(option.providerFareTotal, marginPercent, marginFlat, marginType).toLocaleString("en-IN")}
             </p>
             {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
           </td>
@@ -417,7 +451,14 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
   const updateRule = useUpdateFlightRoutePricingRule();
   const deleteRule = useDeleteFlightRoutePricingRule();
 
-  const [form, setForm] = React.useState({ depCity: "", arrCity: "", cabin: "", marginPercent: 0, marginFlat: 0 });
+  const [form, setForm] = React.useState<{ depCity: string; arrCity: string; cabin: string; marginPercent: number; marginFlat: number; marginType: FlightMarginType }>({
+    depCity: "",
+    arrCity: "",
+    cabin: "",
+    marginPercent: 0,
+    marginFlat: 0,
+    marginType: "PERCENT",
+  });
   const [error, setError] = React.useState<string | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
@@ -430,9 +471,10 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
         cabin: form.cabin || undefined,
         marginPercent: form.marginPercent,
         marginFlat: form.marginFlat,
+        marginType: form.marginType,
         isActive: true,
       });
-      setForm({ depCity: "", arrCity: "", cabin: "", marginPercent: 0, marginFlat: 0 });
+      setForm({ depCity: "", arrCity: "", cabin: "", marginPercent: 0, marginFlat: 0, marginType: "PERCENT" });
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Could not add route rule.");
     }
@@ -452,6 +494,7 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
                 <th className="px-4 py-2 font-medium">Flight</th>
                 <th className="px-4 py-2 font-medium">Cabin</th>
                 <th className="px-4 py-2 font-medium">Label</th>
+                <th className="px-4 py-2 font-medium">Type</th>
                 <th className="px-4 py-2 font-medium">Margin %</th>
                 <th className="px-4 py-2 font-medium">Flat (₹)</th>
                 <th className="px-4 py-2 font-medium">Status</th>
@@ -464,7 +507,7 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
               ))}
               {!routesQuery.isLoading && (routesQuery.data ?? []).length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={9} className="px-4 py-6 text-center text-slate-400">
                     No overrides yet — every route uses the default margin above.
                   </td>
                 </tr>
@@ -474,38 +517,43 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
         </div>
 
         {canWrite ? (
-          <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3">
-            <Input label="From (IATA)" required maxLength={3} value={form.depCity} onChange={(e) => setForm((f) => ({ ...f, depCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
-            <Input label="To (IATA)" required maxLength={3} value={form.arrCity} onChange={(e) => setForm((f) => ({ ...f, arrCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
-            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
-              Cabin
-              <select value={form.cabin} onChange={(e) => setForm((f) => ({ ...f, cabin: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
-                {CABIN_OPTIONS.map((c) => (
-                  <option key={c.value} value={c.value}>
-                    {c.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <Input
-              label="Margin %"
-              type="number"
-              step="0.1"
-              value={form.marginPercent}
-              onChange={(e) => setForm((f) => ({ ...f, marginPercent: Number(e.target.value) }))}
-              className="max-w-[120px]"
-            />
-            <Input
-              label="Flat (₹)"
-              type="number"
-              step="1"
-              value={form.marginFlat}
-              onChange={(e) => setForm((f) => ({ ...f, marginFlat: Number(e.target.value) }))}
-              className="max-w-[120px]"
-            />
-            <Button type="submit" isLoading={createRule.isPending}>
-              Add whole-route rule
-            </Button>
+          <form onSubmit={handleAdd} className="flex flex-col gap-3">
+            <MarginTypeRadio value={form.marginType} onChange={(marginType) => setForm((f) => ({ ...f, marginType }))} name="new-route-margin-type" />
+            <div className="flex flex-wrap items-end gap-3">
+              <Input label="From (IATA)" required maxLength={3} value={form.depCity} onChange={(e) => setForm((f) => ({ ...f, depCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
+              <Input label="To (IATA)" required maxLength={3} value={form.arrCity} onChange={(e) => setForm((f) => ({ ...f, arrCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
+              <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                Cabin
+                <select value={form.cabin} onChange={(e) => setForm((f) => ({ ...f, cabin: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  {CABIN_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Input
+                label="Margin %"
+                type="number"
+                step="0.1"
+                disabled={form.marginType !== "PERCENT"}
+                value={form.marginPercent}
+                onChange={(e) => setForm((f) => ({ ...f, marginPercent: Number(e.target.value) }))}
+                className="max-w-[120px]"
+              />
+              <Input
+                label="Flat (₹)"
+                type="number"
+                step="1"
+                disabled={form.marginType !== "FLAT"}
+                value={form.marginFlat}
+                onChange={(e) => setForm((f) => ({ ...f, marginFlat: Number(e.target.value) }))}
+                className="max-w-[120px]"
+              />
+              <Button type="submit" isLoading={createRule.isPending}>
+                Add whole-route rule
+              </Button>
+            </div>
           </form>
         ) : null}
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
@@ -522,17 +570,28 @@ function RouteRow({
 }: {
   route: FlightRoutePricingRuleDto;
   canWrite: boolean;
-  onUpdate: (args: { id: string; payload: Partial<{ marginPercent: number; marginFlat: number; isActive: boolean }> }) => Promise<unknown>;
+  onUpdate: (args: { id: string; payload: Partial<{ marginPercent: number; marginFlat: number; marginType: FlightMarginType; isActive: boolean }> }) => Promise<unknown>;
   onDelete: (id: string) => Promise<unknown>;
 }) {
   const [marginPercent, setMarginPercent] = React.useState(route.marginPercent);
   const [marginFlat, setMarginFlat] = React.useState(route.marginFlat);
+  const [marginType, setMarginType] = React.useState<FlightMarginType>(route.marginType);
   const [busy, setBusy] = React.useState(false);
 
   async function save() {
     setBusy(true);
     try {
-      await onUpdate({ id: route.id, payload: { marginPercent, marginFlat } });
+      await onUpdate({ id: route.id, payload: { marginPercent, marginFlat, marginType } });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function changeType(next: FlightMarginType) {
+    setMarginType(next);
+    setBusy(true);
+    try {
+      await onUpdate({ id: route.id, payload: { marginType: next } });
     } finally {
       setBusy(false);
     }
@@ -557,13 +616,24 @@ function RouteRow({
       <td className="px-4 py-2 text-slate-500">{route.label ?? "—"}</td>
       <td className="px-4 py-2">
         {canWrite ? (
+          <select value={marginType} disabled={busy} onChange={(e) => changeType(e.target.value as FlightMarginType)} className="rounded border border-slate-200 px-2 py-1 text-sm">
+            <option value="PERCENT">Percentage</option>
+            <option value="FLAT">Flat</option>
+          </select>
+        ) : (
+          marginTypeLabel(route.marginType)
+        )}
+      </td>
+      <td className="px-4 py-2">
+        {canWrite ? (
           <input
             type="number"
             step="0.1"
+            disabled={marginType !== "PERCENT"}
             value={marginPercent}
             onChange={(e) => setMarginPercent(Number(e.target.value))}
             onBlur={save}
-            className="w-20 rounded border border-slate-200 px-2 py-1 text-sm"
+            className="w-20 rounded border border-slate-200 px-2 py-1 text-sm disabled:bg-slate-50 disabled:text-slate-300"
           />
         ) : (
           route.marginPercent
@@ -574,10 +644,11 @@ function RouteRow({
           <input
             type="number"
             step="1"
+            disabled={marginType !== "FLAT"}
             value={marginFlat}
             onChange={(e) => setMarginFlat(Number(e.target.value))}
             onBlur={save}
-            className="w-20 rounded border border-slate-200 px-2 py-1 text-sm"
+            className="w-20 rounded border border-slate-200 px-2 py-1 text-sm disabled:bg-slate-50 disabled:text-slate-300"
           />
         ) : (
           route.marginFlat

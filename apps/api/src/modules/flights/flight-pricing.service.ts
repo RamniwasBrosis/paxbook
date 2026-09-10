@@ -6,9 +6,12 @@ const SETTING_ID = "default";
 /** Sentinel for "applies to everything on this dimension" — an empty string, not null, so the unique DB index stays meaningful. */
 const ANY = "";
 
+export type MarginType = "PERCENT" | "FLAT";
+
 export interface EffectiveMargin {
   marginPercent: number;
   marginFlat: number;
+  marginType: MarginType;
 }
 
 function toRouteDto(r: {
@@ -21,6 +24,7 @@ function toRouteDto(r: {
   label: string | null;
   marginPercent: { toNumber(): number };
   marginFlat: { toNumber(): number };
+  marginType: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -35,6 +39,7 @@ function toRouteDto(r: {
     label: r.label,
     marginPercent: r.marginPercent.toNumber(),
     marginFlat: r.marginFlat.toNumber(),
+    marginType: (r.marginType as MarginType) ?? "PERCENT",
     isActive: r.isActive,
     createdAt: r.createdAt.toISOString(),
     updatedAt: r.updatedAt.toISOString(),
@@ -55,19 +60,32 @@ function toRouteDto(r: {
 export class FlightPricingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSetting(): Promise<{ marginPercent: number; marginFlat: number; updatedAt: Date }> {
+  async getSetting(): Promise<{ marginPercent: number; marginFlat: number; marginType: MarginType; updatedAt: Date }> {
     const setting = await this.prisma.flightPricingSetting.findUnique({ where: { id: SETTING_ID } });
-    if (setting) return { marginPercent: setting.marginPercent.toNumber(), marginFlat: setting.marginFlat.toNumber(), updatedAt: setting.updatedAt };
-    return { marginPercent: 0, marginFlat: 0, updatedAt: new Date(0) };
+    if (setting)
+      return {
+        marginPercent: setting.marginPercent.toNumber(),
+        marginFlat: setting.marginFlat.toNumber(),
+        marginType: (setting.marginType as MarginType) ?? "PERCENT",
+        updatedAt: setting.updatedAt,
+      };
+    return { marginPercent: 0, marginFlat: 0, marginType: "PERCENT", updatedAt: new Date(0) };
   }
 
-  async updateSetting(marginPercent: number, marginFlat: number) {
+  /** Only one of marginPercent/marginFlat is ever actually applied (see EffectiveMargin) — the
+   * unused number is still stored so switching the radio back doesn't lose what was there before. */
+  async updateSetting(marginPercent: number, marginFlat: number, marginType: MarginType) {
     const setting = await this.prisma.flightPricingSetting.upsert({
       where: { id: SETTING_ID },
-      update: { marginPercent, marginFlat },
-      create: { id: SETTING_ID, marginPercent, marginFlat },
+      update: { marginPercent, marginFlat, marginType },
+      create: { id: SETTING_ID, marginPercent, marginFlat, marginType },
     });
-    return { marginPercent: setting.marginPercent.toNumber(), marginFlat: setting.marginFlat.toNumber(), updatedAt: setting.updatedAt };
+    return {
+      marginPercent: setting.marginPercent.toNumber(),
+      marginFlat: setting.marginFlat.toNumber(),
+      marginType: setting.marginType as MarginType,
+      updatedAt: setting.updatedAt,
+    };
   }
 
   async listRoutes() {
@@ -80,6 +98,7 @@ export class FlightPricingService {
     arrCity: string,
     marginPercent: number,
     marginFlat: number,
+    marginType: MarginType,
     isActive = true,
     airlineCode?: string,
     flightNo?: string,
@@ -96,6 +115,7 @@ export class FlightPricingService {
         label: label || null,
         marginPercent,
         marginFlat,
+        marginType,
         isActive,
       },
     });
@@ -104,7 +124,18 @@ export class FlightPricingService {
 
   async updateRoute(
     id: string,
-    patch: { depCity?: string; arrCity?: string; airlineCode?: string; flightNo?: string; cabin?: string; label?: string; marginPercent?: number; marginFlat?: number; isActive?: boolean },
+    patch: {
+      depCity?: string;
+      arrCity?: string;
+      airlineCode?: string;
+      flightNo?: string;
+      cabin?: string;
+      label?: string;
+      marginPercent?: number;
+      marginFlat?: number;
+      marginType?: MarginType;
+      isActive?: boolean;
+    },
   ) {
     const r = await this.prisma.flightRoutePricingRule.update({
       where: { id },
@@ -117,6 +148,7 @@ export class FlightPricingService {
         ...(patch.label !== undefined ? { label: patch.label || null } : {}),
         ...(patch.marginPercent !== undefined ? { marginPercent: patch.marginPercent } : {}),
         ...(patch.marginFlat !== undefined ? { marginFlat: patch.marginFlat } : {}),
+        ...(patch.marginType !== undefined ? { marginType: patch.marginType } : {}),
         ...(patch.isActive !== undefined ? { isActive: patch.isActive } : {}),
       },
     });
@@ -141,7 +173,9 @@ export class FlightPricingService {
         const rule = await this.prisma.flightRoutePricingRule.findUnique({
           where: { depCity_arrCity_airlineCode_flightNo_cabin: { depCity: dep, arrCity: arr, airlineCode: air, flightNo: flt, cabin: cb } },
         });
-        return rule?.isActive ? { marginPercent: rule.marginPercent.toNumber(), marginFlat: rule.marginFlat.toNumber() } : null;
+        return rule?.isActive
+          ? { marginPercent: rule.marginPercent.toNumber(), marginFlat: rule.marginFlat.toNumber(), marginType: (rule.marginType as MarginType) ?? "PERCENT" }
+          : null;
       };
 
       if (airlineCode && flightNo) {
@@ -161,12 +195,18 @@ export class FlightPricingService {
       if (routeWide) return routeWide;
     }
     const setting = await this.getSetting();
-    return { marginPercent: setting.marginPercent, marginFlat: setting.marginFlat };
+    return { marginPercent: setting.marginPercent, marginFlat: setting.marginFlat, marginType: setting.marginType };
   }
 
+  /** Only the number matching marginType is ever applied — percent and flat used to always stack
+   * together, which made it impossible to tell an admin what a given rule would actually charge. */
   applyMargin(fare: FlightFareDto, margin: EffectiveMargin): FlightFareDto {
-    if (margin.marginPercent === 0 && margin.marginFlat === 0) return fare;
-    const adjustedTotal = Math.round((fare.total * (1 + margin.marginPercent / 100) + margin.marginFlat) * 100) / 100;
+    const amount = margin.marginType === "FLAT" ? margin.marginFlat : margin.marginPercent;
+    if (amount === 0) return fare;
+    const adjustedTotal =
+      margin.marginType === "FLAT"
+        ? Math.round((fare.total + margin.marginFlat) * 100) / 100
+        : Math.round((fare.total * (1 + margin.marginPercent / 100)) * 100) / 100;
     const delta = Math.round((adjustedTotal - fare.total) * 100) / 100;
     return { ...fare, total: adjustedTotal, base: Math.round((fare.base + delta) * 100) / 100 };
   }

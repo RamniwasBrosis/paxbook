@@ -1242,6 +1242,10 @@ model FlightPricingSetting {
   id            String   @id @default("default")
   marginPercent Decimal  @db.Decimal(6, 3) @default(0) // e.g. 3.5 = +3.5% added to the provider's fare; negative = blanket discount
   marginFlat    Decimal  @db.Decimal(10, 2) @default(0) // flat rupee amount added per booking; negative = flat discount
+  /// "PERCENT" or "FLAT" — which of the two numbers above is actually applied. Only one ever takes
+  /// effect at a time (they used to silently stack, which was confusing); the unused field is kept
+  /// around in the DB so switching modes doesn't lose the admin's last-entered value.
+  marginType    String   @default("PERCENT")
   updatedAt     DateTime @updatedAt
 
   @@map("flight_pricing_settings")
@@ -1267,6 +1271,8 @@ model FlightRoutePricingRule {
   label         String?
   marginPercent Decimal  @db.Decimal(6, 3) @default(0)
   marginFlat    Decimal  @db.Decimal(10, 2) @default(0)
+  /// "PERCENT" or "FLAT" — same single-mode rule as FlightPricingSetting.marginType.
+  marginType    String   @default("PERCENT")
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

@@ -42,6 +42,10 @@ export class SaveFlightRoutePricingRuleDto {
   @Max(100000)
   marginFlat!: number;
 
+  /** Which of the two numbers above is actually applied — only one ever takes effect. */
+  @IsIn(["PERCENT", "FLAT"])
+  marginType!: "PERCENT" | "FLAT";
+
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
@@ -89,6 +93,10 @@ export class UpdateFlightRoutePricingRuleDto {
   @Min(-100000)
   @Max(100000)
   marginFlat?: number;
+
+  @IsOptional()
+  @IsIn(["PERCENT", "FLAT"])
+  marginType?: "PERCENT" | "FLAT";
 
   @IsOptional()
   @IsBoolean()
