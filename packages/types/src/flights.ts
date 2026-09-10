@@ -261,6 +261,8 @@ export interface FlightRoutePricingRuleDto {
   /** null = applies to every flight on the route; set = this exact airline+flight number only. */
   airlineCode: string | null;
   flightNo: string | null;
+  /** null = applies to every cabin; E/P/B/F = Economy/Premium Economy/Business/First only. */
+  cabin: string | null;
   /** Internal note only, e.g. "Diwali sale on 6E-2314" — never shown to customers. */
   label: string | null;
   marginPercent: number;
@@ -275,6 +277,7 @@ export interface SaveFlightRoutePricingRuleDto {
   arrCity: string;
   airlineCode?: string;
   flightNo?: string;
+  cabin?: string;
   label?: string;
   marginPercent: number;
   marginFlat: number;

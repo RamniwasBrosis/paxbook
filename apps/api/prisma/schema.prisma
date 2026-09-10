@@ -1252,6 +1252,10 @@ model FlightRoutePricingRule {
   /// route-wide rule, which in turn takes priority over the global default in FlightPricingSetting.
   airlineCode   String   @default("")
   flightNo      String   @default("")
+  /// "" (default) means the rule applies to every cabin on the matched route/flight; set to E/P/B/F
+  /// to scope it to one cabin only (e.g. a higher margin on Business fares platform-wide, via a
+  /// route-wide rule with empty airlineCode/flightNo but cabin="B").
+  cabin         String   @default("")
   /// Optional internal note for admins, e.g. "Diwali sale on 6E-2314" — never shown to customers.
   label         String?
   marginPercent Decimal  @db.Decimal(6, 3) @default(0)
@@ -1260,7 +1264,7 @@ model FlightRoutePricingRule {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  @@unique([depCity, arrCity, airlineCode, flightNo])
+  @@unique([depCity, arrCity, airlineCode, flightNo, cabin])
   @@index([depCity, arrCity])
   @@map("flight_route_pricing_rules")
 }

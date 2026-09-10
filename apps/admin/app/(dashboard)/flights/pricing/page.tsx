@@ -19,6 +19,14 @@ import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "
 
 const SAMPLE_FARE = 5000;
 const TODAY = new Date().toISOString().slice(0, 10);
+const CABIN_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "Any cabin" },
+  { value: "E", label: "Economy" },
+  { value: "P", label: "Premium Economy" },
+  { value: "B", label: "Business" },
+  { value: "F", label: "First" },
+];
+const CABIN_LABEL: Record<string, string> = { E: "Economy", P: "Premium Economy", B: "Business", F: "First" };
 
 function previewPrice(providerFare: number, marginPercent: number, marginFlat: number): number {
   return Math.round((providerFare * (1 + marginPercent / 100) + marginFlat) * 100) / 100;
@@ -249,6 +257,7 @@ function LiveFlightRow({
   const [marginPercent, setMarginPercent] = React.useState(0);
   const [marginFlat, setMarginFlat] = React.useState(0);
   const [label, setLabel] = React.useState("");
+  const [cabin, setCabin] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   if (!firstLeg || !lastLeg) return null;
@@ -262,6 +271,7 @@ function LiveFlightRow({
         arrCity: lastLeg!.arrCode,
         airlineCode: firstLeg!.airlineCode,
         flightNo: firstLeg!.flightNo,
+        cabin: cabin || undefined,
         label: label || undefined,
         marginPercent,
         marginFlat,
@@ -299,6 +309,16 @@ function LiveFlightRow({
             <div className="flex flex-wrap items-end gap-3">
               <Input label="Margin %" type="number" step="0.1" value={marginPercent} onChange={(e) => setMarginPercent(Number(e.target.value))} className="max-w-[120px]" />
               <Input label="Flat (₹)" type="number" step="1" value={marginFlat} onChange={(e) => setMarginFlat(Number(e.target.value))} className="max-w-[120px]" />
+              <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                Cabin
+                <select value={cabin} onChange={(e) => setCabin(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  {CABIN_OPTIONS.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <Input label="Label (optional, internal)" value={label} onChange={(e) => setLabel(e.target.value)} className="max-w-[220px]" placeholder="e.g. Diwali sale" />
               <Button onClick={handleSave} isLoading={busy}>
                 Save override for {firstLeg.airlineCode}-{firstLeg.flightNo}
@@ -318,7 +338,7 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
   const updateRule = useUpdateFlightRoutePricingRule();
   const deleteRule = useDeleteFlightRoutePricingRule();
 
-  const [form, setForm] = React.useState({ depCity: "", arrCity: "", marginPercent: 0, marginFlat: 0 });
+  const [form, setForm] = React.useState({ depCity: "", arrCity: "", cabin: "", marginPercent: 0, marginFlat: 0 });
   const [error, setError] = React.useState<string | null>(null);
 
   async function handleAdd(e: React.FormEvent) {
@@ -328,11 +348,12 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
       await createRule.mutateAsync({
         depCity: form.depCity.toUpperCase(),
         arrCity: form.arrCity.toUpperCase(),
+        cabin: form.cabin || undefined,
         marginPercent: form.marginPercent,
         marginFlat: form.marginFlat,
         isActive: true,
       });
-      setForm({ depCity: "", arrCity: "", marginPercent: 0, marginFlat: 0 });
+      setForm({ depCity: "", arrCity: "", cabin: "", marginPercent: 0, marginFlat: 0 });
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Could not add route rule.");
     }
@@ -350,6 +371,7 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
               <tr>
                 <th className="px-4 py-2 font-medium">Route</th>
                 <th className="px-4 py-2 font-medium">Flight</th>
+                <th className="px-4 py-2 font-medium">Cabin</th>
                 <th className="px-4 py-2 font-medium">Label</th>
                 <th className="px-4 py-2 font-medium">Margin %</th>
                 <th className="px-4 py-2 font-medium">Flat (₹)</th>
@@ -363,7 +385,7 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
               ))}
               {!routesQuery.isLoading && (routesQuery.data ?? []).length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-6 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-6 text-center text-slate-400">
                     No overrides yet — every route uses the default margin above.
                   </td>
                 </tr>
@@ -376,6 +398,16 @@ function RoutePricingCard({ canWrite }: { canWrite: boolean }) {
           <form onSubmit={handleAdd} className="flex flex-wrap items-end gap-3">
             <Input label="From (IATA)" required maxLength={3} value={form.depCity} onChange={(e) => setForm((f) => ({ ...f, depCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
             <Input label="To (IATA)" required maxLength={3} value={form.arrCity} onChange={(e) => setForm((f) => ({ ...f, arrCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
+            <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+              Cabin
+              <select value={form.cabin} onChange={(e) => setForm((f) => ({ ...f, cabin: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                {CABIN_OPTIONS.map((c) => (
+                  <option key={c.value} value={c.value}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <Input
               label="Margin %"
               type="number"
@@ -442,6 +474,7 @@ function RouteRow({
         {route.depCity} → {route.arrCity}
       </td>
       <td className="px-4 py-2 text-slate-500">{route.airlineCode && route.flightNo ? `${route.airlineCode}-${route.flightNo}` : "Any flight"}</td>
+      <td className="px-4 py-2 text-slate-500">{route.cabin ? CABIN_LABEL[route.cabin] ?? route.cabin : "Any cabin"}</td>
       <td className="px-4 py-2 text-slate-500">{route.label ?? "—"}</td>
       <td className="px-4 py-2">
         {canWrite ? (

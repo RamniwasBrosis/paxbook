@@ -1,4 +1,6 @@
-import { IsBoolean, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
+import { IsBoolean, IsIn, IsNumber, IsOptional, IsString, Matches, Max, MaxLength, Min } from "class-validator";
+
+const CABIN_CODES = ["E", "P", "B", "F"];
 
 export class SaveFlightRoutePricingRuleDto {
   @IsString()
@@ -18,6 +20,12 @@ export class SaveFlightRoutePricingRuleDto {
   @IsString()
   @MaxLength(10)
   flightNo?: string;
+
+  /** E Economy, P Premium Economy, B Business, F First — omit for "every cabin". */
+  @IsOptional()
+  @IsString()
+  @IsIn(CABIN_CODES)
+  cabin?: string;
 
   @IsOptional()
   @IsString()
@@ -59,6 +67,11 @@ export class UpdateFlightRoutePricingRuleDto {
   @IsString()
   @MaxLength(10)
   flightNo?: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(CABIN_CODES)
+  cabin?: string;
 
   @IsOptional()
   @IsString()
