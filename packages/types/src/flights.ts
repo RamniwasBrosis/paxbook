@@ -292,6 +292,53 @@ export interface VerifyFlightPaymentDto {
 }
 
 // ---------------------------------------------------------------------------
+// Admin — dashboard
+// ---------------------------------------------------------------------------
+
+export interface FlightDashboardStatusCountDto {
+  status: string;
+  count: number;
+}
+
+export interface FlightDashboardBreakdownDto {
+  /** e.g. "DEL → BOM" for a route, or "IndiGo (6E)" for an airline. */
+  label: string;
+  bookings: number;
+  revenue: number;
+}
+
+export interface FlightDashboardDailyFigureDto {
+  /** YYYY-MM-DD */
+  date: string;
+  bookings: number;
+  revenue: number;
+}
+
+export interface FlightDashboardDto {
+  totalBookings: number;
+  confirmedBookings: number;
+  pendingBookings: number;
+  cancelledBookings: number;
+  failedBookings: number;
+  /** Sum of what customers paid on bookings that actually collected payment. */
+  revenue: number;
+  /** Sum of the provider's real fare on those same bookings — our actual cost. */
+  supplierCost: number;
+  /** revenue - supplierCost, i.e. gross margin before refunds. */
+  margin: number;
+  /** Sum actually refunded to customers via Razorpay. */
+  refunded: number;
+  /** margin - refunded. */
+  netProfit: number;
+  byStatus: FlightDashboardStatusCountDto[];
+  byPaymentStatus: FlightDashboardStatusCountDto[];
+  /** Top 10 by revenue. Derived from the real leg data on each booking — never guessed. */
+  topRoutes: FlightDashboardBreakdownDto[];
+  topAirlines: FlightDashboardBreakdownDto[];
+  dailyLast30Days: FlightDashboardDailyFigureDto[];
+}
+
+// ---------------------------------------------------------------------------
 // Admin — live API test tool + logs
 // ---------------------------------------------------------------------------
 

@@ -44,6 +44,9 @@ export default function FlightsPage() {
           <p className="text-sm text-slate-500">Bookings, passengers, fares, and provider status for the flight module.</p>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/flights/dashboard" className="text-sm font-medium text-brand hover:underline">
+            Dashboard →
+          </Link>
           <Link href="/flights/pricing" className="text-sm font-medium text-brand hover:underline">
             Flight pricing (margin &amp; discounts) →
           </Link>

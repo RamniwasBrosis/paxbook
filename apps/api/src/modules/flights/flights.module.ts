@@ -9,10 +9,19 @@ import { AdminFlightApiController } from "./admin-flight-api.controller";
 import { AdminFlightBookingsController } from "./admin-flight-bookings.controller";
 import { AdminFlightBookingsService } from "./admin-flight-bookings.service";
 import { AdminFlightPricingController } from "./admin-flight-pricing.controller";
+import { AdminFlightDashboardController } from "./admin-flight-dashboard.controller";
+import { AdminFlightDashboardService } from "./admin-flight-dashboard.service";
 
 @Module({
   imports: [CustomerPortalModule],
-  controllers: [PublicFlightsController, CustomerFlightsController, AdminFlightApiController, AdminFlightBookingsController, AdminFlightPricingController],
-  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService],
+  controllers: [
+    PublicFlightsController,
+    CustomerFlightsController,
+    AdminFlightApiController,
+    AdminFlightBookingsController,
+    AdminFlightPricingController,
+    AdminFlightDashboardController,
+  ],
+  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService, AdminFlightDashboardService],
 })
 export class FlightsModule {}

@@ -5,6 +5,7 @@ import type {
   FlightApiLogDto,
   FlightApiStatusDto,
   FlightBookingDto,
+  FlightDashboardDto,
   FlightPaymentOrderDto,
   FlightPriceCheckDto,
   FlightPricingSettingDto,
@@ -185,6 +186,10 @@ export function useAdminCancelFlightBooking() {
       apiFetch<FlightBookingDto>(`/admin/flights/bookings/${id}/cancel`, { method: "POST", body: { reason, canMode } }),
     onSuccess: (_data, vars) => invalidateAdminFlightBooking(queryClient, vars.id),
   });
+}
+
+export function useFlightDashboard() {
+  return useQuery({ queryKey: ["admin-flight-dashboard"], queryFn: () => apiFetch<FlightDashboardDto>("/admin/flights/dashboard") });
 }
 
 export function useAdminRefundFlightBooking() {
