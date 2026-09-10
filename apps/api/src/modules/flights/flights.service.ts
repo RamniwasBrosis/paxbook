@@ -14,7 +14,7 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import { RazorpayService } from "../customer-portal/razorpay.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
-import { mapBookingResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
+import { mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
 
@@ -198,7 +198,10 @@ export class FlightsService {
       throw new BadRequestException({ code: "PAYMENT_NOT_CONFIRMED", message: "Payment was not confirmed." });
     }
 
-    await this.prisma.flightPayment.update({ where: { id: payment.id }, data: { status: "CAPTURED", capturedAt: new Date(), method: dto.razorpayPaymentId ? "razorpay" : "dev" } });
+    await this.prisma.flightPayment.update({
+      where: { id: payment.id },
+      data: { status: "CAPTURED", capturedAt: new Date(), method: dto.razorpayPaymentId ? "razorpay" : "dev", providerPaymentId: dto.razorpayPaymentId ?? null },
+    });
     await this.prisma.flightBooking.update({ where: { id: booking.id }, data: { paymentStatus: "PAID" } });
 
     return this.bookWithProvider(tenantId, customerId, booking.id);
@@ -310,13 +313,65 @@ export class FlightsService {
     return this.toDto(await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } }));
   }
 
+  private static readonly CANCELLABLE_STATUSES = new Set(["CONFIRMED", "PENDING_CONFIRMATION"]);
+
+  /**
+   * Cancels every passenger on a booking via FTD's cancelFlight — a single, irreversible call (the
+   * spec is explicit: "Once the cancel request is submitted, it cannot be stopped"). `customerId`
+   * null means an admin-initiated cancellation (no ownership check); otherwise the booking must
+   * belong to that customer. cancelFlight reports per-passenger status only ("Cancelled" or "Pending
+   * Cancelled") and — unlike a normal booking — never reports a refund amount at all, so the actual
+   * money-back-to-customer step is a separate, admin-approved Razorpay refund (see AdminFlightBookingsService).
+   */
+  async cancelBooking(tenantId: string, customerId: string | null, flightBookingId: string, reason: string, canMode = 5): Promise<FlightBookingDto> {
+    const booking = customerId
+      ? await this.getOwned(tenantId, customerId, flightBookingId)
+      : await this.prisma.flightBooking.findFirst({ where: { id: flightBookingId, tenantId }, include: { passengers: true } });
+    if (!booking) throw new NotFoundException({ code: "FLIGHT_BOOKING_NOT_FOUND", message: "Booking does not exist." });
+
+    if (!FlightsService.CANCELLABLE_STATUSES.has(booking.status)) {
+      throw new BadRequestException({ code: "CANCELLATION_NOT_ALLOWED", message: `A booking with status ${booking.status} cannot be cancelled.` });
+    }
+    if (!booking.refId) {
+      throw new BadRequestException({ code: "MISSING_REF_ID", message: "This booking is missing its provider reference and cannot be cancelled automatically. Please contact support." });
+    }
+    const paxIds = booking.passengers.map((p) => p.paxId).filter((id): id is string => Boolean(id));
+    if (paxIds.length === 0) {
+      throw new BadRequestException({ code: "NO_PROVIDER_PAX_ID", message: "This booking has no provider passenger IDs on file and cannot be cancelled automatically. Please contact support." });
+    }
+
+    const raw = await this.ftd.cancel({ refID: booking.refId, paxId: paxIds.join(","), paxIdr: "", canMode, canRemarks: reason });
+    const mapped = mapCancelResponse(raw);
+    const allCancelled = mapped.passengers.length > 0 && mapped.passengers.every((p) => p.cancelStatus.toLowerCase() === "cancelled");
+    const newStatus = allCancelled ? "CANCELLED" : "CANCELLATION_PENDING";
+    const statusSummary = mapped.passengers.map((p) => p.cancelStatus).join(", ") || mapped.status;
+
+    await this.prisma.$transaction([
+      this.prisma.flightBooking.update({
+        where: { id: booking.id },
+        data: { status: newStatus, cancellationReason: reason, cancellationStatus: statusSummary, cancelledAt: allCancelled ? new Date() : null },
+      }),
+      this.prisma.flightBookingStatusHistory.create({
+        data: { flightBookingId: booking.id, fromStatus: booking.status, toStatus: newStatus, note: `Cancellation requested (${reason}) — provider: ${statusSummary}` },
+      }),
+    ]);
+
+    return this.toDto(await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } }));
+  }
+
   private async getOwned(tenantId: string, customerId: string, id: string) {
     const booking = await this.prisma.flightBooking.findFirst({ where: { id, tenantId, customerId }, include: { passengers: true } });
     if (!booking) throw new NotFoundException({ code: "FLIGHT_BOOKING_NOT_FOUND", message: "Booking does not exist." });
     return booking;
   }
 
-  private toDto(b: { id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string; providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null; createdAt: Date; updatedAt: Date; passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }> }): FlightBookingDto {
+  private toDto(b: {
+    id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string;
+    providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null;
+    providerStatus: string | null; errorMessage: string | null; cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
+    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null; createdAt: Date; updatedAt: Date;
+    passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
+  }): FlightBookingDto {
     return {
       id: b.id,
       clientId: b.clientId,
@@ -337,6 +392,12 @@ export class FlightsService {
       pnr: b.pnr,
       providerStatus: b.providerStatus,
       errorMessage: b.errorMessage,
+      cancellationReason: b.cancellationReason,
+      cancellationStatus: b.cancellationStatus,
+      cancelledAt: b.cancelledAt ? b.cancelledAt.toISOString() : null,
+      refundAmount: b.refundAmount ? b.refundAmount.toNumber() : null,
+      refundedAt: b.refundedAt ? b.refundedAt.toISOString() : null,
+      refundReference: b.refundReference,
       createdAt: b.createdAt.toISOString(),
       updatedAt: b.updatedAt.toISOString(),
       passengers: b.passengers.map((p) => ({

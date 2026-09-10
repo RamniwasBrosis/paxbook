@@ -98,6 +98,15 @@ export function useRefreshFlightBookingStatus() {
   });
 }
 
+export function useCancelFlightBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, reason }: { bookingId: string; reason: string }) =>
+      apiFetch<FlightBookingDto>(`/customer/flight-bookings/${bookingId}/cancel`, { method: "POST", body: { reason } }),
+    onSuccess: (_data, vars) => invalidateMyFlightBookings(queryClient, vars.bookingId),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Admin — live API test tool + call log
 // ---------------------------------------------------------------------------
@@ -161,6 +170,29 @@ export function useAdminFlightBooking(id: string | null) {
     queryKey: ["admin-flight-bookings", "detail", id],
     queryFn: () => apiFetch<FlightBookingDto>(`/admin/flights/bookings/${id}`),
     enabled: Boolean(id),
+  });
+}
+
+function invalidateAdminFlightBooking(queryClient: ReturnType<typeof useQueryClient>, id: string) {
+  queryClient.invalidateQueries({ queryKey: ["admin-flight-bookings"] });
+  queryClient.invalidateQueries({ queryKey: ["admin-flight-bookings", "detail", id] });
+}
+
+export function useAdminCancelFlightBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, reason, canMode }: { id: string; reason: string; canMode?: number }) =>
+      apiFetch<FlightBookingDto>(`/admin/flights/bookings/${id}/cancel`, { method: "POST", body: { reason, canMode } }),
+    onSuccess: (_data, vars) => invalidateAdminFlightBooking(queryClient, vars.id),
+  });
+}
+
+export function useAdminRefundFlightBooking() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, amount, note }: { id: string; amount: number; note?: string }) =>
+      apiFetch<FlightBookingDto>(`/admin/flights/bookings/${id}/refund`, { method: "POST", body: { amount, note } }),
+    onSuccess: (_data, vars) => invalidateAdminFlightBooking(queryClient, vars.id),
   });
 }
 

@@ -8,6 +8,7 @@ import { CustomerJwtAuthGuard } from "../customer-auth/guards/customer-jwt-auth.
 import { FlightsService } from "./flights.service";
 import { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
 import { VerifyFlightPaymentDto } from "./dto/verify-flight-payment.dto";
+import { RequestFlightCancellationDto } from "./dto/cancel-flight-booking.dto";
 
 @ApiTags("flights")
 @Public()
@@ -50,5 +51,10 @@ export class CustomerFlightsController {
     @Body() dto: VerifyFlightPaymentDto,
   ) {
     return this.flightsService.confirmBooking(customer.tenantId, customer.sub, id, paymentId, dto);
+  }
+
+  @Post(":id/cancel")
+  cancel(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string, @Body() dto: RequestFlightCancellationDto) {
+    return this.flightsService.cancelBooking(customer.tenantId, customer.sub, id, dto.reason);
   }
 }

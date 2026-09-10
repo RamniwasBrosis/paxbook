@@ -13,10 +13,11 @@ const STATUS_TONE: Record<FlightBookingStatus, "neutral" | "info" | "success" | 
   PENDING_CONFIRMATION: "info",
   CONFIRMED: "success",
   FAILED: "danger",
+  CANCELLATION_PENDING: "warning",
   CANCELLED: "neutral",
 };
 const PAYMENT_TONE = { PENDING: "warning", PARTIAL: "info", PAID: "success", REFUNDED: "neutral" } as const;
-const STATUS_OPTIONS: FlightBookingStatus[] = ["DRAFT", "PENDING_PAYMENT", "PENDING_CONFIRMATION", "CONFIRMED", "FAILED", "CANCELLED"];
+const STATUS_OPTIONS: FlightBookingStatus[] = ["DRAFT", "PENDING_PAYMENT", "PENDING_CONFIRMATION", "CONFIRMED", "FAILED", "CANCELLATION_PENDING", "CANCELLED"];
 
 export default function FlightsPage() {
   const { hasPermission } = useSession();

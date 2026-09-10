@@ -6,6 +6,7 @@ import type { FlightBookingDto } from "@paxbook/types";
 import { customerFetch, CustomerApiError } from "@/lib/customer-api";
 import { FlightBookingPaymentPanel } from "@/components/FlightBookingPaymentPanel";
 import { RefreshFlightStatusButton } from "@/components/RefreshFlightStatusButton";
+import { CancelFlightBookingButton } from "@/components/CancelFlightBookingButton";
 
 export const metadata: Metadata = { title: "Flight Booking Details" };
 
@@ -15,8 +16,11 @@ const STATUS_LABEL: Record<string, string> = {
   PENDING_CONFIRMATION: "Confirming with airline",
   CONFIRMED: "Confirmed",
   FAILED: "Booking failed",
+  CANCELLATION_PENDING: "Cancellation in progress",
   CANCELLED: "Cancelled",
 };
+
+const CANCELLABLE_STATUSES = new Set(["CONFIRMED", "PENDING_CONFIRMATION"]);
 
 const TYPE_LABEL: Record<string, string> = { A: "Adult", C: "Child", I: "Infant" };
 
@@ -43,11 +47,12 @@ export default async function FlightBookingDetailPage({ params }: { params: { id
             <Plane className="h-6 w-6 text-brand" strokeWidth={1.75} />
             {booking.depCity} → {booking.arrCity}
           </h1>
-          <p className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+          <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
             {booking.status === "CONFIRMED" ? <CheckCircle2 className="h-4 w-4 text-emerald-500" /> : null}
             {booking.status === "FAILED" || booking.status === "CANCELLED" ? <XCircle className="h-4 w-4 text-red-500" /> : null}
             {STATUS_LABEL[booking.status] ?? booking.status} · Payment: {booking.paymentStatus}
             {booking.status === "PENDING_CONFIRMATION" ? <RefreshFlightStatusButton bookingId={booking.id} /> : null}
+            {CANCELLABLE_STATUSES.has(booking.status) ? <CancelFlightBookingButton bookingId={booking.id} /> : null}
           </p>
         </div>
         {booking.pnr ? (
@@ -62,6 +67,25 @@ export default async function FlightBookingDetailPage({ params }: { params: { id
       </div>
 
       {booking.errorMessage ? <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{booking.errorMessage}</p> : null}
+
+      {booking.cancellationReason ? (
+        <div className="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+          <p>
+            <span className="font-semibold text-slate-800">Cancellation reason:</span> {booking.cancellationReason}
+          </p>
+          {booking.status === "CANCELLATION_PENDING" ? (
+            <p className="mt-1 text-slate-500">The airline is still processing this cancellation — check back shortly.</p>
+          ) : null}
+          {booking.refundedAt ? (
+            <p className="mt-1">
+              <span className="font-semibold text-emerald-700">Refunded:</span> {booking.currency} {booking.refundAmount?.toLocaleString("en-IN")} on{" "}
+              {new Date(booking.refundedAt).toLocaleDateString("en-IN")}
+            </p>
+          ) : booking.status === "CANCELLED" ? (
+            <p className="mt-1 text-slate-500">Your refund, if any, is being reviewed and will be processed shortly.</p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">

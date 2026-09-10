@@ -77,4 +77,15 @@ export class RazorpayService {
     const expected = createHmac("sha256", credentials.keySecret).update(`${orderId}|${paymentId}`).digest("hex");
     return expected === signature;
   }
+
+  /** Refunds (fully or partially) a captured payment. Keyed by the Razorpay *payment* id, not the order id. */
+  async refund(tenantId: string, paymentId: string, amountInRupees: number, notes?: Record<string, string>): Promise<{ refundId: string; mock: boolean }> {
+    const credentials = await this.resolveCredentials(tenantId);
+    if (!credentials || paymentId.startsWith("mock_") || paymentId.startsWith("pay_dev_")) {
+      return { refundId: `mock_refund_${randomUUID()}`, mock: true };
+    }
+    const client = new Razorpay({ key_id: credentials.keyId, key_secret: credentials.keySecret });
+    const refund = await client.payments.refund(paymentId, { amount: Math.round(amountInRupees * 100), notes });
+    return { refundId: refund.id, mock: false };
+  }
 }

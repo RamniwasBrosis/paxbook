@@ -1,11 +1,13 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PERMISSIONS } from "@paxbook/config";
-import { useSession, useAdminFlightBooking } from "@paxbook/api-client";
+import { useSession, useAdminFlightBooking, useAdminCancelFlightBooking, useAdminRefundFlightBooking } from "@paxbook/api-client";
+import { ApiRequestError } from "@paxbook/auth-client";
 import type { FlightBookingStatus } from "@paxbook/types";
-import { Badge, Card, CardContent, CardHeader, CardTitle } from "@paxbook/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@paxbook/ui";
 
 const STATUS_TONE: Record<FlightBookingStatus, "neutral" | "info" | "success" | "danger" | "warning"> = {
   DRAFT: "neutral",
@@ -13,14 +15,26 @@ const STATUS_TONE: Record<FlightBookingStatus, "neutral" | "info" | "success" | 
   PENDING_CONFIRMATION: "info",
   CONFIRMED: "success",
   FAILED: "danger",
+  CANCELLATION_PENDING: "warning",
   CANCELLED: "neutral",
 };
 const PAYMENT_TONE = { PENDING: "warning", PARTIAL: "info", PAID: "success", REFUNDED: "neutral" } as const;
+const CANCELLABLE_STATUSES = new Set<FlightBookingStatus>(["CONFIRMED", "PENDING_CONFIRMATION"]);
+const REFUNDABLE_STATUSES = new Set<FlightBookingStatus>(["CANCELLED", "CANCELLATION_PENDING"]);
+
+const CAN_MODES = [
+  { value: 5, label: "Customer cancel" },
+  { value: 2, label: "Missed flight / no-show" },
+  { value: 7, label: "Flight was cancelled (by airline)" },
+  { value: 8, label: "Time changed" },
+  { value: 6, label: "Already cancelled" },
+];
 
 export default function FlightBookingDetailPage() {
   const params = useParams<{ id: string }>();
   const { hasPermission } = useSession();
   const canRead = hasPermission(PERMISSIONS.FLIGHTS_READ);
+  const canWrite = hasPermission(PERMISSIONS.FLIGHTS_WRITE);
   const bookingQuery = useAdminFlightBooking(params.id);
 
   if (!canRead) {
@@ -89,6 +103,10 @@ export default function FlightBookingDetailPage() {
         </CardContent>
       </Card>
 
+      {(booking.cancellationReason || CANCELLABLE_STATUSES.has(booking.status) || REFUNDABLE_STATUSES.has(booking.status)) && canWrite ? (
+        <CancellationCard booking={booking} />
+      ) : null}
+
       <Card>
         <CardHeader>
           <CardTitle>Passengers</CardTitle>
@@ -132,6 +150,118 @@ export default function FlightBookingDetailPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function CancellationCard({ booking }: { booking: NonNullable<ReturnType<typeof useAdminFlightBooking>["data"]> }) {
+  const cancel = useAdminCancelFlightBooking();
+  const refund = useAdminRefundFlightBooking();
+
+  const [reason, setReason] = React.useState("");
+  const [canMode, setCanMode] = React.useState(5);
+  const [cancelError, setCancelError] = React.useState<string | null>(null);
+
+  const [refundAmount, setRefundAmount] = React.useState(booking.totalAmount);
+  const [refundNote, setRefundNote] = React.useState("");
+  const [refundError, setRefundError] = React.useState<string | null>(null);
+
+  async function handleCancel(e: React.FormEvent) {
+    e.preventDefault();
+    setCancelError(null);
+    try {
+      await cancel.mutateAsync({ id: booking.id, reason, canMode });
+      setReason("");
+    } catch (err) {
+      setCancelError(err instanceof ApiRequestError ? err.message : "Could not cancel this booking.");
+    }
+  }
+
+  async function handleRefund(e: React.FormEvent) {
+    e.preventDefault();
+    setRefundError(null);
+    try {
+      await refund.mutateAsync({ id: booking.id, amount: refundAmount, note: refundNote || undefined });
+      setRefundNote("");
+    } catch (err) {
+      setRefundError(err instanceof ApiRequestError ? err.message : "Could not process this refund.");
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Cancellation &amp; refund</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-5 text-sm">
+        {booking.cancellationReason ? (
+          <div className="rounded-lg bg-mist p-3">
+            <Field label="Cancellation reason" value={booking.cancellationReason} />
+            <Field label="Provider status" value={booking.cancellationStatus ?? "—"} className="mt-2" />
+            {booking.refundedAt ? (
+              <>
+                <Field label="Refunded" value={`${booking.currency} ${booking.refundAmount?.toLocaleString("en-IN")} on ${new Date(booking.refundedAt).toLocaleString("en-IN")}`} className="mt-2 text-emerald-700" />
+                <Field label="Refund reference" value={booking.refundReference ?? "—"} className="mt-2" />
+              </>
+            ) : null}
+          </div>
+        ) : null}
+
+        {CANCELLABLE_STATUSES.has(booking.status) ? (
+          <form onSubmit={handleCancel} className="flex flex-col gap-3 border-t border-slate-100 pt-4">
+            <p className="text-xs font-semibold uppercase text-slate-400">Cancel this booking</p>
+            <p className="text-xs text-slate-500">
+              This calls the airline&apos;s cancellation API immediately for every passenger and cannot be undone. It does not refund the customer — do that
+              separately below once cancellation is confirmed.
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                Reason
+                <select value={canMode} onChange={(e) => setCanMode(Number(e.target.value))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  {CAN_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <Input label="Internal note (sent to airline)" required value={reason} onChange={(e) => setReason(e.target.value)} className="min-w-[240px] flex-1" />
+              <Button type="submit" variant="danger" isLoading={cancel.isPending}>
+                Cancel booking
+              </Button>
+            </div>
+            {cancelError ? <p className="text-sm text-red-600">{cancelError}</p> : null}
+          </form>
+        ) : null}
+
+        {REFUNDABLE_STATUSES.has(booking.status) && booking.paymentStatus === "PAID" ? (
+          <form onSubmit={handleRefund} className="flex flex-col gap-3 border-t border-slate-100 pt-4">
+            <p className="text-xs font-semibold uppercase text-slate-400">Process refund to customer</p>
+            <p className="text-xs text-slate-500">
+              The airline&apos;s cancellation API doesn&apos;t report a refund amount — check the fare rules / cancellation policy for this flight, decide the
+              amount, and issue it here via Razorpay.
+            </p>
+            <div className="flex flex-wrap items-end gap-3">
+              <Input
+                label={`Refund amount (${booking.currency})`}
+                type="number"
+                step="0.01"
+                min={1}
+                max={booking.totalAmount}
+                required
+                value={refundAmount}
+                onChange={(e) => setRefundAmount(Number(e.target.value))}
+                className="max-w-[180px]"
+              />
+              <Input label="Note (optional)" value={refundNote} onChange={(e) => setRefundNote(e.target.value)} className="min-w-[240px] flex-1" />
+              <Button type="submit" isLoading={refund.isPending}>
+                Issue refund
+              </Button>
+            </div>
+            {refundError ? <p className="text-sm text-red-600">{refundError}</p> : null}
+          </form>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

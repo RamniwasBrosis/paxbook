@@ -1102,12 +1102,13 @@ model Voucher {
 // ============================================================================
 
 enum FlightBookingStatus {
-  DRAFT                // search/price-check done, not booked yet
+  DRAFT                  // search/price-check done, not booked yet
   PENDING_PAYMENT
-  PENDING_CONFIRMATION // booked with the provider, awaiting their confirmation (provider status "Pending")
-  CONFIRMED            // provider status success — PNR issued
+  PENDING_CONFIRMATION   // booked with the provider, awaiting their confirmation (provider status "Pending")
+  CONFIRMED              // provider status success — PNR issued
   FAILED
-  CANCELLED
+  CANCELLATION_PENDING   // cancelFlight called — provider returned "Pending Cancelled" for at least one passenger
+  CANCELLED              // provider confirmed every passenger "Cancelled"
 }
 
 model FlightBooking {
@@ -1142,6 +1143,19 @@ model FlightBooking {
   pnr            String?
   providerStatus String?
   errorMessage   String?
+  /// Customer- or admin-supplied reason sent to the provider as canRemarks.
+  cancellationReason String?
+  /// Raw per-passenger Cancelstatus values from the provider's cancelFlight response
+  /// (e.g. "Cancelled" or "Pending Cancelled"), joined for display — the provider gives
+  /// no single authoritative "is this done yet" flag beyond this.
+  cancellationStatus String?
+  cancelledAt        DateTime?
+  /// What we actually refunded the customer via Razorpay — distinct from any FTD wallet-side
+  /// credit (which shows up in the provider's daily Statement, not returned by cancelFlight itself)
+  /// since cancelFlight never reports a refund amount at all.
+  refundAmount   Decimal?            @db.Decimal(12, 2)
+  refundedAt     DateTime?
+  refundReference String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
@@ -1186,7 +1200,11 @@ model FlightPayment {
   flightBookingId String
   flightBooking   FlightBooking       @relation(fields: [flightBookingId], references: [id])
   provider        String              @default("razorpay")
+  /// The Razorpay *order* id, set when the order is created.
   providerRef     String?
+  /// The Razorpay *payment* id, set once payment is verified/captured — required to issue a refund
+  /// against this specific payment (Razorpay refunds are keyed by payment id, not order id).
+  providerPaymentId String?
   amount          Decimal             @db.Decimal(12, 2)
   status          PaymentRecordStatus @default(CREATED)
   method          String?

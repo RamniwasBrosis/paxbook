@@ -1,10 +1,56 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import type { FlightBookingDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
+import { RazorpayService } from "../customer-portal/razorpay.service";
+import { FlightsService } from "./flights.service";
 
 @Injectable()
 export class AdminFlightBookingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly flights: FlightsService,
+    private readonly razorpay: RazorpayService,
+  ) {}
+
+  /** Delegates to FlightsService so the FTD cancelFlight payload/response handling lives in one place. */
+  async cancel(tenantId: string, id: string, reason: string, canMode = 5): Promise<FlightBookingDto> {
+    return this.flights.cancelBooking(tenantId, null, id, reason, canMode);
+  }
+
+  /** Admin-approved refund of an already-cancelled booking, issued against the captured Razorpay payment. */
+  async refund(tenantId: string, id: string, amount: number, note?: string): Promise<FlightBookingDto> {
+    const booking = await this.prisma.flightBooking.findFirst({
+      where: { id, tenantId },
+      include: { passengers: true, payments: { where: { status: "CAPTURED" }, orderBy: { createdAt: "desc" }, take: 1 } },
+    });
+    if (!booking) throw new NotFoundException({ code: "FLIGHT_BOOKING_NOT_FOUND", message: "Booking does not exist." });
+    if (booking.status !== "CANCELLED" && booking.status !== "CANCELLATION_PENDING") {
+      throw new BadRequestException({ code: "REFUND_NOT_ALLOWED", message: "Only a cancelled booking can be refunded." });
+    }
+    const payment = booking.payments[0];
+    if (!payment?.providerPaymentId) {
+      throw new BadRequestException({ code: "NO_CAPTURED_PAYMENT", message: "This booking has no captured payment on file to refund." });
+    }
+    if (amount <= 0 || amount > booking.totalAmount.toNumber()) {
+      throw new BadRequestException({ code: "INVALID_REFUND_AMOUNT", message: "Refund amount must be greater than 0 and cannot exceed what the customer paid." });
+    }
+
+    const result = await this.razorpay.refund(tenantId, payment.providerPaymentId, amount, note ? { note } : undefined);
+
+    await this.prisma.$transaction([
+      this.prisma.flightBooking.update({
+        where: { id: booking.id },
+        data: { paymentStatus: "REFUNDED", refundAmount: amount, refundedAt: new Date(), refundReference: result.refundId },
+      }),
+      this.prisma.flightPayment.update({ where: { id: payment.id }, data: { status: "REFUNDED" } }),
+      this.prisma.flightBookingStatusHistory.create({
+        data: { flightBookingId: booking.id, fromStatus: booking.status, toStatus: booking.status, note: `Refunded ₹${amount}${note ? ` — ${note}` : ""} (ref ${result.refundId})` },
+      }),
+    ]);
+
+    const updated = await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } });
+    return this.toDto(updated);
+  }
 
   async findAll(tenantId: string, status?: string): Promise<FlightBookingDto[]> {
     const bookings = await this.prisma.flightBooking.findMany({
@@ -31,7 +77,10 @@ export class AdminFlightBookingsService {
   private toDto(b: {
     id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null;
     adt: number; chd: number; inf: number; cabin: string; providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string;
-    paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null; createdAt: Date; updatedAt: Date;
+    paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null;
+    cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
+    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
+    createdAt: Date; updatedAt: Date;
     customer?: { name: string; email: string } | null;
     passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
   }): FlightBookingDto {
@@ -55,6 +104,12 @@ export class AdminFlightBookingsService {
       pnr: b.pnr,
       providerStatus: b.providerStatus,
       errorMessage: b.errorMessage,
+      cancellationReason: b.cancellationReason,
+      cancellationStatus: b.cancellationStatus,
+      cancelledAt: b.cancelledAt ? b.cancelledAt.toISOString() : null,
+      refundAmount: b.refundAmount ? b.refundAmount.toNumber() : null,
+      refundedAt: b.refundedAt ? b.refundedAt.toISOString() : null,
+      refundReference: b.refundReference,
       createdAt: b.createdAt.toISOString(),
       updatedAt: b.updatedAt.toISOString(),
       customerName: b.customer?.name,

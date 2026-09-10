@@ -163,7 +163,7 @@ export interface CreateFlightBookingRequestDto {
   searchContext: SearchFlightRequestDto;
 }
 
-export type FlightBookingStatus = "DRAFT" | "PENDING_PAYMENT" | "PENDING_CONFIRMATION" | "CONFIRMED" | "FAILED" | "CANCELLED";
+export type FlightBookingStatus = "DRAFT" | "PENDING_PAYMENT" | "PENDING_CONFIRMATION" | "CONFIRMED" | "FAILED" | "CANCELLATION_PENDING" | "CANCELLED";
 
 export interface FlightPassengerDto {
   id: string;
@@ -202,11 +202,35 @@ export interface FlightBookingDto {
   pnr: string | null;
   providerStatus: string | null;
   errorMessage: string | null;
+  /** Reason sent to the provider when cancelling (customer- or admin-supplied). */
+  cancellationReason: string | null;
+  /** Raw per-passenger provider cancel status, e.g. "Cancelled" or "Pending Cancelled" — joined for display. */
+  cancellationStatus: string | null;
+  cancelledAt: string | null;
+  /** What was actually refunded to the customer via Razorpay — distinct from FTD's own wallet-side credit. */
+  refundAmount: number | null;
+  refundedAt: string | null;
+  refundReference: string | null;
   createdAt: string;
   updatedAt: string;
   passengers: FlightPassengerDto[];
   customerName?: string;
   customerEmail?: string;
+}
+
+export interface RequestFlightCancellationDto {
+  reason: string;
+}
+
+export interface AdminCancelFlightBookingDto {
+  reason: string;
+  /** 2 Missed/No-show, 5 Customer cancel (default), 6 Already cancelled, 7 Flight cancelled, 8 Time changed. */
+  canMode?: number;
+}
+
+export interface ProcessFlightRefundDto {
+  amount: number;
+  note?: string;
 }
 
 // ---------------------------------------------------------------------------

@@ -274,3 +274,27 @@ export function mapBookingResponse(raw: Raw): MappedBookingResponse {
     status: raw.Status?.status ?? "",
   };
 }
+
+export interface MappedCancelResponse {
+  refId: string;
+  status: string;
+  /** One entry per passenger actually returned by the provider, onward + return combined. */
+  passengers: Array<{ paxId: string; cancelStatus: string }>;
+}
+
+/** cancelFlight's response casing isn't documented precisely and the spec's sample tree capitalizes
+ * differently from the (verified) Book response's actual casing — check both defensively, matching
+ * this file's established pattern for this provider's inconsistent JSON. */
+export function mapCancelResponse(raw: Raw): MappedCancelResponse {
+  const ticket = raw.ticket ?? raw.Ticket ?? {};
+  const status = raw.Status ?? raw.status ?? {};
+  const collectLeg = (leg: Raw | undefined): Array<{ paxId: string; cancelStatus: string }> => {
+    const list: Raw[] = leg?.Passenger ?? leg?.passenger ?? [];
+    return list.map((p) => ({ paxId: String(p.paxID ?? p.paxId ?? ""), cancelStatus: String(p.Cancelstatus ?? p.cancelstatus ?? p.cancelStatus ?? "") }));
+  };
+  return {
+    refId: String(status.refID ?? ""),
+    status: String(status.status ?? ""),
+    passengers: [...collectLeg(ticket.Onward ?? ticket.onward), ...collectLeg(ticket.Return ?? ticket.return)],
+  };
+}
