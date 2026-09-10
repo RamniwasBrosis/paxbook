@@ -193,6 +193,12 @@ export interface FlightBookingDto {
   chd: number;
   inf: number;
   cabin: string;
+  /** The exact flight(s) actually booked — frozen from the price-check snapshot at booking time, so
+   * always the real thing the customer paid for. Empty for bookings made before this was tracked. */
+  legs: FlightLegDto[];
+  returnLegs: FlightLegDto[] | null;
+  /** Baggage allowance, refundability, and fare type from that same snapshot. Null for older bookings. */
+  fare: FlightFareDto | null;
   /** The provider's own fare total before our margin/discount was applied — null for bookings made before this was tracked. */
   providerFareAmount: number | null;
   totalAmount: number;

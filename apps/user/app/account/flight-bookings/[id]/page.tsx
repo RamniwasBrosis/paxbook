@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { CheckCircle2, Plane, Ticket, XCircle } from "lucide-react";
-import type { FlightBookingDto } from "@paxbook/types";
+import { CheckCircle2, Download, Plane, Ticket, XCircle } from "lucide-react";
+import type { FlightBookingDto, FlightLegDto } from "@paxbook/types";
 import { customerFetch, CustomerApiError } from "@/lib/customer-api";
+import { formatDateTimeLong, formatMinutes } from "@/lib/flights";
 import { FlightBookingPaymentPanel } from "@/components/FlightBookingPaymentPanel";
 import { RefreshFlightStatusButton } from "@/components/RefreshFlightStatusButton";
 import { CancelFlightBookingButton } from "@/components/CancelFlightBookingButton";
@@ -55,15 +56,23 @@ export default async function FlightBookingDetailPage({ params }: { params: { id
             {CANCELLABLE_STATUSES.has(booking.status) ? <CancelFlightBookingButton bookingId={booking.id} /> : null}
           </p>
         </div>
-        {booking.pnr ? (
-          <div className="flat-card flex items-center gap-2 px-4 py-2.5">
-            <Ticket className="h-4 w-4 text-brand" strokeWidth={1.75} />
-            <div>
-              <p className="text-[10px] font-semibold uppercase text-slate-400">PNR</p>
-              <p className="font-bold text-navy-deep">{booking.pnr}</p>
+        <div className="flex items-center gap-3">
+          {booking.pnr ? (
+            <div className="flat-card flex items-center gap-2 px-4 py-2.5">
+              <Ticket className="h-4 w-4 text-brand" strokeWidth={1.75} />
+              <div>
+                <p className="text-[10px] font-semibold uppercase text-slate-400">PNR</p>
+                <p className="font-bold text-navy-deep">{booking.pnr}</p>
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+          {booking.status === "CONFIRMED" || booking.status === "PENDING_CONFIRMATION" ? (
+            <Link href={`/account/flight-bookings/${booking.id}/ticket`} className="flat-card flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-brand hover:bg-mist">
+              <Download className="h-4 w-4" strokeWidth={1.75} />
+              Ticket
+            </Link>
+          ) : null}
+        </div>
       </div>
 
       {booking.errorMessage ? <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{booking.errorMessage}</p> : null}
@@ -89,6 +98,21 @@ export default async function FlightBookingDetailPage({ params }: { params: { id
 
       <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
         <div className="flex flex-col gap-6 lg:col-span-2">
+          {booking.legs.length > 0 ? (
+            <section className="rounded-2xl border border-slate-100 p-6">
+              <h2 className="font-semibold text-slate-900">Flight details</h2>
+              <div className="mt-3 flex flex-col gap-3">
+                <FlightLegRows legs={booking.legs} />
+                {booking.returnLegs && booking.returnLegs.length > 0 ? (
+                  <>
+                    <p className="mt-2 text-xs font-semibold uppercase text-slate-400">Return</p>
+                    <FlightLegRows legs={booking.returnLegs} />
+                  </>
+                ) : null}
+              </div>
+            </section>
+          ) : null}
+
           <section className="rounded-2xl border border-slate-100 p-6">
             <h2 className="font-semibold text-slate-900">Trip details</h2>
             <dl className="mt-3 grid grid-cols-2 gap-4 text-sm">
@@ -159,5 +183,36 @@ export default async function FlightBookingDetailPage({ params }: { params: { id
         <aside>{needsPayment ? <FlightBookingPaymentPanel bookingId={booking.id} amount={booking.totalAmount} currency={booking.currency} /> : null}</aside>
       </div>
     </div>
+  );
+}
+
+function FlightLegRows({ legs }: { legs: FlightLegDto[] }) {
+  return (
+    <>
+      {legs.map((leg, idx) => (
+        <div key={idx} className="rounded-xl bg-mist p-4 text-sm">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-navy-deep">
+              {leg.airlineName} {leg.airlineCode}-{leg.flightNo}
+            </p>
+            <p className="text-slate-500">{formatMinutes(leg.durationMinutes)}</p>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-4">
+            <div>
+              <p className="font-bold text-navy-deep">{leg.depCode}</p>
+              <p className="text-slate-500">{leg.depAirportName}</p>
+              {leg.depTerminal ? <p className="text-xs text-slate-400">Terminal {leg.depTerminal}</p> : null}
+              <p className="mt-1 text-slate-700">{formatDateTimeLong(leg.depDateTime)}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-navy-deep">{leg.arrCode}</p>
+              <p className="text-slate-500">{leg.arrAirportName}</p>
+              {leg.arrTerminal ? <p className="text-xs text-slate-400">Terminal {leg.arrTerminal}</p> : null}
+              <p className="mt-1 text-slate-700">{formatDateTimeLong(leg.arrDateTime)}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }

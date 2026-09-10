@@ -275,6 +275,25 @@ export function mapBookingResponse(raw: Raw): MappedBookingResponse {
   };
 }
 
+export interface ExtractedFlightSnapshot {
+  legs: FlightLegDto[];
+  returnLegs: FlightLegDto[] | null;
+  fare: FlightFareDto | null;
+}
+
+/** `FlightBooking.fareSnapshot` freezes the exact `FlightPriceCheckDto` the customer paid for — this
+ * pulls the flight-leg and fare details back out of it for display (ticket/invoice, booking detail),
+ * since none of that is duplicated into its own columns. Defensive against a missing/malformed
+ * snapshot rather than throwing, since older bookings may predate a field being added here. */
+export function extractFlightSnapshot(fareSnapshot: unknown): ExtractedFlightSnapshot {
+  const option = (fareSnapshot as { option?: { legs?: FlightLegDto[]; returnLegs?: FlightLegDto[]; fare?: FlightFareDto } } | null | undefined)?.option;
+  return {
+    legs: option?.legs ?? [],
+    returnLegs: option?.returnLegs ?? null,
+    fare: option?.fare ?? null,
+  };
+}
+
 export interface MappedCancelResponse {
   refId: string;
   status: string;

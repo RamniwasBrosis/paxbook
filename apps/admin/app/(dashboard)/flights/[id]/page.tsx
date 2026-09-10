@@ -6,8 +6,17 @@ import { useParams } from "next/navigation";
 import { PERMISSIONS } from "@paxbook/config";
 import { useSession, useAdminFlightBooking, useAdminCancelFlightBooking, useAdminRefundFlightBooking } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
-import type { FlightBookingStatus } from "@paxbook/types";
+import type { FlightBookingStatus, FlightLegDto } from "@paxbook/types";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@paxbook/ui";
+
+function formatDateTimeLong(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleString("en-IN", { weekday: "short", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+}
+function formatMinutes(mins: number): string {
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
+}
 
 const STATUS_TONE: Record<FlightBookingStatus, "neutral" | "info" | "success" | "danger" | "warning"> = {
   DRAFT: "neutral",
@@ -87,6 +96,23 @@ export default function FlightBookingDetailPage() {
           {booking.errorMessage ? <Field label="Error" value={booking.errorMessage} className="text-red-600 sm:col-span-3" /> : null}
         </CardContent>
       </Card>
+
+      {booking.legs.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Flight details</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            <FlightLegRows legs={booking.legs} />
+            {booking.returnLegs && booking.returnLegs.length > 0 ? (
+              <>
+                <p className="mt-2 text-xs font-semibold uppercase text-slate-400">Return</p>
+                <FlightLegRows legs={booking.returnLegs} />
+              </>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <Card>
         <CardHeader>
@@ -271,5 +297,36 @@ function Field({ label, value, className }: { label: string; value: string; clas
       <p className="text-xs font-semibold uppercase text-slate-400">{label}</p>
       <p className="text-slate-900">{value}</p>
     </div>
+  );
+}
+
+function FlightLegRows({ legs }: { legs: FlightLegDto[] }) {
+  return (
+    <>
+      {legs.map((leg, idx) => (
+        <div key={idx} className="rounded-lg bg-mist p-4 text-sm">
+          <div className="flex items-center justify-between">
+            <p className="font-semibold text-slate-900">
+              {leg.airlineName} {leg.airlineCode}-{leg.flightNo}
+            </p>
+            <p className="text-slate-500">{formatMinutes(leg.durationMinutes)}</p>
+          </div>
+          <div className="mt-2 grid grid-cols-2 gap-4">
+            <div>
+              <p className="font-bold text-slate-900">{leg.depCode}</p>
+              <p className="text-slate-500">{leg.depAirportName}</p>
+              {leg.depTerminal ? <p className="text-xs text-slate-400">Terminal {leg.depTerminal}</p> : null}
+              <p className="mt-1 text-slate-700">{formatDateTimeLong(leg.depDateTime)}</p>
+            </div>
+            <div className="text-right">
+              <p className="font-bold text-slate-900">{leg.arrCode}</p>
+              <p className="text-slate-500">{leg.arrAirportName}</p>
+              {leg.arrTerminal ? <p className="text-xs text-slate-400">Terminal {leg.arrTerminal}</p> : null}
+              <p className="mt-1 text-slate-700">{formatDateTimeLong(leg.arrDateTime)}</p>
+            </div>
+          </div>
+        </div>
+      ))}
+    </>
   );
 }

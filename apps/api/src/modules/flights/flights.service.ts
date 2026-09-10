@@ -14,7 +14,7 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import { RazorpayService } from "../customer-portal/razorpay.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
-import { mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
+import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
 
@@ -367,11 +367,13 @@ export class FlightsService {
 
   private toDto(b: {
     id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string;
+    fareSnapshot: unknown;
     providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null;
     providerStatus: string | null; errorMessage: string | null; cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
     refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null; createdAt: Date; updatedAt: Date;
     passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
   }): FlightBookingDto {
+    const snapshot = extractFlightSnapshot(b.fareSnapshot);
     return {
       id: b.id,
       clientId: b.clientId,
@@ -384,6 +386,9 @@ export class FlightsService {
       chd: b.chd,
       inf: b.inf,
       cabin: b.cabin,
+      legs: snapshot.legs,
+      returnLegs: snapshot.returnLegs,
+      fare: snapshot.fare,
       providerFareAmount: b.providerFareAmount ? b.providerFareAmount.toNumber() : null,
       totalAmount: b.totalAmount.toNumber(),
       currency: b.currency,
