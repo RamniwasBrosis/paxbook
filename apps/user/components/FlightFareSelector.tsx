@@ -3,9 +3,10 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Plane, Loader2, Luggage, ShieldCheck, ShieldOff, Utensils, Info } from "lucide-react";
+import { Plane, Luggage, ShieldCheck, ShieldOff, Utensils, Info } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
+import { FlightLoader } from "@/components/FlightLoader";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -59,8 +60,8 @@ export function FlightFareSelector() {
 
   if (loading) {
     return (
-      <div className="flat-card flex items-center justify-center gap-2 p-12 text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin" /> Loading fare options…
+      <div className="flat-card">
+        <FlightLoader message="Loading fare options for this flight…" />
       </div>
     );
   }
@@ -80,6 +81,9 @@ export function FlightFareSelector() {
 
   return (
     <div className="flex flex-col gap-6">
+      <Link href={`/flights/results?${passThroughQuery}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
+        ← Back to results
+      </Link>
       <div className="flat-card p-5">
         <p className="mb-3 text-xs font-semibold uppercase text-slate-400">Flight details</p>
         <div className="flex flex-col gap-3">

@@ -83,6 +83,21 @@ export interface FlightSearchResultDto {
   options: FlightOptionDto[];
 }
 
+/** Admin-only variant of FlightOptionDto that also carries the FTD provider's real (pre-margin)
+ * fare and the exact margin rule that was applied — used by the Pricing page's live search so an
+ * admin can see provider cost vs. customer price side by side when deciding what margin to set. */
+export interface AdminFlightOptionDto extends FlightOptionDto {
+  providerFareTotal: number;
+  effectiveMarginPercent: number;
+  effectiveMarginFlat: number;
+}
+
+export interface AdminFlightSearchResultDto {
+  refId: string;
+  isComplete: boolean;
+  options: AdminFlightOptionDto[];
+}
+
 export interface FlightBaggageOptionDto {
   id: string;
   amount: number;

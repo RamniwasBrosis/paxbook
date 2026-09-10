@@ -8,6 +8,7 @@ import { Loader2, Plane, AlertTriangle } from "lucide-react";
 import type { FlightPassengerInputDto, FlightPriceCheckDto, SearchFlightRequestDto } from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
+import { FlightLoader } from "@/components/FlightLoader";
 import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -249,7 +250,13 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     }
   }
 
-  if (!loadedSelection) return <div className="flat-card p-12 text-center text-slate-500">Loading…</div>;
+  if (!loadedSelection) {
+    return (
+      <div className="flat-card">
+        <FlightLoader message="Loading your trip…" />
+      </div>
+    );
+  }
 
   if (!selection) {
     return (
@@ -264,8 +271,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
 
   if (loadingPrice) {
     return (
-      <div className="flat-card flex items-center justify-center gap-2 p-12 text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin" /> Locking in your fares…
+      <div className="flat-card">
+        <FlightLoader message="Locking in your fares…" />
       </div>
     );
   }
@@ -287,6 +294,11 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div>
+        {step === "passengers" ? (
+          <Link href="/flights/round-trip/fare" className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
+            ← Change fares
+          </Link>
+        ) : null}
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-400">
           <span className={step === "passengers" ? "text-brand" : ""}>1. Passenger details</span>
           <span>›</span>

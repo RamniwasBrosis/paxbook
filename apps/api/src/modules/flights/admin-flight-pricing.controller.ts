@@ -3,6 +3,8 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { PERMISSIONS } from "@paxbook/config";
 import { RequirePermissions } from "../../common/decorators/require-permissions.decorator";
 import { FlightPricingService } from "./flight-pricing.service";
+import { FlightsService } from "./flights.service";
+import { SearchFlightDto } from "./dto/search-flight.dto";
 import { UpdateFlightPricingSettingDto } from "./dto/update-flight-pricing-setting.dto";
 import { SaveFlightRoutePricingRuleDto, UpdateFlightRoutePricingRuleDto } from "./dto/save-flight-route-pricing-rule.dto";
 
@@ -11,7 +13,18 @@ import { SaveFlightRoutePricingRuleDto, UpdateFlightRoutePricingRuleDto } from "
 @ApiBearerAuth()
 @Controller({ path: "admin/flights/pricing", version: "1" })
 export class AdminFlightPricingController {
-  constructor(private readonly pricing: FlightPricingService) {}
+  constructor(
+    private readonly pricing: FlightPricingService,
+    private readonly flights: FlightsService,
+  ) {}
+
+  /** Real-time provider-vs-customer price check, kept separate from the raw debug API test tool
+   * (/admin/flights/api/search) so this one can stay purpose-built for margin decisions. */
+  @Post("live-search")
+  @RequirePermissions(PERMISSIONS.FLIGHTS_READ)
+  liveSearch(@Body() dto: SearchFlightDto) {
+    return this.flights.adminSearchWithProviderFare(dto);
+  }
 
   @Get("settings")
   @RequirePermissions(PERMISSIONS.FLIGHTS_READ)

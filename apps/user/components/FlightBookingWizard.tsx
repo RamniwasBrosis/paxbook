@@ -8,6 +8,7 @@ import { Loader2, Plane, ShieldCheck, ShieldOff, AlertTriangle } from "lucide-re
 import type { CreateFlightBookingRequestDto, FlightPassengerInputDto, FlightPriceCheckDto } from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
+import { FlightLoader } from "@/components/FlightLoader";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -264,8 +265,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
 
   if (loadingPrice) {
     return (
-      <div className="flat-card flex items-center justify-center gap-2 p-12 text-slate-500">
-        <Loader2 className="h-5 w-5 animate-spin" /> Locking in your fare…
+      <div className="flat-card">
+        <FlightLoader message="Locking in your fare…" />
       </div>
     );
   }
@@ -287,6 +288,14 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <div>
+        {step === "passengers" ? (
+          <Link
+            href={`/flights/fare?flightId=${flightId}&refId=${encodeURIComponent(refId)}&${new URLSearchParams(Array.from(params.entries()).filter(([k]) => k !== "flightId")).toString()}`}
+            className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand"
+          >
+            ← Change fare
+          </Link>
+        ) : null}
         <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-400">
           <span className={step === "passengers" ? "text-brand" : ""}>1. Passenger details</span>
           <span>›</span>

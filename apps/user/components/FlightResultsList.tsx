@@ -8,6 +8,7 @@ import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
 import { findAirport } from "@/lib/airports";
 import { FlightDateStrip } from "@/components/FlightDateStrip";
+import { FlightLoader } from "@/components/FlightLoader";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -295,6 +296,9 @@ export function FlightResultsList() {
       </aside>
 
       <div>
+        <Link href="/flights" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
+          ← Modify search
+        </Link>
         <div className="flat-card mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
           <div>
             <p className="font-bold text-navy-deep">
@@ -325,8 +329,8 @@ export function FlightResultsList() {
         </div>
 
         {loading ? (
-          <div className="flat-card flex items-center justify-center gap-2 p-12 text-slate-500">
-            <Loader2 className="h-5 w-5 animate-spin" /> Searching live fares…
+          <div className="flat-card">
+            <FlightLoader message="Searching live fares across airlines…" />
           </div>
         ) : error ? (
           <div className="flat-card p-8 text-center">

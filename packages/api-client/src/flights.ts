@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@paxbook/auth-client";
 import type {
+  AdminFlightSearchResultDto,
   AirportDto,
   CreateFlightBookingRequestDto,
   FlightApiLogDto,
@@ -238,6 +239,14 @@ export function useAdminRefundFlightBooking() {
 // ---------------------------------------------------------------------------
 // Admin — pricing (margin/discount over the provider's fares)
 // ---------------------------------------------------------------------------
+
+/** Real-time provider-vs-customer price check for margin decisions — separate from useAdminFlightSearch
+ * (the raw debug API test tool), since this one returns the provider's true fare alongside the margin. */
+export function useAdminPricingLiveSearch() {
+  return useMutation({
+    mutationFn: (payload: SearchFlightRequestDto) => apiFetch<AdminFlightSearchResultDto>("/admin/flights/pricing/live-search", { method: "POST", body: payload }),
+  });
+}
 
 export function useFlightPricingSetting() {
   return useQuery({ queryKey: ["admin-flight-pricing-setting"], queryFn: () => apiFetch<FlightPricingSettingDto>("/admin/flights/pricing/settings") });

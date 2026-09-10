@@ -1,10 +1,12 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Plane, Loader2, Luggage, ShieldCheck, ShieldOff, Info } from "lucide-react";
+import { Plane, Luggage, ShieldCheck, ShieldOff, Info } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto, SearchFlightRequestDto } from "@paxbook/types";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader } from "@/lib/flights";
+import { FlightLoader } from "@/components/FlightLoader";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -72,7 +74,13 @@ export function RoundTripFareSelector() {
   const [onwardState, chooseOnward] = useLegFareDetails(selection?.onward ?? null);
   const [returnState, chooseReturn] = useLegFareDetails(selection?.return ?? null);
 
-  if (!loaded) return <div className="flat-card p-12 text-center text-slate-500">Loading…</div>;
+  if (!loaded) {
+    return (
+      <div className="flat-card">
+        <FlightLoader message="Loading your selected flights…" />
+      </div>
+    );
+  }
 
   if (!selection) {
     return (
@@ -98,6 +106,9 @@ export function RoundTripFareSelector() {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
+      <button type="button" onClick={() => router.back()} className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
+        ← Back to results
+      </button>
       <LegFareSection title="Departure" leg={selection.onward} state={onwardState} onChoose={chooseOnward} />
       <LegFareSection title="Return" leg={selection.return} state={returnState} onChoose={chooseReturn} />
 
@@ -155,8 +166,8 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
       ) : null}
 
       {state.loading ? (
-        <div className="flat-card flex items-center justify-center gap-2 p-8 text-slate-500">
-          <Loader2 className="h-5 w-5 animate-spin" /> Loading fare options…
+        <div className="flat-card">
+          <FlightLoader message="Loading fare options…" compact />
         </div>
       ) : state.error ? (
         <div className="flat-card p-6 text-center text-red-600">{state.error}</div>

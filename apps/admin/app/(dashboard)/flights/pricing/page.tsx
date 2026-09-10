@@ -11,10 +11,10 @@ import {
   useCreateFlightRoutePricingRule,
   useUpdateFlightRoutePricingRule,
   useDeleteFlightRoutePricingRule,
-  useAdminFlightSearch,
+  useAdminPricingLiveSearch,
 } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
-import type { FlightOptionDto, FlightRoutePricingRuleDto, SaveFlightRoutePricingRuleDto } from "@paxbook/types";
+import type { AdminFlightOptionDto, FlightRoutePricingRuleDto, SaveFlightRoutePricingRuleDto } from "@paxbook/types";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@paxbook/ui";
 
 const SAMPLE_FARE = 5000;
@@ -27,6 +27,7 @@ const CABIN_OPTIONS: { value: string; label: string }[] = [
   { value: "F", label: "First" },
 ];
 const CABIN_LABEL: Record<string, string> = { E: "Economy", P: "Premium Economy", B: "Business", F: "First" };
+const SEARCH_CABIN_OPTIONS = CABIN_OPTIONS.filter((c) => c.value !== "");
 
 function previewPrice(providerFare: number, marginPercent: number, marginFlat: number): number {
   return Math.round((providerFare * (1 + marginPercent / 100) + marginFlat) * 100) / 100;
@@ -149,17 +150,22 @@ function GlobalMarginCard({ canWrite }: { canWrite: boolean }) {
   );
 }
 
+type SortOption = "price-asc" | "price-desc" | "provider-asc" | "margin-desc";
+
 function LiveFlightOverrideCard({ canWrite }: { canWrite: boolean }) {
-  const search = useAdminFlightSearch();
+  const search = useAdminPricingLiveSearch();
   const createRule = useCreateFlightRoutePricingRule();
-  const [form, setForm] = React.useState({ depCity: "", arrCity: "", onDate: "" });
+  const [form, setForm] = React.useState({ depCity: "", arrCity: "", onDate: "", cabin: "E" });
   const [error, setError] = React.useState<string | null>(null);
   const [openRowId, setOpenRowId] = React.useState<string | null>(null);
+  const [airlineFilter, setAirlineFilter] = React.useState("");
+  const [sort, setSort] = React.useState<SortOption>("price-asc");
 
   async function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setOpenRowId(null);
+    setAirlineFilter("");
     if (!/^[A-Za-z]{3}$/.test(form.depCity) || !/^[A-Za-z]{3}$/.test(form.arrCity) || !form.onDate) {
       setError("Enter valid 3-letter airport codes and a date.");
       return;
@@ -174,7 +180,7 @@ function LiveFlightOverrideCard({ canWrite }: { canWrite: boolean }) {
         adt: 1,
         chd: 0,
         inf: 0,
-        cabin: "E",
+        cabin: form.cabin,
         fareType: "A",
       });
     } catch (err) {
@@ -182,20 +188,52 @@ function LiveFlightOverrideCard({ canWrite }: { canWrite: boolean }) {
     }
   }
 
+  const airlines = React.useMemo(() => {
+    const codes = new Set<string>();
+    for (const option of search.data?.options ?? []) {
+      const code = option.legs[0]?.airlineCode;
+      if (code) codes.add(code);
+    }
+    return Array.from(codes).sort();
+  }, [search.data]);
+
+  const visibleOptions = React.useMemo(() => {
+    const options = (search.data?.options ?? []).filter((option) => !airlineFilter || option.legs[0]?.airlineCode === airlineFilter);
+    const sorted = [...options];
+    sorted.sort((a, b) => {
+      if (sort === "price-asc") return a.fare.total - b.fare.total;
+      if (sort === "price-desc") return b.fare.total - a.fare.total;
+      if (sort === "provider-asc") return a.providerFareTotal - b.providerFareTotal;
+      return b.fare.total - b.providerFareTotal - (a.fare.total - a.providerFareTotal);
+    });
+    return sorted;
+  }, [search.data, airlineFilter, sort]);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Live flights — set an override for one specific flight</CardTitle>
+        <CardTitle>Live flights — real-time provider fare vs. customer price</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-sm text-slate-500">
-          Search real flights the same way customers do, then set a margin or discount on one exact airline + flight number — it takes priority over the
-          route and default margins.
+          Search real flights the same way customers do. Each result shows what the provider actually charges us right now, the margin currently in
+          effect, and what the customer pays — use this to decide a margin, then set an override on one exact airline + flight number, which takes
+          priority over the route and default margins.
         </p>
         <form onSubmit={handleSearch} className="flex flex-wrap items-end gap-3">
           <Input label="From (IATA)" required maxLength={3} value={form.depCity} onChange={(e) => setForm((f) => ({ ...f, depCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
           <Input label="To (IATA)" required maxLength={3} value={form.arrCity} onChange={(e) => setForm((f) => ({ ...f, arrCity: e.target.value.toUpperCase() }))} className="max-w-[100px]" />
           <Input label="Date" type="date" required min={TODAY} value={form.onDate} onChange={(e) => setForm((f) => ({ ...f, onDate: e.target.value }))} className="max-w-[170px]" />
+          <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+            Cabin
+            <select value={form.cabin} onChange={(e) => setForm((f) => ({ ...f, cabin: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+              {SEARCH_CABIN_OPTIONS.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </label>
           <Button type="submit" isLoading={search.isPending}>
             Search live
           </Button>
@@ -203,34 +241,61 @@ function LiveFlightOverrideCard({ canWrite }: { canWrite: boolean }) {
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
 
         {search.data && search.data.options.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border border-slate-100">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-slate-100 text-xs uppercase text-slate-400">
-                <tr>
-                  <th className="px-4 py-2 font-medium">Flight</th>
-                  <th className="px-4 py-2 font-medium">Route</th>
-                  <th className="px-4 py-2 font-medium">Depart</th>
-                  <th className="px-4 py-2 font-medium">Customer price now</th>
-                  {canWrite ? <th className="px-4 py-2 font-medium">Actions</th> : null}
-                </tr>
-              </thead>
-              <tbody>
-                {search.data.options.map((option) => (
-                  <LiveFlightRow
-                    key={option.id}
-                    option={option}
-                    open={openRowId === option.id}
-                    onToggle={() => setOpenRowId(openRowId === option.id ? null : option.id)}
-                    canWrite={canWrite}
-                    onSave={async (payload) => {
-                      await createRule.mutateAsync(payload);
-                      setOpenRowId(null);
-                    }}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <div className="flex flex-wrap items-end gap-3">
+              <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                Airline
+                <select value={airlineFilter} onChange={(e) => setAirlineFilter(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  <option value="">All airlines</option>
+                  {airlines.map((code) => (
+                    <option key={code} value={code}>
+                      {code}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-xs font-medium text-slate-600">
+                Sort by
+                <select value={sort} onChange={(e) => setSort(e.target.value as SortOption)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm">
+                  <option value="price-asc">Customer price: low to high</option>
+                  <option value="price-desc">Customer price: high to low</option>
+                  <option value="provider-asc">Provider fare: low to high</option>
+                  <option value="margin-desc">Our margin: highest first</option>
+                </select>
+              </label>
+              {!search.data.isComplete ? <span className="pb-2 text-xs text-slate-400">More airlines may still be loading…</span> : null}
+            </div>
+            <div className="overflow-x-auto rounded-lg border border-slate-100">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-slate-100 text-xs uppercase text-slate-400">
+                  <tr>
+                    <th className="px-4 py-2 font-medium">Flight</th>
+                    <th className="px-4 py-2 font-medium">Route</th>
+                    <th className="px-4 py-2 font-medium">Depart</th>
+                    <th className="px-4 py-2 font-medium">Provider fare (our cost)</th>
+                    <th className="px-4 py-2 font-medium">Active margin</th>
+                    <th className="px-4 py-2 font-medium">Customer price now</th>
+                    {canWrite ? <th className="px-4 py-2 font-medium">Actions</th> : null}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleOptions.map((option) => (
+                    <LiveFlightRow
+                      key={option.id}
+                      option={option}
+                      open={openRowId === option.id}
+                      onToggle={() => setOpenRowId(openRowId === option.id ? null : option.id)}
+                      canWrite={canWrite}
+                      onSave={async (payload) => {
+                        await createRule.mutateAsync(payload);
+                        setOpenRowId(null);
+                      }}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         ) : search.data && search.data.options.length === 0 ? (
           <p className="text-sm text-slate-400">No flights found for that search.</p>
         ) : null}
@@ -246,7 +311,7 @@ function LiveFlightRow({
   canWrite,
   onSave,
 }: {
-  option: FlightOptionDto;
+  option: AdminFlightOptionDto;
   open: boolean;
   onToggle: () => void;
   canWrite: boolean;
@@ -254,8 +319,8 @@ function LiveFlightRow({
 }) {
   const firstLeg = option.legs[0];
   const lastLeg = option.legs[option.legs.length - 1];
-  const [marginPercent, setMarginPercent] = React.useState(0);
-  const [marginFlat, setMarginFlat] = React.useState(0);
+  const [marginPercent, setMarginPercent] = React.useState(option.effectiveMarginPercent);
+  const [marginFlat, setMarginFlat] = React.useState(option.effectiveMarginFlat);
   const [label, setLabel] = React.useState("");
   const [cabin, setCabin] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -284,6 +349,8 @@ function LiveFlightRow({
     }
   }
 
+  const ourMargin = Math.round((option.fare.total - option.providerFareTotal) * 100) / 100;
+
   return (
     <>
       <tr className="border-b border-slate-50 last:border-0">
@@ -294,7 +361,15 @@ function LiveFlightRow({
           {firstLeg.depCode} → {lastLeg.arrCode}
         </td>
         <td className="px-4 py-2">{new Date(firstLeg.depDateTime).toLocaleString("en-IN")}</td>
-        <td className="px-4 py-2">₹{option.fare.total.toLocaleString("en-IN")}</td>
+        <td className="px-4 py-2">₹{option.providerFareTotal.toLocaleString("en-IN")}</td>
+        <td className="px-4 py-2 text-slate-500">
+          {option.effectiveMarginPercent !== 0 ? `${option.effectiveMarginPercent}%` : null}
+          {option.effectiveMarginPercent !== 0 && option.effectiveMarginFlat !== 0 ? " + " : null}
+          {option.effectiveMarginFlat !== 0 ? `₹${option.effectiveMarginFlat.toLocaleString("en-IN")}` : null}
+          {option.effectiveMarginPercent === 0 && option.effectiveMarginFlat === 0 ? "None" : null}
+          <span className="ml-1 text-xs text-slate-400">(₹{ourMargin.toLocaleString("en-IN")})</span>
+        </td>
+        <td className="px-4 py-2 font-semibold">₹{option.fare.total.toLocaleString("en-IN")}</td>
         {canWrite ? (
           <td className="px-4 py-2">
             <Button variant="secondary" onClick={onToggle}>
@@ -305,7 +380,7 @@ function LiveFlightRow({
       </tr>
       {open ? (
         <tr className="border-b border-slate-50 bg-mist/50 last:border-0">
-          <td colSpan={5} className="px-4 py-3">
+          <td colSpan={7} className="px-4 py-3">
             <div className="flex flex-wrap items-end gap-3">
               <Input label="Margin %" type="number" step="0.1" value={marginPercent} onChange={(e) => setMarginPercent(Number(e.target.value))} className="max-w-[120px]" />
               <Input label="Flat (₹)" type="number" step="1" value={marginFlat} onChange={(e) => setMarginFlat(Number(e.target.value))} className="max-w-[120px]" />
@@ -324,6 +399,10 @@ function LiveFlightRow({
                 Save override for {firstLeg.airlineCode}-{firstLeg.flightNo}
               </Button>
             </div>
+            <p className="mt-2 text-xs text-slate-400">
+              Preview: provider ₹{option.providerFareTotal.toLocaleString("en-IN")} → customer would pay ₹
+              {previewPrice(option.providerFareTotal, marginPercent, marginFlat).toLocaleString("en-IN")}
+            </p>
             {error ? <p className="mt-2 text-sm text-red-600">{error}</p> : null}
           </td>
         </tr>

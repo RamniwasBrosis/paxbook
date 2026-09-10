@@ -1,11 +1,13 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Plane, Loader2, ArrowRight, CheckCircle2 } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto, SearchFlightRequestDto } from "@paxbook/types";
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
 import { findAirport } from "@/lib/airports";
+import { FlightLoader } from "@/components/FlightLoader";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const MAX_POLL_ATTEMPTS = 8;
@@ -108,6 +110,9 @@ export function RoundTripResultsList() {
 
   return (
     <div className="pb-28">
+      <Link href="/flights" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
+        ← Modify search
+      </Link>
       <div className="flat-card mb-4 p-4">
         <p className="font-bold text-navy-deep">
           Flights from {depCityLabel} <ArrowRight className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {arrCityLabel}, and back
@@ -197,8 +202,8 @@ function LegColumn({
         <p className="text-xs text-slate-400">{subtitle}</p>
       </div>
       {state.loading ? (
-        <div className="flat-card flex items-center justify-center gap-2 p-10 text-slate-500">
-          <Loader2 className="h-5 w-5 animate-spin" /> Searching…
+        <div className="flat-card">
+          <FlightLoader message="Searching live fares…" compact />
         </div>
       ) : state.error ? (
         <div className="flat-card p-6 text-center text-red-600">{state.error}</div>

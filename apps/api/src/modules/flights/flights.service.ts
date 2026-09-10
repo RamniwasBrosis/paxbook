@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import type {
+  AdminFlightSearchResultDto,
   CreateFlightBookingRequestDto,
   FlightApiStatusDto,
   FlightBookingDto,
@@ -40,6 +41,24 @@ export class FlightsService {
         return { ...option, fare: this.pricing.applyMargin(option.fare, margin) };
       }),
     );
+  }
+
+  /** Admin-only: same live search, but keeps the provider's real (pre-margin) fare alongside the
+   * customer-facing one and the exact margin that produced it — the public/customer search never
+   * exposes provider cost, so this is a separate method rather than a flag on the shared one. */
+  async adminSearchWithProviderFare(dto: SearchFlightDto): Promise<AdminFlightSearchResultDto> {
+    const raw = await this.ftd.search({ ...dto, reDate: dto.reDate ?? "", refID: dto.refID ?? "" });
+    const mapped = mapSearchOrFareDetails(raw);
+    const options = await Promise.all(
+      mapped.options.map(async (option) => {
+        const depCity = option.legs[0]?.depCode ?? "";
+        const arrCity = option.legs[option.legs.length - 1]?.arrCode ?? "";
+        const margin = await this.pricing.getEffectiveMargin(depCity, arrCity, option.legs[0]?.airlineCode, option.legs[0]?.flightNo, option.legs[0]?.cabin);
+        const providerFareTotal = option.fare.total;
+        return { ...option, fare: this.pricing.applyMargin(option.fare, margin), providerFareTotal, effectiveMarginPercent: margin.marginPercent, effectiveMarginFlat: margin.marginFlat };
+      }),
+    );
+    return { refId: mapped.refId, isComplete: mapped.isComplete, options };
   }
 
   async apiStatus(): Promise<FlightApiStatusDto> {

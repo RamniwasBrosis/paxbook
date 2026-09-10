@@ -35,9 +35,19 @@ const config: Config = {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        fly: {
+          "0%, 100%": { transform: "translate(-8%, 0) rotate(0deg)" },
+          "50%": { transform: "translate(8%, -10px) rotate(-3deg)" },
+        },
+        runway: {
+          "0%": { backgroundPositionX: "0px" },
+          "100%": { backgroundPositionX: "-32px" },
+        },
       },
       animation: {
         marquee: "marquee 32s linear infinite",
+        fly: "fly 2.4s ease-in-out infinite",
+        runway: "runway 0.8s linear infinite",
       },
     },
   },
