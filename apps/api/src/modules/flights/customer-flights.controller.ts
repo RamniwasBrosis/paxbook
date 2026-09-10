@@ -7,6 +7,7 @@ import type { RequestCustomer } from "../../common/types/request-customer";
 import { CustomerJwtAuthGuard } from "../customer-auth/guards/customer-jwt-auth.guard";
 import { FlightsService } from "./flights.service";
 import { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
+import { CreateRoundTripFlightBookingDto } from "./dto/create-round-trip-flight-booking.dto";
 import { VerifyFlightPaymentDto } from "./dto/verify-flight-payment.dto";
 import { RequestFlightCancellationDto } from "./dto/cancel-flight-booking.dto";
 
@@ -36,6 +37,11 @@ export class CustomerFlightsController {
   @Post()
   create(@CurrentCustomer() customer: RequestCustomer, @Body() dto: CreateFlightBookingDto) {
     return this.flightsService.createDraftBooking(customer.tenantId, customer.sub, dto, dto.searchContext);
+  }
+
+  @Post("round-trip")
+  createRoundTrip(@CurrentCustomer() customer: RequestCustomer, @Body() dto: CreateRoundTripFlightBookingDto) {
+    return this.flightsService.createRoundTripDraftBooking(customer.tenantId, customer.sub, dto);
   }
 
   @Post(":id/payment/order")

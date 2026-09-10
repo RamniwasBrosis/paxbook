@@ -5,6 +5,7 @@ import { FlightsService } from "./flights.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { PublicFlightsController } from "./public-flights.controller";
 import { CustomerFlightsController } from "./customer-flights.controller";
+import { CustomerFlightTripsController } from "./customer-flight-trips.controller";
 import { AdminFlightApiController } from "./admin-flight-api.controller";
 import { AdminFlightBookingsController } from "./admin-flight-bookings.controller";
 import { AdminFlightBookingsService } from "./admin-flight-bookings.service";
@@ -19,6 +20,7 @@ import { AirportsService } from "./airports.service";
   controllers: [
     PublicFlightsController,
     CustomerFlightsController,
+    CustomerFlightTripsController,
     AdminFlightApiController,
     AdminFlightBookingsController,
     AdminFlightPricingController,

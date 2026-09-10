@@ -80,7 +80,7 @@ export class AdminFlightBookingsService {
     adt: number; chd: number; inf: number; cabin: string; fareSnapshot: unknown; providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string;
     paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null;
     cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
-    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
+    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null; tripId: string | null; tripRole: string | null;
     createdAt: Date; updatedAt: Date;
     customer?: { name: string; email: string } | null;
     passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
@@ -115,6 +115,8 @@ export class AdminFlightBookingsService {
       refundAmount: b.refundAmount ? b.refundAmount.toNumber() : null,
       refundedAt: b.refundedAt ? b.refundedAt.toISOString() : null,
       refundReference: b.refundReference,
+      tripId: b.tripId,
+      tripRole: b.tripRole as FlightBookingDto["tripRole"],
       createdAt: b.createdAt.toISOString(),
       updatedAt: b.updatedAt.toISOString(),
       customerName: b.customer?.name,

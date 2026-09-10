@@ -8,6 +8,7 @@ import type {
   FlightPaymentOrderDto,
   FlightPriceCheckDto,
   FlightSearchResultDto,
+  FlightTripDto,
   VerifyFlightPaymentDto,
 } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
@@ -17,6 +18,7 @@ import { FlightPricingService } from "./flight-pricing.service";
 import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
+import type { CreateRoundTripFlightBookingDto } from "./dto/create-round-trip-flight-booking.dto";
 
 @Injectable()
 export class FlightsService {
@@ -91,12 +93,20 @@ export class FlightsService {
    * provider, never trusted from the client) — this is the DRAFT the customer pays for. Nothing is
    * booked with the provider yet; that only happens after payment clears, in confirmBooking().
    */
-  async createDraftBooking(tenantId: string, customerId: string, dto: CreateFlightBookingDto, searchContext: SearchFlightDto): Promise<FlightBookingDto> {
+  async createDraftBooking(
+    tenantId: string,
+    customerId: string,
+    dto: CreateFlightBookingDto,
+    searchContext: SearchFlightDto,
+    trip?: { tripId: string; tripRole: "ONWARD" | "RETURN" },
+  ): Promise<FlightBookingDto> {
     // Per the FTD spec, "Domestic Round Trip are two One Way bookings" — a single domestic search/price-check
     // with tripType=1 only ever returns onward-leg data, so a booking made against it would silently charge
     // and confirm only the onward flight while looking like a round trip. Block it here as a hard safety net
-    // (the UI already prevents selecting this combination) rather than let a crafted request through.
-    if (searchContext.tripType === 1 && searchContext.serType === 1) {
+    // (the UI already prevents selecting this combination) rather than let a crafted request through. A real
+    // domestic round trip goes through createRoundTripDraftBooking instead, which books each direction as its
+    // own one-way (tripType 0) booking linked by trip.tripId — so this guard never fires for that path.
+    if (!trip && searchContext.tripType === 1 && searchContext.serType === 1) {
       throw new BadRequestException({
         code: "DOMESTIC_ROUND_TRIP_UNSUPPORTED",
         message: "Domestic round trips must be booked as two separate one-way flights. Please search and book your return trip separately.",
@@ -137,6 +147,8 @@ export class FlightsService {
         currency: "INR",
         status: "DRAFT",
         paymentStatus: "PENDING",
+        tripId: trip?.tripId ?? null,
+        tripRole: trip?.tripRole ?? null,
         passengers: {
           create: dto.passengers.map((p) => ({
             title: p.title,
@@ -164,6 +176,104 @@ export class FlightsService {
     });
 
     return this.toDto(booking);
+  }
+
+  /**
+   * A domestic round trip, modeled as two linked one-way DRAFT bookings sharing a tripId (see
+   * FlightBooking.tripId in schema.prisma) — each goes through the exact same createDraftBooking path
+   * as a standalone one-way booking, just tagged with which half of the trip it is. Passengers, contact
+   * details, PAN, and GST apply to both legs identically (the same travellers fly both directions).
+   */
+  async createRoundTripDraftBooking(tenantId: string, customerId: string, dto: CreateRoundTripFlightBookingDto): Promise<FlightTripDto> {
+    if (dto.onward.searchContext.serType !== 1 || dto.return.searchContext.serType !== 1) {
+      throw new BadRequestException({ code: "ROUND_TRIP_MUST_BE_DOMESTIC", message: "This round-trip flow is for domestic flights only." });
+    }
+    const tripId = randomUUID();
+    const legInput = (leg: { flightID: number; refID: string; searchContext: SearchFlightDto }): CreateFlightBookingDto => ({
+      flightID: leg.flightID,
+      refID: leg.refID,
+      passengers: dto.passengers,
+      mobile: dto.mobile,
+      email: dto.email,
+      firstPaxPanNo: dto.firstPaxPanNo,
+      gst: dto.gst,
+      searchContext: leg.searchContext,
+    });
+
+    const onward = await this.createDraftBooking(tenantId, customerId, legInput(dto.onward), dto.onward.searchContext, { tripId, tripRole: "ONWARD" });
+    const returnLeg = await this.createDraftBooking(tenantId, customerId, legInput(dto.return), dto.return.searchContext, { tripId, tripRole: "RETURN" });
+
+    return { tripId, onward, return: returnLeg, totalAmount: onward.totalAmount + returnLeg.totalAmount, currency: onward.currency };
+  }
+
+  private async getTripBookings(tenantId: string, customerId: string, tripId: string): Promise<{ onward: FlightBookingDto; return: FlightBookingDto }> {
+    const bookings = await this.prisma.flightBooking.findMany({ where: { tenantId, customerId, tripId }, include: { passengers: true } });
+    const onward = bookings.find((b) => b.tripRole === "ONWARD");
+    const returnLeg = bookings.find((b) => b.tripRole === "RETURN");
+    if (!onward || !returnLeg) throw new NotFoundException({ code: "FLIGHT_TRIP_NOT_FOUND", message: "Trip does not exist." });
+    return { onward: this.toDto(onward), return: this.toDto(returnLeg) };
+  }
+
+  async getTrip(tenantId: string, customerId: string, tripId: string): Promise<FlightTripDto> {
+    const { onward, return: returnLeg } = await this.getTripBookings(tenantId, customerId, tripId);
+    return { tripId, onward, return: returnLeg, totalAmount: onward.totalAmount + returnLeg.totalAmount, currency: onward.currency };
+  }
+
+  /** One combined Razorpay order for both legs' total — split back into two FlightPayment rows (one
+   * per booking) sharing that same order id, so refunds/cancellations still work per-leg afterward. */
+  async createTripPaymentOrder(tenantId: string, customerId: string, tripId: string): Promise<FlightPaymentOrderDto> {
+    const { onward, return: returnLeg } = await this.getTripBookings(tenantId, customerId, tripId);
+    if (onward.paymentStatus === "PAID" || returnLeg.paymentStatus === "PAID") {
+      throw new BadRequestException({ code: "ALREADY_PAID", message: "This trip is already paid." });
+    }
+    const combinedTotal = Math.round((onward.totalAmount + returnLeg.totalAmount) * 100) / 100;
+
+    const onwardPayment = await this.prisma.flightPayment.create({ data: { tenantId, flightBookingId: onward.id, amount: onward.totalAmount, provider: "razorpay" } });
+    const returnPayment = await this.prisma.flightPayment.create({ data: { tenantId, flightBookingId: returnLeg.id, amount: returnLeg.totalAmount, provider: "razorpay" } });
+
+    const order = await this.razorpay.createOrder(tenantId, combinedTotal, onward.currency, `trip_${tripId}`);
+
+    await this.prisma.$transaction([
+      this.prisma.flightPayment.update({ where: { id: onwardPayment.id }, data: { providerRef: order.orderId } }),
+      this.prisma.flightPayment.update({ where: { id: returnPayment.id }, data: { providerRef: order.orderId } }),
+      this.prisma.flightBooking.updateMany({ where: { id: { in: [onward.id, returnLeg.id] } }, data: { status: "PENDING_PAYMENT" } }),
+    ]);
+
+    return { paymentId: onwardPayment.id, orderId: order.orderId, amount: order.amount, currency: order.currency, keyId: order.keyId, mock: order.mock };
+  }
+
+  /** Verifies the one shared payment, then books both legs with the provider — each leg's own bookWithProvider
+   * call, so a failure on one side (e.g. return sells out between payment and booking) leaves the other
+   * leg's real booking intact rather than losing it, matching how a single-leg failure already behaves. */
+  async confirmTripBooking(tenantId: string, customerId: string, tripId: string, dto: VerifyFlightPaymentDto): Promise<FlightTripDto> {
+    const { onward, return: returnLeg } = await this.getTripBookings(tenantId, customerId, tripId);
+    const onwardPayment = await this.prisma.flightPayment.findFirst({ where: { flightBookingId: onward.id, tenantId }, orderBy: { createdAt: "desc" } });
+    const returnPayment = await this.prisma.flightPayment.findFirst({ where: { flightBookingId: returnLeg.id, tenantId }, orderBy: { createdAt: "desc" } });
+    if (!onwardPayment || !returnPayment) throw new NotFoundException({ code: "PAYMENT_NOT_FOUND", message: "Payment does not exist." });
+
+    if (await this.razorpay.isConfigured(tenantId)) {
+      if (!dto.razorpayOrderId || !dto.razorpayPaymentId || !dto.razorpaySignature) {
+        throw new BadRequestException({ code: "PAYMENT_VERIFICATION_INCOMPLETE", message: "Missing payment verification fields." });
+      }
+      const valid = await this.razorpay.verifySignature(tenantId, dto.razorpayOrderId, dto.razorpayPaymentId, dto.razorpaySignature);
+      if (!valid) throw new UnauthorizedException({ code: "PAYMENT_SIGNATURE_INVALID", message: "Payment verification failed." });
+    } else if (!dto.devConfirm) {
+      throw new BadRequestException({ code: "PAYMENT_NOT_CONFIRMED", message: "Payment was not confirmed." });
+    }
+
+    const method = dto.razorpayPaymentId ? "razorpay" : "dev";
+    await this.prisma.$transaction([
+      this.prisma.flightPayment.update({ where: { id: onwardPayment.id }, data: { status: "CAPTURED", capturedAt: new Date(), method, providerPaymentId: dto.razorpayPaymentId ?? null } }),
+      this.prisma.flightPayment.update({ where: { id: returnPayment.id }, data: { status: "CAPTURED", capturedAt: new Date(), method, providerPaymentId: dto.razorpayPaymentId ?? null } }),
+      this.prisma.flightBooking.updateMany({ where: { id: { in: [onward.id, returnLeg.id] } }, data: { paymentStatus: "PAID" } }),
+    ]);
+
+    const [bookedOnward, bookedReturn] = await Promise.all([
+      this.bookWithProvider(tenantId, customerId, onward.id),
+      this.bookWithProvider(tenantId, customerId, returnLeg.id),
+    ]);
+
+    return { tripId, onward: bookedOnward, return: bookedReturn, totalAmount: bookedOnward.totalAmount + bookedReturn.totalAmount, currency: bookedOnward.currency };
   }
 
   async createPaymentOrder(tenantId: string, customerId: string, flightBookingId: string): Promise<FlightPaymentOrderDto> {
@@ -370,7 +480,7 @@ export class FlightsService {
     fareSnapshot: unknown;
     providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null;
     providerStatus: string | null; errorMessage: string | null; cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
-    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null; createdAt: Date; updatedAt: Date;
+    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null; tripId: string | null; tripRole: string | null; createdAt: Date; updatedAt: Date;
     passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
   }): FlightBookingDto {
     const snapshot = extractFlightSnapshot(b.fareSnapshot);
@@ -403,6 +513,8 @@ export class FlightsService {
       refundAmount: b.refundAmount ? b.refundAmount.toNumber() : null,
       refundedAt: b.refundedAt ? b.refundedAt.toISOString() : null,
       refundReference: b.refundReference,
+      tripId: b.tripId,
+      tripRole: b.tripRole as FlightBookingDto["tripRole"],
       createdAt: b.createdAt.toISOString(),
       updatedAt: b.updatedAt.toISOString(),
       passengers: b.passengers.map((p) => ({

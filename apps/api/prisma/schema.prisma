@@ -1143,6 +1143,12 @@ model FlightBooking {
   pnr            String?
   providerStatus String?
   errorMessage   String?
+  /// Groups this booking with its counterpart leg for a domestic round trip — per the provider's own
+  /// spec, "Domestic Round Trip are two One Way bookings", so there is no single bookable/cancellable
+  /// unit at the provider; a shared tripId is purely our own linkage for combined search/checkout UX.
+  tripId   String?
+  /// "ONWARD" or "RETURN" — which half of the trip this booking is, when tripId is set.
+  tripRole String?
   /// Customer- or admin-supplied reason sent to the provider as canRemarks.
   cancellationReason String?
   /// Raw per-passenger Cancelstatus values from the provider's cancelFlight response
@@ -1165,6 +1171,7 @@ model FlightBooking {
 
   @@index([tenantId])
   @@index([customerId])
+  @@index([tripId])
   @@map("flight_bookings")
 }
 

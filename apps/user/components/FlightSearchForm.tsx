@@ -46,7 +46,7 @@ export function FlightSearchForm({ compact }: { compact?: boolean }) {
       return;
     }
     setBusy(true);
-    const query = searchContextToQuery({
+    const context = {
       tripType,
       serType,
       depCity: depCity.toUpperCase(),
@@ -58,8 +58,16 @@ export function FlightSearchForm({ compact }: { compact?: boolean }) {
       inf,
       cabin,
       fareType,
-    });
-    router.push(`/flights/results?${query}`);
+    };
+    const query = searchContextToQuery(context);
+    // Domestic round trip has no single bookable "round trip" unit at the provider (FTD's own spec:
+    // "Domestic Round Trip are two One Way bookings") — it goes through a dedicated flow that runs two
+    // one-way searches and links the resulting bookings, rather than the single-search results page.
+    if (tripType === 1 && serType === 1) {
+      router.push(`/flights/round-trip/results?${query}`);
+    } else {
+      router.push(`/flights/results?${query}`);
+    }
   }
 
   return (
@@ -70,23 +78,15 @@ export function FlightSearchForm({ compact }: { compact?: boolean }) {
             <input type="radio" checked={tripType === 0} onChange={() => setTripType(0)} className="accent-brand" />
             One way
           </label>
-          <label className={`flex items-center gap-1.5 ${serType === 1 ? "opacity-40" : ""}`}>
-            <input type="radio" checked={tripType === 1} disabled={serType === 1} onChange={() => setTripType(1)} className="accent-brand" />
+          <label className="flex items-center gap-1.5">
+            <input type="radio" checked={tripType === 1} onChange={() => setTripType(1)} className="accent-brand" />
             Round trip
           </label>
         </div>
         <span aria-hidden className="hidden h-4 w-px bg-slate-200 sm:block" />
         <div className="flex items-center gap-4">
           <label className="flex items-center gap-1.5">
-            <input
-              type="radio"
-              checked={serType === 1}
-              onChange={() => {
-                setServType(1);
-                if (tripType === 1) setTripType(0);
-              }}
-              className="accent-brand"
-            />
+            <input type="radio" checked={serType === 1} onChange={() => setServType(1)} className="accent-brand" />
             Domestic
           </label>
           <label className="flex items-center gap-1.5">
@@ -95,7 +95,6 @@ export function FlightSearchForm({ compact }: { compact?: boolean }) {
           </label>
         </div>
       </div>
-      {serType === 1 ? <p className="mt-1 text-xs text-slate-400">Round trip booking for domestic routes is coming soon — search and book your return as a separate one-way trip for now.</p> : null}
 
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto_1fr]">
         <AirportAutocomplete label="From" value={depCity} onChange={setDepCity} placeholder="City or airport" />

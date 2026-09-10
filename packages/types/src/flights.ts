@@ -217,11 +217,46 @@ export interface FlightBookingDto {
   refundAmount: number | null;
   refundedAt: string | null;
   refundReference: string | null;
+  /** Set when this booking is one leg of a domestic round trip (see FlightTripDto) — null for a
+   * standalone one-way booking, or for the onward leg of a genuine FTD-bundled international round trip. */
+  tripId: string | null;
+  tripRole: "ONWARD" | "RETURN" | null;
   createdAt: string;
   updatedAt: string;
   passengers: FlightPassengerDto[];
   customerName?: string;
   customerEmail?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Domestic round trips — per FTD's own spec ("Domestic Round Trip are two One
+// Way bookings"), modeled as two linked one-way bookings sharing a tripId,
+// rather than a single provider-side round-trip booking (which domestic
+// simply doesn't support).
+// ---------------------------------------------------------------------------
+
+export interface RoundTripLegRequestDto {
+  flightID: number;
+  refID: string;
+  searchContext: SearchFlightRequestDto;
+}
+
+export interface CreateRoundTripBookingRequestDto {
+  onward: RoundTripLegRequestDto;
+  return: RoundTripLegRequestDto;
+  passengers: FlightPassengerInputDto[];
+  mobile: string;
+  email: string;
+  firstPaxPanNo?: string;
+  gst?: FlightGstInputDto;
+}
+
+export interface FlightTripDto {
+  tripId: string;
+  onward: FlightBookingDto;
+  return: FlightBookingDto;
+  totalAmount: number;
+  currency: string;
 }
 
 export interface RequestFlightCancellationDto {
