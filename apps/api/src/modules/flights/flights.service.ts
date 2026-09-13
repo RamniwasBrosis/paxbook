@@ -6,6 +6,7 @@ import type {
   FlightApiStatusDto,
   FlightBaggageOptionDto,
   FlightBookingDto,
+  FlightCancellationEstimateDto,
   FlightMealOptionDto,
   FlightOptionDto,
   FlightPaymentOrderDto,
@@ -20,6 +21,7 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import { RazorpayService } from "../customer-portal/razorpay.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
+import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
 import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto, FlightSsrSelectionDto } from "./dto/create-flight-booking.dto";
@@ -46,6 +48,7 @@ export class FlightsService {
     private readonly ftd: FtdClientService,
     private readonly razorpay: RazorpayService,
     private readonly pricing: FlightPricingService,
+    private readonly cancellationEstimate: FlightCancellationEstimateService,
   ) {}
 
   /** Applies our margin/discount in place, keyed off the leg data actually returned (not the search
@@ -717,10 +720,32 @@ export class FlightsService {
     const newStatus = allCancelled ? "CANCELLED" : "CANCELLATION_PENDING";
     const statusSummary = mapped.passengers.map((p) => p.cancelStatus).join(", ") || mapped.status;
 
+    // A real, provider-backed refund estimate frozen at the moment cancellation is requested — real
+    // airline cancellation fees are determined by when you cancel, not when an admin later processes
+    // the refund. This must never block or fail the cancellation itself (already irreversible above),
+    // so any failure here just leaves the estimate fields null — the admin refund flow falls back to
+    // fully-manual entry exactly as before this feature existed.
+    const { dto: refundEstimate, snapshot: refundEstimateSnapshot } = await this.computeEstimate(booking).catch(
+      (): { dto: FlightCancellationEstimateDto; snapshot: unknown } => ({
+        dto: { available: false, estimatedRefundAmount: null, cancellationFee: null, currency: booking.currency, note: "Could not compute a refund estimate for this cancellation. Our team will confirm the amount manually.", computedAt: new Date().toISOString() },
+        snapshot: null,
+      }),
+    );
+
     await this.prisma.$transaction([
       this.prisma.flightBooking.update({
         where: { id: booking.id },
-        data: { status: newStatus, cancellationReason: reason, cancellationStatus: statusSummary, cancelledAt: allCancelled ? new Date() : null },
+        data: {
+          status: newStatus,
+          cancellationReason: reason,
+          cancellationStatus: statusSummary,
+          cancelledAt: allCancelled ? new Date() : null,
+          estimatedRefundAmount: refundEstimate.estimatedRefundAmount,
+          estimatedCancellationFee: refundEstimate.cancellationFee,
+          refundEstimateComputedAt: new Date(),
+          refundEstimateNote: refundEstimate.note,
+          refundEstimateSnapshot: refundEstimateSnapshot as object,
+        },
       }),
       this.prisma.flightBookingStatusHistory.create({
         data: { flightBookingId: booking.id, fromStatus: booking.status, toStatus: newStatus, note: `Cancellation requested (${reason}) — provider: ${statusSummary}` },
@@ -728,6 +753,43 @@ export class FlightsService {
     ]);
 
     return this.toDto(await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } }));
+  }
+
+  /** Read-only preview of the same estimate cancelBooking() will freeze — used by the customer-facing
+   * cancel modal so they see a real number (or the honest "can't estimate this" fallback) before
+   * committing to an irreversible cancellation. Shares computeEstimate with cancelBooking so the two
+   * numbers can never drift apart. */
+  async previewCancellationEstimate(tenantId: string, customerId: string, flightBookingId: string): Promise<FlightCancellationEstimateDto> {
+    const booking = await this.getOwned(tenantId, customerId, flightBookingId);
+    if (!FlightsService.CANCELLABLE_STATUSES.has(booking.status)) {
+      throw new BadRequestException({ code: "CANCELLATION_NOT_ALLOWED", message: `A booking with status ${booking.status} cannot be cancelled.` });
+    }
+    return (await this.computeEstimate(booking)).dto;
+  }
+
+  private async computeEstimate(booking: {
+    flightId: string | null;
+    providerFareAmount: { toNumber(): number } | null;
+    currency: string;
+    fareSnapshot: unknown;
+    passengers: unknown[];
+  }): Promise<{ dto: FlightCancellationEstimateDto; snapshot: unknown }> {
+    // journey_segment in FTD's Fare Rules is the overall origin-destination pair (e.g. "DEL-BOM"),
+    // not each physical flight leg — confirmed against a real connecting itinerary (DEL-HYD-MAA-BOM)
+    // whose fare rules only listed "DEL-BOM". Using legs[0]'s own arrCode would silently never match
+    // on any connecting flight.
+    const legs = extractFlightSnapshot(booking.fareSnapshot).legs;
+    const firstLeg = legs[0];
+    const lastLeg = legs[legs.length - 1];
+    return this.cancellationEstimate.estimate({
+      flightId: booking.flightId,
+      providerFareAmount: booking.providerFareAmount,
+      passengerCount: booking.passengers.length,
+      journeyDepCode: firstLeg?.depCode ?? "",
+      journeyArrCode: lastLeg?.arrCode ?? "",
+      journeyDepDateTime: firstLeg?.depDateTime ?? "",
+      currency: booking.currency,
+    });
   }
 
   private async getOwned(tenantId: string, customerId: string, id: string) {
@@ -741,7 +803,9 @@ export class FlightsService {
     fareSnapshot: unknown;
     providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null;
     providerStatus: string | null; errorMessage: string | null; cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
-    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null; tripId: string | null; tripRole: string | null; createdAt: Date; updatedAt: Date;
+    refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
+    estimatedRefundAmount: { toNumber(): number } | null; estimatedCancellationFee: { toNumber(): number } | null; refundEstimateComputedAt: Date | null; refundEstimateNote: string | null;
+    tripId: string | null; tripRole: string | null; createdAt: Date; updatedAt: Date;
     passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
   }): FlightBookingDto {
     const snapshot = extractFlightSnapshot(b.fareSnapshot);
@@ -774,6 +838,10 @@ export class FlightsService {
       refundAmount: b.refundAmount ? b.refundAmount.toNumber() : null,
       refundedAt: b.refundedAt ? b.refundedAt.toISOString() : null,
       refundReference: b.refundReference,
+      estimatedRefundAmount: b.estimatedRefundAmount ? b.estimatedRefundAmount.toNumber() : null,
+      estimatedCancellationFee: b.estimatedCancellationFee ? b.estimatedCancellationFee.toNumber() : null,
+      refundEstimateComputedAt: b.refundEstimateComputedAt ? b.refundEstimateComputedAt.toISOString() : null,
+      refundEstimateNote: b.refundEstimateNote,
       tripId: b.tripId,
       tripRole: b.tripRole as FlightBookingDto["tripRole"],
       createdAt: b.createdAt.toISOString(),

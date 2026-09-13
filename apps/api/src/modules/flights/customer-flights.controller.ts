@@ -63,4 +63,9 @@ export class CustomerFlightsController {
   cancel(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string, @Body() dto: RequestFlightCancellationDto) {
     return this.flightsService.cancelBooking(customer.tenantId, customer.sub, id, dto.reason);
   }
+
+  @Get(":id/cancellation-estimate")
+  cancellationEstimate(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string) {
+    return this.flightsService.previewCancellationEstimate(customer.tenantId, customer.sub, id);
+  }
 }

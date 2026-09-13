@@ -3,6 +3,7 @@ import { CustomerPortalModule } from "../customer-portal/customer-portal.module"
 import { FtdClientService } from "./ftd-client.service";
 import { FlightsService } from "./flights.service";
 import { FlightPricingService } from "./flight-pricing.service";
+import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
 import { PublicFlightsController } from "./public-flights.controller";
 import { CustomerFlightsController } from "./customer-flights.controller";
 import { CustomerFlightTripsController } from "./customer-flight-trips.controller";
@@ -27,6 +28,6 @@ import { AirportsService } from "./airports.service";
     AdminFlightDashboardController,
     AdminAirportsController,
   ],
-  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService, AdminFlightDashboardService, AirportsService],
+  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService, FlightCancellationEstimateService, AdminFlightDashboardService, AirportsService],
 })
 export class FlightsModule {}

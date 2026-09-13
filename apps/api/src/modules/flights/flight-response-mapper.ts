@@ -1,4 +1,6 @@
 import type {
+  FareRuleWindowDto,
+  FareRulesDto,
   FlightBaggageOptionDto,
   FlightFareDto,
   FlightLegDto,
@@ -346,5 +348,38 @@ export function mapCancelResponse(raw: Raw): MappedCancelResponse {
     refId: String(status.refID ?? ""),
     status: String(status.status ?? ""),
     passengers: [...collectLeg(ticket.Onward ?? ticket.onward), ...collectLeg(ticket.Return ?? ticket.return)],
+  };
+}
+
+function mapCancellationWindow(w: Raw): FareRuleWindowDto {
+  return {
+    journeySegment: String(w.journey_segment ?? ""),
+    start: toNum(w.start),
+    end: toNum(w.end),
+    startType: toNum(w.start_type) === 1 ? 1 : 0,
+    endType: toNum(w.end_type) === 1 ? 1 : 0,
+    amount: toNum(w.amount),
+    amountType: toNum(w.amount_type) === 1 ? 1 : 0,
+    remarks: String(w.remarks ?? ""),
+  };
+}
+
+/** postFareRules returns ONE of two shapes ("Either of them will be available" per the provider's
+ * own spec, Section 14) — a structured `policy.{cancellation,reissue,noshow,seat}` schedule, or
+ * just `html`. Never assume the structured shape is present; check for `html` first. */
+export function mapFareRules(raw: Raw): FareRulesDto {
+  const fareRule: Raw = raw.farerule ?? raw.farRule ?? raw.FareRule ?? {};
+  const genRemarks: string | null = fareRule.genRemarks ?? null;
+  if (fareRule.html !== undefined) {
+    return { kind: "html", genRemarks, html: String(fareRule.html ?? "") };
+  }
+  const policy: Raw = fareRule.policy ?? {};
+  return {
+    kind: "structured",
+    genRemarks,
+    cancellation: (policy.cancellation ?? []).map(mapCancellationWindow),
+    reissue: policy.reissue ?? [],
+    noshow: policy.noshow ?? [],
+    seat: policy.seat ?? [],
   };
 }

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { XCircle } from "lucide-react";
+import type { FlightCancellationEstimateDto } from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 
 export function CancelFlightBookingButton({
@@ -21,6 +22,31 @@ export function CancelFlightBookingButton({
   const [reason, setReason] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [estimate, setEstimate] = React.useState<FlightCancellationEstimateDto | null>(null);
+  const [loadingEstimate, setLoadingEstimate] = React.useState(false);
+
+  // Fetch a real, provider-backed estimate once the modal opens — never blocks the actual cancel
+  // action if it fails or comes back unavailable; the qualitative fallback below always still works.
+  React.useEffect(() => {
+    if (!open) {
+      setEstimate(null);
+      return;
+    }
+    let cancelled = false;
+    setLoadingEstimate(true);
+    fetch(`/api/customer/flight-bookings/${bookingId}/cancellation-estimate`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (!cancelled && json?.success !== false) setEstimate(json.data as FlightCancellationEstimateDto);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setLoadingEstimate(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, bookingId]);
 
   async function confirmCancel() {
     if (reason.trim().length < 3) {
@@ -63,7 +89,13 @@ export function CancelFlightBookingButton({
           Cancelling contacts the airline immediately to cancel every passenger&apos;s ticket. Any refund due will be reviewed and processed by our team
           separately — you&apos;ll see it reflected here once it is.
         </p>
-        {refundable === true ? (
+        {loadingEstimate ? (
+          <p className="mt-3 text-sm text-slate-400">Checking the airline&apos;s cancellation policy…</p>
+        ) : estimate?.available ? (
+          <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+            Estimated refund: {currency} {estimate.estimatedRefundAmount?.toLocaleString("en-IN")}. {estimate.note}
+          </p>
+        ) : refundable === true ? (
           <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
             This fare is refundable. You paid {currency} {totalAmount?.toLocaleString("en-IN")} — your eligible refund (after any airline cancellation
             charge) will be calculated and processed to your original payment method.

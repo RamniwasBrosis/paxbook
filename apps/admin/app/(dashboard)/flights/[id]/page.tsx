@@ -187,9 +187,15 @@ function CancellationCard({ booking }: { booking: NonNullable<ReturnType<typeof 
   const [canMode, setCanMode] = React.useState(5);
   const [cancelError, setCancelError] = React.useState<string | null>(null);
 
-  const [refundAmount, setRefundAmount] = React.useState(booking.totalAmount);
+  const [refundAmount, setRefundAmount] = React.useState(booking.estimatedRefundAmount ?? booking.totalAmount);
   const [refundNote, setRefundNote] = React.useState("");
   const [refundError, setRefundError] = React.useState<string | null>(null);
+
+  // The estimate only appears once cancellation actually happens (frozen at that moment) — reset the
+  // pre-filled amount if the admin has this page open through that transition, without a full reload.
+  React.useEffect(() => {
+    setRefundAmount(booking.estimatedRefundAmount ?? booking.totalAmount);
+  }, [booking.estimatedRefundAmount, booking.totalAmount]);
 
   async function handleCancel(e: React.FormEvent) {
     e.preventDefault();
@@ -262,10 +268,18 @@ function CancellationCard({ booking }: { booking: NonNullable<ReturnType<typeof 
         {REFUNDABLE_STATUSES.has(booking.status) && booking.paymentStatus === "PAID" ? (
           <form onSubmit={handleRefund} className="flex flex-col gap-3 border-t border-slate-100 pt-4">
             <p className="text-xs font-semibold uppercase text-slate-400">Process refund to customer</p>
-            <p className="text-xs text-slate-500">
-              The airline&apos;s cancellation API doesn&apos;t report a refund amount — check the fare rules / cancellation policy for this flight, decide the
-              amount, and issue it here via Razorpay.
-            </p>
+            {booking.estimatedRefundAmount != null ? (
+              <p className="text-xs text-slate-500">
+                Pre-filled from an automatic estimate based on the airline&apos;s fare rules
+                {booking.estimatedCancellationFee != null ? ` (₹${booking.estimatedCancellationFee.toLocaleString("en-IN")} airline cancellation fee already deducted; our margin is never refunded)` : ""}
+                — <strong>this is only an estimate</strong>, review and adjust before issuing. {booking.refundEstimateNote}
+              </p>
+            ) : (
+              <p className="text-xs text-slate-500">
+                The airline&apos;s cancellation API doesn&apos;t report a refund amount — check the fare rules / cancellation policy for this flight, decide the
+                amount, and issue it here via Razorpay.
+              </p>
+            )}
             <div className="flex flex-wrap items-end gap-3">
               <Input
                 label={`Refund amount (${booking.currency})`}

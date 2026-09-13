@@ -46,6 +46,52 @@ export interface FlightFareDto {
   agentMarkup: number;
 }
 
+// ---------------------------------------------------------------------------
+// Fare rules — used to compute a real cancellation-fee estimate at cancel time.
+// FTD's own spec says "Either of them will be available": a structured, computable
+// cancellation-fee schedule, OR just an HTML blob with no usable numbers. Modeled
+// as a discriminated union rather than optional fields so callers can't accidentally
+// read `cancellation` off an html-only response.
+// ---------------------------------------------------------------------------
+
+/** One cancellation-fee window from FTD's structured Fare Rules policy — field names mirror the
+ * provider's own wire vocabulary (start/end/amount_type) since this is a thin typing of their
+ * shape, not a redesign. See FlightCancellationEstimateDto / flight-cancellation-estimate.service.ts
+ * for the open questions (confirmed against real data before trusting this) about which of
+ * start/end is closer to departure, and whether amount is per-passenger or per-booking. */
+export interface FareRuleWindowDto {
+  journeySegment: string;
+  start: number;
+  end: number;
+  /** 0 = hours, 1 = days */
+  startType: 0 | 1;
+  /** 0 = hours, 1 = days */
+  endType: 0 | 1;
+  amount: number;
+  /** 0 = fixed ₹ amount, 1 = percentage */
+  amountType: 0 | 1;
+  remarks: string;
+}
+
+export type FareRulesDto =
+  | { kind: "structured"; genRemarks: string | null; cancellation: FareRuleWindowDto[]; reissue: Record<string, unknown>[]; noshow: Record<string, unknown>[]; seat: Record<string, unknown>[] }
+  | { kind: "html"; genRemarks: string | null; html: string };
+
+/** Always an ESTIMATE — a human (customer or admin) reviews it, it's never auto-applied to the
+ * actual Razorpay refund. `available: false` is a normal, expected outcome (HTML-only fare rules,
+ * no matching journey segment, provider call failed, etc.), not an error — callers must fall back
+ * to the existing qualitative-only refundable/non-refundable messaging in that case. */
+export interface FlightCancellationEstimateDto {
+  available: boolean;
+  estimatedRefundAmount: number | null;
+  cancellationFee: number | null;
+  currency: string;
+  /** Always safe to show a customer as-is — either the basis for a real number, or a plain-language
+   * explanation of why none could be computed. */
+  note: string;
+  computedAt: string;
+}
+
 export interface FlightValidationDto {
   isLowCostCarrier: boolean;
   freeMeal: boolean;
@@ -302,6 +348,19 @@ export interface FlightBookingDto {
   refundAmount: number | null;
   refundedAt: string | null;
   refundReference: string | null;
+  /** A real, provider-backed estimate frozen at the moment cancellation was requested (see
+   * FlightsService.cancelBooking) — max(0, providerFareAmount - estimatedCancellationFee). Null
+   * when no computable Fare Rules match was found (HTML-only fare, no journey_segment match, the
+   * provider call failed, etc.) — the admin refund flow then falls back to fully-manual entry.
+   * Always an estimate for a human to review, never auto-applied to the actual Razorpay refund. */
+  estimatedRefundAmount: number | null;
+  /** The airline's own cancellation fee this estimate deducted — never includes Paxbook's margin,
+   * which is never refunded regardless of when the customer cancels. */
+  estimatedCancellationFee: number | null;
+  refundEstimateComputedAt: string | null;
+  /** Human-readable basis for the estimate, or why none was computable — see
+   * FlightCancellationEstimateDto.note. Always safe to show a customer or admin as-is. */
+  refundEstimateNote: string | null;
   /** Set when this booking is one leg of a domestic round trip (see FlightTripDto) — null for a
    * standalone one-way booking, or for the onward leg of a genuine FTD-bundled international round trip. */
   tripId: string | null;

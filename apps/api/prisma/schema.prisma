@@ -1162,6 +1162,23 @@ model FlightBooking {
   refundAmount   Decimal?            @db.Decimal(12, 2)
   refundedAt     DateTime?
   refundReference String?
+  /// A real, provider-backed estimate frozen at the moment cancellation was requested (see
+  /// FlightsService.cancelBooking) — max(0, providerFareAmount - estimatedCancellationFee). Null
+  /// when no computable Fare Rules match was found (HTML-only fare, no journey_segment match, the
+  /// provider call failed, etc.) — the admin refund flow then falls back to fully-manual entry,
+  /// exactly as before this feature existed. Never auto-applied to the actual Razorpay refund.
+  estimatedRefundAmount    Decimal?  @db.Decimal(12, 2)
+  /// The airline's own cancellation fee this estimate deducted — shown to the admin for context.
+  /// Never includes Paxbook's margin, which is never refunded regardless of when cancelled.
+  estimatedCancellationFee Decimal?  @db.Decimal(12, 2)
+  refundEstimateComputedAt DateTime?
+  /// Human-readable basis for the estimate, or why none was computable — shown to both the
+  /// customer (cancel modal) and admin (refund form) as-is.
+  refundEstimateNote       String?
+  /// The exact matched Fare Rules policy window (or an "html"/"no match"/"call failed" marker)
+  /// this estimate was derived from — raw audit trail, mirrors fareSnapshot's existing role of
+  /// freezing provider data as JSON rather than adding a column per field.
+  refundEstimateSnapshot   Json?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
