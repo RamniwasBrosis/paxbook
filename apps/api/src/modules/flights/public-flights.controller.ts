@@ -6,6 +6,7 @@ import { FlightsService } from "./flights.service";
 import { AirportsService } from "./airports.service";
 import { SearchFlightDto } from "./dto/search-flight.dto";
 import { FareRulesLookupDto, FlightLookupDto } from "./dto/flight-lookup.dto";
+import { FlightSeatLookupDto } from "./dto/flight-seat-lookup.dto";
 
 /** Search, fare details, price check, fare rules — no login required, matching the rest of the public browsing flow. */
 @ApiTags("flights")
@@ -36,6 +37,11 @@ export class PublicFlightsController {
   @Post("price-check")
   priceCheck(@Body() dto: FlightLookupDto) {
     return this.flightsService.priceCheck(dto.flightID, dto.refID);
+  }
+
+  @Post("seats")
+  seats(@Body() dto: FlightSeatLookupDto) {
+    return this.flightsService.seats(dto.flightID, dto.refID, dto.passengers);
   }
 
   @Get("fare-rules")

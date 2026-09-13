@@ -14,6 +14,10 @@ export class FlightSsrSelectionDto {
   @IsArray()
   @IsString({ each: true })
   mealIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  seatId?: string;
 }
 
 export class FlightPassengerSsrInputDto {

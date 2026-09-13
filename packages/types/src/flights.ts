@@ -128,6 +128,54 @@ export interface FlightPriceCheckDto {
 }
 
 // ---------------------------------------------------------------------------
+// Seat selection — fetched via its own lookup call (needs real passenger names,
+// unlike baggage/meal which come bundled in price-check), so it's modeled
+// separately from FlightSsrDto rather than folded into it.
+// ---------------------------------------------------------------------------
+
+/** One seat in the cabin grid, as returned by FTD's seat-map lookup. The inverted-sounding
+ * `isBooked` naming is FTD's own: true means the seat IS available, false means it is NOT — this is
+ * confirmed against the provider's spec, not a bug; never "fix" it, just handle it correctly
+ * wherever it's read. These lookup-only fields (row/col/isBooked/isAisle) don't exist in the
+ * narrower shape that round-trips into the actual booking payload. */
+export interface FlightSeatOptionDto {
+  row: number;
+  col: string;
+  seatID: string;
+  isBooked: boolean;
+  isAisle: boolean;
+  seatName: string;
+  seatAmt: number;
+  paxType: "Adult" | "Child" | "All";
+}
+
+/** One leg/segment's seat grid — FTD returns one SeatMap array per physical flight segment, so a
+ * connecting itinerary has more than one entry per direction. */
+export interface FlightSeatMapDto {
+  seatMap: FlightSeatOptionDto[];
+}
+
+export interface FlightSeatLookupResultDto {
+  onward: FlightSeatMapDto[];
+  return?: FlightSeatMapDto[];
+}
+
+/** FTD's seat lookup needs real passenger names (unlike price-check/fare-details), so this is only
+ * called once names are typed and validated in the booking wizard. */
+export interface FlightSeatLookupPassengerDto {
+  title: string;
+  fName: string;
+  lName: string;
+  pType: "A" | "C" | "I";
+}
+
+export interface FlightSeatLookupRequestDto {
+  flightID: number;
+  refID: string;
+  passengers: FlightSeatLookupPassengerDto[];
+}
+
+// ---------------------------------------------------------------------------
 // Booking
 // ---------------------------------------------------------------------------
 
@@ -139,6 +187,10 @@ export interface FlightSsrSelectionDto {
   /** One mealID per distinct legRef the passenger wants a meal for — usually one entry, since most
    * flights have a single leg-ref group; more for a multi-segment journey with per-segment meals. */
   mealIds?: string[];
+  /** Chosen seat's seatID for this leg direction — only an id, never an amount. The server
+   * re-validates against a fresh seat-map lookup at booking time and reads the real seatAmt/seatName
+   * from there, same "never trust a client amount" pattern as baggage/meal. */
+  seatId?: string;
 }
 
 export interface FlightPassengerSsrInputDto {

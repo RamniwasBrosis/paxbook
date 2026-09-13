@@ -11,6 +11,8 @@ import type {
   FlightPaymentOrderDto,
   FlightPriceCheckDto,
   FlightSearchResultDto,
+  FlightSeatLookupResultDto,
+  FlightSeatOptionDto,
   FlightTripDto,
   VerifyFlightPaymentDto,
 } from "@paxbook/types";
@@ -18,10 +20,24 @@ import { PrismaService } from "../../common/prisma/prisma.service";
 import { RazorpayService } from "../customer-portal/razorpay.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
-import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
+import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto, FlightSsrSelectionDto } from "./dto/create-flight-booking.dto";
+import type { FlightSeatLookupPassengerDto } from "./dto/flight-seat-lookup.dto";
 import type { CreateRoundTripFlightBookingDto } from "./dto/create-round-trip-flight-booking.dto";
+
+/** What one passenger ended up with for one leg direction, after re-validating their submitted
+ * baggage/meal/seat ids against a fresh provider lookup — this is what gets stashed in
+ * fareSnapshot._resolvedSsr and replayed into FTD's ssrInfo block at confirm-time. */
+interface ResolvedSsrLeg {
+  baggage?: FlightBaggageOptionDto;
+  meals: FlightMealOptionDto[];
+  seat?: FlightSeatOptionDto;
+}
+interface ResolvedSsrByPassenger {
+  onward?: ResolvedSsrLeg;
+  return?: ResolvedSsrLeg;
+}
 
 @Injectable()
 export class FlightsService {
@@ -116,8 +132,21 @@ export class FlightsService {
     return this.ftd.fareRules(flightID);
   }
 
+  /** Real seat-map lookup — needs actual passenger names (an FTD requirement), so unlike
+   * price-check's bundled baggage/meal data this is its own on-demand call, made only once names are
+   * typed. No margin applied — seat prices pass through from FTD unmodified, same as baggage/meal. */
+  async seats(flightID: number, refID: string, passengers: FlightSeatLookupPassengerDto[]): Promise<FlightSeatLookupResultDto> {
+    const raw = await this.ftd.seats(
+      flightID,
+      refID,
+      passengers.map((p) => ({ title: p.title, fName: p.fName, lName: p.lName, pType: p.pType })),
+    );
+    return mapSeats(raw);
+  }
+
   /** "All" matches any passenger; "Adult"/"Child" only match that exact pType. FTD's SSR options
-   * come tagged this way, and infants ("I") are never offered baggage/meal add-ons by the provider. */
+   * come tagged this way (baggage/meal/seat all use it), and infants ("I") are never offered these
+   * add-ons by the provider. */
   private ssrPaxTypeMatches(optionPaxType: "Adult" | "Child" | "All", pType: string): boolean {
     if (optionPaxType === "All") return true;
     if (optionPaxType === "Adult") return pType === "A";
@@ -136,7 +165,7 @@ export class FlightsService {
   private resolveSsrSelection(
     dto: CreateFlightBookingDto,
     priceCheck: FlightPriceCheckDto,
-  ): { total: number; resolved: Array<{ onward?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] }; return?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] } }> } {
+  ): { total: number; resolved: ResolvedSsrByPassenger[] } {
     const ssr = priceCheck.ssr;
     const validation = priceCheck.option.validation;
     let total = 0;
@@ -191,6 +220,96 @@ export class FlightsService {
   }
 
   /**
+   * Real seat-map validation — structurally different from baggage/meal because FTD's seat lookup
+   * is its own call (needs passenger names, isn't bundled in price-check) rather than data already
+   * in hand. Short-circuits before ever calling FTD if nobody selected a seat, so bookings that don't
+   * touch this feature pay zero extra latency. When seats ARE requested, re-fetches a fresh map
+   * (never trusts a stale one), rejects an id that's missing/taken/pax-type-mismatched, and rejects
+   * two passengers claiming the same seat in one submission — the DTO has no uniqueness constraint
+   * of its own, so this has to be enforced here.
+   */
+  private async resolveSeatSelection(
+    dto: CreateFlightBookingDto,
+    priceCheck: FlightPriceCheckDto,
+  ): Promise<{ total: number; resolved: Array<{ onward?: FlightSeatOptionDto; return?: FlightSeatOptionDto }> }> {
+    const validation = priceCheck.option.validation;
+    const hasReturn = Boolean(priceCheck.option.returnLegs);
+    const anySeatRequested = dto.passengers.some((p) => p.ssr?.onward?.seatId || p.ssr?.return?.seatId);
+
+    if (!anySeatRequested) {
+      if (validation.seatMandatory) {
+        throw new BadRequestException({
+          code: "SEAT_MAP_UNAVAILABLE",
+          message: "This fare requires selecting a seat. Please go back and choose a seat, or contact our travel desk to complete this booking manually.",
+        });
+      }
+      return { total: 0, resolved: dto.passengers.map(() => ({})) };
+    }
+
+    let seatMap: FlightSeatLookupResultDto;
+    try {
+      seatMap = await this.seats(
+        dto.flightID,
+        dto.refID,
+        dto.passengers.map((p) => ({ title: p.title, fName: p.fName, lName: p.lName, pType: p.pType })),
+      );
+    } catch {
+      throw new BadRequestException({
+        code: "SEAT_MAP_UNAVAILABLE",
+        message: "Could not retrieve seat availability for this flight. Please try again or contact our travel desk.",
+      });
+    }
+
+    const flatten = (maps: typeof seatMap.onward | undefined) => (maps ?? []).flatMap((m) => m.seatMap);
+    const onwardSeats = flatten(seatMap.onward);
+    const returnSeats = flatten(seatMap.return);
+
+    if (validation.seatMandatory && onwardSeats.length === 0 && (!hasReturn || returnSeats.length === 0)) {
+      throw new BadRequestException({
+        code: "SEAT_MAP_UNAVAILABLE",
+        message: "This fare requires selecting a seat, but seat availability could not be retrieved for it. Please try a different fare or contact our travel desk.",
+      });
+    }
+
+    let total = 0;
+    const claimedOnward = new Set<string>();
+    const claimedReturn = new Set<string>();
+
+    const resolveLeg = (idx: number, pType: string, seatId: string | undefined, seats: FlightSeatOptionDto[], claimed: Set<string>, label: string | undefined): FlightSeatOptionDto | undefined => {
+      if (!seatId) {
+        // Infants never get their own seat (they travel on a lap) — FTD doesn't offer them one, so
+        // a seat-mandatory fare can't reasonably demand one either.
+        if (validation.seatMandatory && seats.length > 0 && pType !== "I") {
+          throw new BadRequestException({
+            code: "SEAT_REQUIRED",
+            message: `Passenger ${idx + 1}: this fare requires selecting a seat${label ? ` for the ${label} flight` : ""}.`,
+          });
+        }
+        return undefined;
+      }
+      const seat = seats.find((s) => s.seatID === seatId);
+      // isBooked: true means AVAILABLE (FTD's own inverted-sounding naming) — a false/missing seat
+      // is either already taken or doesn't exist in this fresh lookup at all.
+      if (!seat || !seat.isBooked || !this.ssrPaxTypeMatches(seat.paxType, pType)) {
+        throw new BadRequestException({ code: "SEAT_INVALID", message: `Passenger ${idx + 1}: the selected seat is no longer available for this fare.` });
+      }
+      if (claimed.has(seatId)) {
+        throw new BadRequestException({ code: "SEAT_ALREADY_ASSIGNED", message: `Passenger ${idx + 1}: this seat has already been selected for another passenger.` });
+      }
+      claimed.add(seatId);
+      total += seat.seatAmt;
+      return seat;
+    };
+
+    const resolved = dto.passengers.map((p, idx) => ({
+      onward: resolveLeg(idx, p.pType, p.ssr?.onward?.seatId, onwardSeats, claimedOnward, hasReturn ? "departure" : undefined),
+      return: hasReturn ? resolveLeg(idx, p.pType, p.ssr?.return?.seatId, returnSeats, claimedReturn, "return") : undefined,
+    }));
+
+    return { total, resolved };
+  }
+
+  /**
    * Creates our own booking record and freezes the price at this moment (re-verified against the
    * provider, never trusted from the client) — this is the DRAFT the customer pays for. Nothing is
    * booked with the provider yet; that only happens after payment clears, in confirmBooking().
@@ -225,7 +344,18 @@ export class FlightsService {
     // Real baggage/meal purchase: only ids ever come from the client, priced and validated here
     // against what the provider just quoted moments ago — see resolveSsrSelection's own comment.
     const { total: ssrTotal, resolved: resolvedSsr } = this.resolveSsrSelection(dto, priceCheck);
-    const totalAmount = priceCheck.option.fare.total + ssrTotal;
+    // Real seat purchase: its own fresh FTD lookup (see resolveSeatSelection's own comment) — merged
+    // into the same per-passenger shape below so bookWithProvider only has one structure to read back.
+    const { total: seatTotal, resolved: resolvedSeats } = await this.resolveSeatSelection(dto, priceCheck);
+    const mergedResolvedSsr: ResolvedSsrByPassenger[] = dto.passengers.map((_, idx) => {
+      const mergeLeg = (base: ResolvedSsrLeg | undefined, seat: FlightSeatOptionDto | undefined): ResolvedSsrLeg | undefined =>
+        base || seat ? { baggage: base?.baggage, meals: base?.meals ?? [], seat } : undefined;
+      return {
+        onward: mergeLeg(resolvedSsr[idx]?.onward, resolvedSeats[idx]?.onward),
+        return: mergeLeg(resolvedSsr[idx]?.return, resolvedSeats[idx]?.return),
+      };
+    });
+    const totalAmount = priceCheck.option.fare.total + ssrTotal + seatTotal;
 
     const booking = await this.prisma.flightBooking.create({
       data: {
@@ -279,7 +409,7 @@ export class FlightsService {
     // re-run the id lookup against a possibly-stale re-fetch of the provider's SSR options.
     await this.prisma.flightBooking.update({
       where: { id: booking.id },
-      data: { fareSnapshot: { ...(priceCheck as object), _bookingInput: dto, _resolvedSsr: resolvedSsr } as unknown as object },
+      data: { fareSnapshot: { ...(priceCheck as object), _bookingInput: dto, _resolvedSsr: mergedResolvedSsr } as unknown as object },
     });
 
     return this.toDto(booking);
@@ -428,7 +558,7 @@ export class FlightsService {
     const booking = await this.prisma.flightBooking.findFirstOrThrow({ where: { id: flightBookingId, tenantId, customerId }, include: { passengers: true } });
     const snapshot = booking.fareSnapshot as unknown as {
       _bookingInput?: CreateFlightBookingDto;
-      _resolvedSsr?: Array<{ onward?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] }; return?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] } }>;
+      _resolvedSsr?: ResolvedSsrByPassenger[];
     };
     const input = snapshot?._bookingInput;
     if (!input) {
@@ -440,11 +570,14 @@ export class FlightsService {
     // matches; there's no other stable per-passenger key to join on (FlightPassenger.id is a random uuid).
     const resolvedSsr = snapshot?._resolvedSsr;
 
-    const toFtdSsrLeg = (leg: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] } | undefined) => {
-      if (!leg || (!leg.baggage && leg.meals.length === 0)) return undefined;
+    const toFtdSsrLeg = (leg: ResolvedSsrLeg | undefined) => {
+      if (!leg || (!leg.baggage && leg.meals.length === 0 && !leg.seat)) return undefined;
       const block: Record<string, unknown> = {};
       if (leg.baggage) block.Bagg = { baggID: leg.baggage.id, baggAmt: leg.baggage.amount, baggDesc: leg.baggage.description, paxType: leg.baggage.paxType };
       if (leg.meals.length > 0) block.Meal = leg.meals.map((m) => ({ mealID: m.id, mealAmt: m.amount, mealDesc: m.description, mealRef: m.legRef, paxType: m.paxType }));
+      // Every FTD "Book with SSR" example sends Seat as a 1-element array — match that shape exactly,
+      // even though this UI only ever assigns one seat per passenger per leg.
+      if (leg.seat) block.Seat = [{ seatID: leg.seat.seatID, seatName: leg.seat.seatName, seatAmt: leg.seat.seatAmt, paxType: leg.seat.paxType }];
       return block;
     };
 

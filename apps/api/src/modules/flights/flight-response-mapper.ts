@@ -6,6 +6,9 @@ import type {
   FlightOptionDto,
   FlightPriceCheckDto,
   FlightSearchResultDto,
+  FlightSeatLookupResultDto,
+  FlightSeatMapDto,
+  FlightSeatOptionDto,
   FlightSsrDto,
   FlightValidationDto,
 } from "@paxbook/types";
@@ -212,6 +215,34 @@ export function mapPriceCheck(raw: Raw): FlightPriceCheckDto {
     : null;
 
   return { option, ssr };
+}
+
+function mapSeatMapArray(arr: Raw[] | undefined): FlightSeatMapDto[] {
+  return (arr ?? []).map((segment) => ({
+    seatMap: (segment.SeatMap ?? []).map(
+      (s: Raw): FlightSeatOptionDto => ({
+        row: toNum(s.row),
+        col: String(s.col ?? ""),
+        seatID: String(s.seatID ?? ""),
+        // FTD's own inverted-sounding naming: true means available, false means taken. Don't "fix" it.
+        isBooked: s.isBooked === true || s.isBooked === "1" || s.isBooked === 1,
+        isAisle: s.isAisle === true || s.isAisle === "1" || s.isAisle === 1,
+        seatName: s.seatName ?? "",
+        seatAmt: toNum(s.seatAmt),
+        paxType: s.paxType === "Adult" ? "Adult" : s.paxType === "Child" ? "Child" : "All",
+      }),
+    ),
+  }));
+}
+
+/** Whether FTD wraps this response in `result` (like price-check) or returns it flat (like search)
+ * wasn't confirmed by static inspection of the docs alone — read defensively either way. */
+export function mapSeats(raw: Raw): FlightSeatLookupResultDto {
+  const root: Raw = raw.result ?? raw;
+  const seatRoot: Raw = root.FlightSeat ?? root;
+  const onward = mapSeatMapArray(seatRoot.Onward);
+  const returnMaps = seatRoot.Return ? mapSeatMapArray(seatRoot.Return) : undefined;
+  return { onward, ...(returnMaps ? { return: returnMaps } : {}) };
 }
 
 export interface MappedBookingLeg {
