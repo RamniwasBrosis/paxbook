@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plane, ShieldCheck, Headset, BadgePercent, ArrowRight } from "lucide-react";
+import type { BannerDto } from "@paxbook/types";
+import { publicFetch } from "@/lib/api";
 import { FlightSearchForm } from "@/components/FlightSearchForm";
+import { PromoBannerStrip } from "@/components/PromoBannerStrip";
 
 export const metadata: Metadata = { title: "Flight Booking — Search & Book Flights" };
 
@@ -22,8 +25,9 @@ function defaultDepartureDate(): string {
   return d.toISOString().slice(0, 10).replace(/-/g, "");
 }
 
-export default function FlightsLandingPage() {
+export default async function FlightsLandingPage() {
   const onDate = defaultDepartureDate();
+  const banners = await publicFetch<BannerDto[]>("/public/banners?placement=flights_page").catch(() => [] as BannerDto[]);
 
   return (
     <div>
@@ -44,6 +48,8 @@ export default function FlightsLandingPage() {
           </div>
         </div>
       </section>
+
+      <PromoBannerStrip banners={banners} />
 
       <div className="shell pb-6 pt-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Popular routes</p>

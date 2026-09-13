@@ -65,6 +65,22 @@ export class PublicService {
     return this.cache.getOrSet(`public:homepage:${tenantId}`, 60, () => this.loadHomepage(tenantId));
   }
 
+  /** Real admin-managed CMS banners for a single placement (e.g. "flights_page") — same active-window
+   * filtering as the homepage's banner strip, just not bundled into that page's larger payload. */
+  async getBannersByPlacement(tenantId: string, placement: string): Promise<BannerDto[]> {
+    const now = new Date();
+    const banners = await this.prisma.banner.findMany({
+      where: {
+        tenantId,
+        placement,
+        isActive: true,
+        OR: [{ activeFrom: null }, { activeFrom: { lte: now } }],
+      },
+      orderBy: { sortOrder: "asc" },
+    });
+    return banners.filter((b) => !b.activeTo || b.activeTo >= now).map((b) => this.toBannerDto(b));
+  }
+
   private async loadHomepage(tenantId: string): Promise<PublicHomepageDto> {
     const now = new Date();
 

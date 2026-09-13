@@ -16,6 +16,11 @@ export class PublicContentController {
     return this.publicService.getHomepage(tenant.id);
   }
 
+  @Get("banners")
+  getBanners(@CurrentTenant() tenant: ResolvedTenant, @Query("placement") placement: string) {
+    return this.publicService.getBannersByPlacement(tenant.id, placement);
+  }
+
   @Get("branding")
   getBranding(@CurrentTenant() tenant: ResolvedTenant) {
     return this.publicService.getBranding(tenant.id);

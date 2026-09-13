@@ -85,13 +85,14 @@ export default function CmsPage() {
   );
 }
 
-const PLACEMENTS = ["homepage_hero", "homepage_strip", "homepage_bottom", "destination_page", "package_page"];
+const PLACEMENTS = ["homepage_hero", "homepage_strip", "homepage_bottom", "destination_page", "package_page", "flights_page"];
 const PLACEMENT_LABELS: Record<string, string> = {
   homepage_hero: "Homepage — Hero",
   homepage_strip: "Homepage — Strip",
   homepage_bottom: "Homepage — Bottom CTA / Posters",
   destination_page: "Destination page",
   package_page: "Package page",
+  flights_page: "Flight booking page",
 };
 
 function BannersTab({ canWrite }: { canWrite: boolean }) {
