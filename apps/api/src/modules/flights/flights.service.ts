@@ -4,7 +4,9 @@ import type {
   AdminFlightSearchResultDto,
   CreateFlightBookingRequestDto,
   FlightApiStatusDto,
+  FlightBaggageOptionDto,
   FlightBookingDto,
+  FlightMealOptionDto,
   FlightOptionDto,
   FlightPaymentOrderDto,
   FlightPriceCheckDto,
@@ -18,7 +20,7 @@ import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
-import type { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
+import type { CreateFlightBookingDto, FlightSsrSelectionDto } from "./dto/create-flight-booking.dto";
 import type { CreateRoundTripFlightBookingDto } from "./dto/create-round-trip-flight-booking.dto";
 
 @Injectable()
@@ -114,6 +116,80 @@ export class FlightsService {
     return this.ftd.fareRules(flightID);
   }
 
+  /** "All" matches any passenger; "Adult"/"Child" only match that exact pType. FTD's SSR options
+   * come tagged this way, and infants ("I") are never offered baggage/meal add-ons by the provider. */
+  private ssrPaxTypeMatches(optionPaxType: "Adult" | "Child" | "All", pType: string): boolean {
+    if (optionPaxType === "All") return true;
+    if (optionPaxType === "Adult") return pType === "A";
+    if (optionPaxType === "Child") return pType === "C";
+    return false;
+  }
+
+  /**
+   * Re-validates every baggage/meal id a customer submitted against the SSR options this exact
+   * request's own price-check just quoted — never trusts a client-supplied amount (there isn't one
+   * to trust; the DTO only carries ids) and never trusts a stale/cached option list. Also enforces
+   * the fare's own baggageMandatory/mealMandatory flags now that these are real, selectable options
+   * rather than a blanket UI block. Returns the real total to add to the booking plus, per passenger,
+   * the resolved option objects bookWithProvider() needs later to build FTD's ssrInfo block.
+   */
+  private resolveSsrSelection(
+    dto: CreateFlightBookingDto,
+    priceCheck: FlightPriceCheckDto,
+  ): { total: number; resolved: Array<{ onward?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] }; return?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] } }> } {
+    const ssr = priceCheck.ssr;
+    const validation = priceCheck.option.validation;
+    let total = 0;
+
+    const resolveLeg = (
+      idx: number,
+      pType: string,
+      sel: FlightSsrSelectionDto | undefined,
+      legOptions: { baggage: FlightBaggageOptionDto[]; meals: FlightMealOptionDto[] } | undefined,
+      label: string | undefined,
+    ) => {
+      if (!legOptions) return undefined;
+      let baggage: FlightBaggageOptionDto | undefined;
+      if (sel?.baggageId) {
+        baggage = legOptions.baggage.find((b) => b.id === sel.baggageId);
+        if (!baggage || !this.ssrPaxTypeMatches(baggage.paxType, pType)) {
+          throw new BadRequestException({ code: "SSR_BAGGAGE_INVALID", message: `Passenger ${idx + 1}: the selected baggage option is no longer available for this fare.` });
+        }
+        total += baggage.amount;
+      } else if (validation.baggageMandatory && legOptions.baggage.length > 0) {
+        throw new BadRequestException({
+          code: "SSR_BAGGAGE_REQUIRED",
+          message: `Passenger ${idx + 1}: this fare requires selecting a baggage option${label ? ` for the ${label} flight` : ""}.`,
+        });
+      }
+
+      const meals: FlightMealOptionDto[] = [];
+      for (const mealId of sel?.mealIds ?? []) {
+        const meal = legOptions.meals.find((m) => m.id === mealId);
+        if (!meal || !this.ssrPaxTypeMatches(meal.paxType, pType)) {
+          throw new BadRequestException({ code: "SSR_MEAL_INVALID", message: `Passenger ${idx + 1}: a selected meal option is no longer available for this fare.` });
+        }
+        meals.push(meal);
+        total += meal.amount;
+      }
+      if (meals.length === 0 && validation.mealMandatory && legOptions.meals.length > 0) {
+        throw new BadRequestException({
+          code: "SSR_MEAL_REQUIRED",
+          message: `Passenger ${idx + 1}: this fare requires selecting a meal option${label ? ` for the ${label} flight` : ""}.`,
+        });
+      }
+
+      return baggage || meals.length > 0 ? { baggage, meals } : undefined;
+    };
+
+    const resolved = dto.passengers.map((p, idx) => ({
+      onward: resolveLeg(idx, p.pType, p.ssr?.onward, ssr?.onward, ssr?.return ? "departure" : undefined),
+      return: ssr?.return ? resolveLeg(idx, p.pType, p.ssr?.return, ssr.return, "return") : undefined,
+    }));
+
+    return { total, resolved };
+  }
+
   /**
    * Creates our own booking record and freezes the price at this moment (re-verified against the
    * provider, never trusted from the client) — this is the DRAFT the customer pays for. Nothing is
@@ -146,7 +222,10 @@ export class FlightsService {
       throw new BadRequestException({ code: "NO_PASSENGERS", message: "At least one passenger is required." });
     }
 
-    const totalAmount = priceCheck.option.fare.total;
+    // Real baggage/meal purchase: only ids ever come from the client, priced and validated here
+    // against what the provider just quoted moments ago — see resolveSsrSelection's own comment.
+    const { total: ssrTotal, resolved: resolvedSsr } = this.resolveSsrSelection(dto, priceCheck);
+    const totalAmount = priceCheck.option.fare.total + ssrTotal;
 
     const booking = await this.prisma.flightBooking.create({
       data: {
@@ -195,10 +274,12 @@ export class FlightsService {
       include: { passengers: true },
     });
 
-    // Stash the contact/GST/PAN details needed at the actual FTD book() call for confirmBooking().
+    // Stash the contact/GST/PAN details needed at the actual FTD book() call for confirmBooking(),
+    // plus the already-validated SSR selection (_resolvedSsr) so bookWithProvider() doesn't need to
+    // re-run the id lookup against a possibly-stale re-fetch of the provider's SSR options.
     await this.prisma.flightBooking.update({
       where: { id: booking.id },
-      data: { fareSnapshot: { ...(priceCheck as object), _bookingInput: dto } as unknown as object },
+      data: { fareSnapshot: { ...(priceCheck as object), _bookingInput: dto, _resolvedSsr: resolvedSsr } as unknown as object },
     });
 
     return this.toDto(booking);
@@ -345,24 +426,45 @@ export class FlightsService {
 
   private async bookWithProvider(tenantId: string, customerId: string, flightBookingId: string): Promise<FlightBookingDto> {
     const booking = await this.prisma.flightBooking.findFirstOrThrow({ where: { id: flightBookingId, tenantId, customerId }, include: { passengers: true } });
-    const snapshot = booking.fareSnapshot as unknown as { _bookingInput?: CreateFlightBookingDto };
+    const snapshot = booking.fareSnapshot as unknown as {
+      _bookingInput?: CreateFlightBookingDto;
+      _resolvedSsr?: Array<{ onward?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] }; return?: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] } }>;
+    };
     const input = snapshot?._bookingInput;
     if (!input) {
       await this.markFailed(booking.id, "Missing original booking details — cannot complete booking with the provider.");
       throw new BadRequestException({ code: "BOOKING_INPUT_MISSING", message: "Could not complete this booking. Please contact support." });
     }
+    // Positional pairing with input.passengers[idx] / _resolvedSsr[idx] — booking.passengers was
+    // created from that same array via one nested create in createDraftBooking, so insertion order
+    // matches; there's no other stable per-passenger key to join on (FlightPassenger.id is a random uuid).
+    const resolvedSsr = snapshot?._resolvedSsr;
+
+    const toFtdSsrLeg = (leg: { baggage?: FlightBaggageOptionDto; meals: FlightMealOptionDto[] } | undefined) => {
+      if (!leg || (!leg.baggage && leg.meals.length === 0)) return undefined;
+      const block: Record<string, unknown> = {};
+      if (leg.baggage) block.Bagg = { baggID: leg.baggage.id, baggAmt: leg.baggage.amount, baggDesc: leg.baggage.description, paxType: leg.baggage.paxType };
+      if (leg.meals.length > 0) block.Meal = leg.meals.map((m) => ({ mealID: m.id, mealAmt: m.amount, mealDesc: m.description, mealRef: m.legRef, paxType: m.paxType }));
+      return block;
+    };
 
     const payload = {
-      passenger: booking.passengers.map((p) => ({
-        title: p.title,
-        fName: p.fName,
-        lName: p.lName,
-        pType: p.pType,
-        gender: p.gender,
-        dob: p.dob,
-        ...(p.documentId ? { document_id: p.documentId } : {}),
-        ...(p.ppNo ? { ppNo: p.ppNo, ppIss: p.ppIss, ppExp: p.ppExp, ppNat: p.ppNat } : {}),
-      })),
+      passenger: booking.passengers.map((p, idx) => {
+        const ssrForPax = resolvedSsr?.[idx];
+        const onward = toFtdSsrLeg(ssrForPax?.onward);
+        const returnLeg = toFtdSsrLeg(ssrForPax?.return);
+        return {
+          title: p.title,
+          fName: p.fName,
+          lName: p.lName,
+          pType: p.pType,
+          gender: p.gender,
+          dob: p.dob,
+          ...(p.documentId ? { document_id: p.documentId } : {}),
+          ...(p.ppNo ? { ppNo: p.ppNo, ppIss: p.ppIss, ppExp: p.ppExp, ppNat: p.ppNat } : {}),
+          ...(onward || returnLeg ? { ssrInfo: { ...(onward ? { Onward: onward } : {}), ...(returnLeg ? { Return: returnLeg } : {}) } } : {}),
+        };
+      }),
       refID: booking.refId,
       clientID: booking.clientId,
       flightID: Number(booking.flightId),

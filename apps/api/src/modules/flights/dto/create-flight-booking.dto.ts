@@ -1,6 +1,34 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
 import { SearchFlightDto } from "./search-flight.dto";
+
+/** Only ids, never a price — see FlightsService.createDraftBooking, which re-validates every id
+ * against the SSR options this exact request's own price-check just quoted and reads the real
+ * amount from there, so there is nowhere for a client to submit a price. */
+export class FlightSsrSelectionDto {
+  @IsOptional()
+  @IsString()
+  baggageId?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  mealIds?: string[];
+}
+
+export class FlightPassengerSsrInputDto {
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => FlightSsrSelectionDto)
+  onward?: FlightSsrSelectionDto;
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => FlightSsrSelectionDto)
+  return?: FlightSsrSelectionDto;
+}
 
 export class FlightPassengerInputDto {
   @IsString()
@@ -44,6 +72,12 @@ export class FlightPassengerInputDto {
   @IsOptional()
   @IsString()
   ppNat?: string;
+
+  @IsOptional()
+  @IsObject()
+  @ValidateNested()
+  @Type(() => FlightPassengerSsrInputDto)
+  ssr?: FlightPassengerSsrInputDto;
 }
 
 export class FlightGstInputDto {

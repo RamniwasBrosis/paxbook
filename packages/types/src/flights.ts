@@ -131,6 +131,21 @@ export interface FlightPriceCheckDto {
 // Booking
 // ---------------------------------------------------------------------------
 
+/** A passenger's chosen baggage/meal add-ons for one leg direction — only ids, never an amount.
+ * The server re-validates every id against the SSR options the just-completed price-check actually
+ * quoted and reads the real price from there, so there is nowhere for a client to submit a price. */
+export interface FlightSsrSelectionDto {
+  baggageId?: string;
+  /** One mealID per distinct legRef the passenger wants a meal for — usually one entry, since most
+   * flights have a single leg-ref group; more for a multi-segment journey with per-segment meals. */
+  mealIds?: string[];
+}
+
+export interface FlightPassengerSsrInputDto {
+  onward?: FlightSsrSelectionDto;
+  return?: FlightSsrSelectionDto;
+}
+
 export interface FlightPassengerInputDto {
   title: string;
   fName: string;
@@ -143,6 +158,7 @@ export interface FlightPassengerInputDto {
   ppIss?: string;
   ppExp?: string;
   ppNat?: string;
+  ssr?: FlightPassengerSsrInputDto;
 }
 
 export interface FlightGstInputDto {

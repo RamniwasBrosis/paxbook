@@ -5,7 +5,15 @@ import Link from "next/link";
 import Script from "next/script";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Plane, ShieldCheck, ShieldOff, AlertTriangle } from "lucide-react";
-import type { CreateFlightBookingRequestDto, FlightPassengerInputDto, FlightPriceCheckDto } from "@paxbook/types";
+import type {
+  CreateFlightBookingRequestDto,
+  FlightBaggageOptionDto,
+  FlightMealOptionDto,
+  FlightPassengerInputDto,
+  FlightPassengerSsrInputDto,
+  FlightPriceCheckDto,
+  FlightSsrDto,
+} from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
@@ -49,6 +57,44 @@ function storageKey(flightId: string, refId: string) {
   return `pb_flight_pax_${flightId}_${refId}`;
 }
 
+interface SsrLegChoice {
+  baggageId?: string;
+  mealIds?: string[];
+}
+interface PassengerSsrChoice {
+  onward?: SsrLegChoice;
+  return?: SsrLegChoice;
+}
+
+/** Sums the real amounts of a passenger's chosen options against the SSR list actually quoted —
+ * display-only; the server independently re-validates and recomputes this from scratch on submit. */
+function sumSsrChoice(choice: PassengerSsrChoice | undefined, ssr: FlightSsrDto | null): number {
+  if (!choice || !ssr) return 0;
+  const addLeg = (leg: SsrLegChoice | undefined, legSsr: { baggage: FlightBaggageOptionDto[]; meals: FlightMealOptionDto[] } | undefined) => {
+    if (!leg || !legSsr) return 0;
+    let sum = 0;
+    if (leg.baggageId) sum += legSsr.baggage.find((b) => b.id === leg.baggageId)?.amount ?? 0;
+    for (const mealId of leg.mealIds ?? []) sum += legSsr.meals.find((m) => m.id === mealId)?.amount ?? 0;
+    return sum;
+  };
+  return addLeg(choice.onward, ssr.onward) + addLeg(choice.return, ssr.return);
+}
+
+/** Drops empty legs so the create-booking payload only ever carries a passenger's real selections. */
+function cleanSsrChoice(choice: PassengerSsrChoice | undefined): FlightPassengerSsrInputDto | undefined {
+  if (!choice) return undefined;
+  const cleanLeg = (leg: SsrLegChoice | undefined) => {
+    if (!leg) return undefined;
+    const mealIds = (leg.mealIds ?? []).filter(Boolean);
+    if (!leg.baggageId && mealIds.length === 0) return undefined;
+    return { ...(leg.baggageId ? { baggageId: leg.baggageId } : {}), ...(mealIds.length ? { mealIds } : {}) };
+  };
+  const onward = cleanLeg(choice.onward);
+  const returnLeg = cleanLeg(choice.return);
+  if (!onward && !returnLeg) return undefined;
+  return { ...(onward ? { onward } : {}), ...(returnLeg ? { return: returnLeg } : {}) };
+}
+
 export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLoggedIn: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
@@ -62,6 +108,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
 
   const [step, setStep] = React.useState<"passengers" | "review">("passengers");
   const [passengers, setPassengers] = React.useState<PassengerForm[]>([]);
+  const [ssrChoices, setSsrChoices] = React.useState<Record<number, PassengerSsrChoice>>({});
   const [mobile, setMobile] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [panNo, setPanNo] = React.useState("");
@@ -108,6 +155,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         setMobile(parsed.mobile ?? "");
         setEmail(parsed.email ?? "");
         setPanNo(parsed.panNo ?? "");
+        setSsrChoices(parsed.ssrChoices ?? {});
         return;
       } catch {
         // fall through to fresh slots
@@ -119,24 +167,27 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
       ...Array.from({ length: searchContext.inf }, () => ({ pType: "I" as const })),
     ].map((slot) => ({ title: "Mr", fName: "", lName: "", pType: slot.pType, gender: "M" as const, dobIso: "", ppNo: "", ppIss: "", ppExp: "", ppNat: "", documentId: "" }));
     setPassengers(slots);
+    setSsrChoices({});
   }, [searchContext, flightId, refId]);
 
   // Persist in-progress entries so a login-modal round trip (or accidental refresh) doesn't lose typed data.
   React.useEffect(() => {
     if (!flightId || !refId || passengers.length === 0) return;
-    window.sessionStorage.setItem(storageKey(flightId, refId), JSON.stringify({ passengers, mobile, email, panNo }));
-  }, [passengers, mobile, email, panNo, flightId, refId]);
+    window.sessionStorage.setItem(storageKey(flightId, refId), JSON.stringify({ passengers, mobile, email, panNo, ssrChoices }));
+  }, [passengers, mobile, email, panNo, ssrChoices, flightId, refId]);
 
   function updatePassenger(idx: number, patch: Partial<PassengerForm>) {
     setPassengers((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
   }
 
+  function updatePassengerSsr(idx: number, next: PassengerSsrChoice) {
+    setSsrChoices((prev) => ({ ...prev, [idx]: next }));
+  }
+
   const validation = priceCheck?.option.validation;
-  // Baggage/meal/seat selection isn't wired into the booking flow yet (the backend's create-booking
-  // payload has no slot for it) — if the fare requires one of these to be chosen, we can't safely
-  // fulfil the booking, so block here rather than risk a payment succeeding and the provider booking
-  // failing (or silently ignoring a mandatory requirement) afterwards.
-  const unsupportedMandatory = Boolean(validation?.seatMandatory || validation?.mealMandatory || validation?.baggageMandatory);
+  // Baggage/meal are now real, selectable options (see SsrPicker below), so only seat selection —
+  // not built yet, needs FTD's separate seat-map lookup call — still forces this hard block.
+  const unsupportedMandatory = Boolean(validation?.seatMandatory);
 
   function validatePassengers(): string | null {
     for (const [idx, p] of passengers.entries()) {
@@ -174,7 +225,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           flightID: Number(flightId),
           refID: refId,
           passengers: passengers.map(
-            (p): FlightPassengerInputDto => ({
+            (p, idx): FlightPassengerInputDto => ({
               title: p.title,
               fName: p.fName.trim(),
               lName: p.lName.trim(),
@@ -183,6 +234,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               dob: isoToDdMmYyyy(p.dobIso),
               ...(p.ppNo ? { ppNo: p.ppNo, ppIss: p.ppIss, ppExp: p.ppExp, ppNat: p.ppNat } : {}),
               ...(p.documentId ? { documentId: p.documentId } : {}),
+              ...(cleanSsrChoice(ssrChoices[idx]) ? { ssr: cleanSsrChoice(ssrChoices[idx]) } : {}),
             }),
           ),
           mobile,
@@ -285,6 +337,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   }
 
   const { option, ssr } = priceCheck;
+  const ssrAddOnTotal = Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, ssr), 0);
+  const displayTotal = option.fare.total + ssrAddOnTotal;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
@@ -304,7 +358,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           <div className="flat-card flex items-start gap-3 border border-amber-200 bg-amber-50 p-5">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" strokeWidth={2} />
             <div>
-              <p className="font-bold text-navy-deep">This fare needs a seat, meal, or baggage selection we don&apos;t support online yet</p>
+              <p className="font-bold text-navy-deep">This fare needs a seat selection we don&apos;t support online yet</p>
               <p className="mt-1 text-sm text-slate-600">Please go back and choose a different fare, or contact our travel desk to complete this booking manually.</p>
               <Link href={`/flights/fare?flightId=${flightId}&refId=${encodeURIComponent(refId)}&${new URLSearchParams(Array.from(params.entries()).filter(([k]) => k !== "flightId")).toString()}`} className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">
                 ← Choose a different fare
@@ -321,6 +375,9 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                 international={searchContext.serType === 2}
                 docMandatory={Boolean(validation?.docMandatory)}
                 onChange={(patch) => updatePassenger(idx, patch)}
+                ssr={ssr}
+                ssrChoice={ssrChoices[idx]}
+                onSsrChange={(next) => updatePassengerSsr(idx, next)}
               />
             ))}
 
@@ -401,7 +458,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                 className="flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Confirm &amp; pay ₹{option.fare.total.toLocaleString("en-IN")}
+                Confirm &amp; pay ₹{displayTotal.toLocaleString("en-IN")}
               </button>
             </div>
           </div>
@@ -435,23 +492,6 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           <p className="mt-1">Baggage: {option.fare.baggageCheckIn || "As per airline"} check-in, {option.fare.baggageCabin || "—"} cabin</p>
         </div>
 
-        {ssr && (ssr.onward.baggage.length > 0 || ssr.onward.meals.length > 0) ? (
-          <div className="mt-3 border-t border-slate-100 pt-3 text-xs text-slate-500">
-            <p className="mb-1 font-semibold uppercase text-slate-400">Extras available on this flight</p>
-            {ssr.onward.baggage.slice(0, 2).map((b) => (
-              <p key={b.id}>
-                {b.description}: ₹{b.amount.toLocaleString("en-IN")}
-              </p>
-            ))}
-            {ssr.onward.meals.slice(0, 2).map((m) => (
-              <p key={m.id}>
-                {m.description}: ₹{m.amount.toLocaleString("en-IN")}
-              </p>
-            ))}
-            <p className="mt-1 italic">To add extra baggage or meals, contact our travel desk after booking.</p>
-          </div>
-        ) : null}
-
         <div className="mt-3 border-t border-slate-100 pt-3 text-sm">
           <div className="flex justify-between text-slate-500">
             <span>Base fare</span>
@@ -461,9 +501,15 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             <span>Taxes &amp; fees</span>
             <span>₹{option.fare.tax.toLocaleString("en-IN")}</span>
           </div>
+          {ssrAddOnTotal > 0 ? (
+            <div className="flex justify-between text-slate-500">
+              <span>Extras (baggage/meals)</span>
+              <span>₹{ssrAddOnTotal.toLocaleString("en-IN")}</span>
+            </div>
+          ) : null}
           <div className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-bold text-navy-deep">
             <span>Total</span>
-            <span>₹{option.fare.total.toLocaleString("en-IN")}</span>
+            <span>₹{displayTotal.toLocaleString("en-IN")}</span>
           </div>
         </div>
       </aside>
@@ -488,12 +534,18 @@ function PassengerFieldset({
   international,
   docMandatory,
   onChange,
+  ssr,
+  ssrChoice,
+  onSsrChange,
 }: {
   index: number;
   passenger: PassengerForm;
   international: boolean;
   docMandatory: boolean;
   onChange: (patch: Partial<PassengerForm>) => void;
+  ssr: FlightSsrDto | null;
+  ssrChoice: PassengerSsrChoice | undefined;
+  onSsrChange: (next: PassengerSsrChoice) => void;
 }) {
   const typeLabel = passenger.pType === "A" ? "Adult" : passenger.pType === "C" ? "Child" : "Infant";
   return (
@@ -542,6 +594,108 @@ function PassengerFieldset({
           />
         </div>
       ) : null}
+      {ssr && passenger.pType !== "I" ? <SsrPicker ssr={ssr} pType={passenger.pType} choice={ssrChoice} onChange={onSsrChange} /> : null}
     </div>
+  );
+}
+
+const SSR_PAX_TYPE_LABEL: Record<"A" | "C", "Adult" | "Child"> = { A: "Adult", C: "Child" };
+
+function ssrOptionMatchesPax(optionPaxType: "Adult" | "Child" | "All", pType: "A" | "C"): boolean {
+  return optionPaxType === "All" || optionPaxType === SSR_PAX_TYPE_LABEL[pType];
+}
+
+/** Real, selectable baggage/meal add-ons for one passenger — "None" plus one radio per option,
+ * grouped by leg direction and (for meals) by legRef, since a connecting flight's segments can each
+ * offer different meals. Rendered inside each passenger's own card since FTD prices these per
+ * passenger, per direction, not once for the whole booking. */
+function SsrPicker({
+  ssr,
+  pType,
+  choice,
+  onChange,
+}: {
+  ssr: FlightSsrDto;
+  pType: "A" | "C";
+  choice: PassengerSsrChoice | undefined;
+  onChange: (next: PassengerSsrChoice) => void;
+}) {
+  function setBaggage(direction: "onward" | "return", baggageId: string | undefined) {
+    const legChoice = choice?.[direction] ?? {};
+    onChange({ ...choice, [direction]: { ...legChoice, baggageId } });
+  }
+
+  function setMeal(direction: "onward" | "return", legMeals: FlightMealOptionDto[], mealId: string | undefined) {
+    const legChoice = choice?.[direction] ?? {};
+    const otherIds = (legChoice.mealIds ?? []).filter((id) => !legMeals.some((m) => m.id === id));
+    onChange({ ...choice, [direction]: { ...legChoice, mealIds: mealId ? [...otherIds, mealId] : otherIds } });
+  }
+
+  function renderLeg(direction: "onward" | "return", legSsr: { baggage: FlightBaggageOptionDto[]; meals: FlightMealOptionDto[] } | undefined, label: string) {
+    if (!legSsr) return null;
+    const baggageOptions = legSsr.baggage.filter((b) => ssrOptionMatchesPax(b.paxType, pType));
+    const mealsByLegRef = new Map<number, FlightMealOptionDto[]>();
+    legSsr.meals
+      .filter((m) => ssrOptionMatchesPax(m.paxType, pType))
+      .forEach((m) => mealsByLegRef.set(m.legRef, [...(mealsByLegRef.get(m.legRef) ?? []), m]));
+    if (baggageOptions.length === 0 && mealsByLegRef.size === 0) return null;
+
+    const legChoice = choice?.[direction];
+
+    return (
+      <div className="mt-3 border-t border-slate-100 pt-3">
+        <p className="mb-2 text-xs font-semibold uppercase text-slate-400">{label} extras</p>
+        {baggageOptions.length > 0 ? (
+          <div className="mb-2">
+            <p className="mb-1 text-xs font-semibold text-slate-500">Extra baggage</p>
+            <div className="flex flex-col gap-1">
+              <label className="flex items-center gap-2 text-sm text-slate-600">
+                <input type="radio" checked={!legChoice?.baggageId} onChange={() => setBaggage(direction, undefined)} className="accent-brand" />
+                None
+              </label>
+              {baggageOptions.map((b) => (
+                <label key={b.id} className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                  <span className="flex items-center gap-2">
+                    <input type="radio" checked={legChoice?.baggageId === b.id} onChange={() => setBaggage(direction, b.id)} className="accent-brand" />
+                    {b.description}
+                  </span>
+                  <span className="font-semibold text-navy-deep">+₹{b.amount.toLocaleString("en-IN")}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {Array.from(mealsByLegRef.entries()).map(([legRef, meals]) => {
+          const chosenMealId = legChoice?.mealIds?.find((id) => meals.some((m) => m.id === id));
+          return (
+            <div key={legRef} className="mb-2 last:mb-0">
+              <p className="mb-1 text-xs font-semibold text-slate-500">Meal{mealsByLegRef.size > 1 ? ` (segment ${legRef})` : ""}</p>
+              <div className="flex flex-col gap-1">
+                <label className="flex items-center gap-2 text-sm text-slate-600">
+                  <input type="radio" checked={!chosenMealId} onChange={() => setMeal(direction, meals, undefined)} className="accent-brand" />
+                  None
+                </label>
+                {meals.map((m) => (
+                  <label key={m.id} className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                    <span className="flex items-center gap-2">
+                      <input type="radio" checked={chosenMealId === m.id} onChange={() => setMeal(direction, meals, m.id)} className="accent-brand" />
+                      {m.description}
+                    </span>
+                    <span className="font-semibold text-navy-deep">+₹{m.amount.toLocaleString("en-IN")}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {renderLeg("onward", ssr.onward, ssr.return ? "Departure" : "Flight")}
+      {ssr.return ? renderLeg("return", ssr.return, "Return") : null}
+    </>
   );
 }
