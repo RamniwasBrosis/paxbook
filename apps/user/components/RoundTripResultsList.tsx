@@ -212,8 +212,8 @@ function LegColumn({
         <div className="flat-card p-6 text-center text-slate-500">{state.polling ? "Still searching more airlines…" : "No flights found for this date."}</div>
       ) : (
         <div className="flex flex-col gap-2">
-          {sorted.map((option) => (
-            <LegOptionCard key={option.id} option={option} selected={selected?.id === option.id} onSelect={() => onSelect(option)} />
+          {sorted.map((option, idx) => (
+            <LegOptionCard key={option.id} option={option} selected={selected?.id === option.id} onSelect={() => onSelect(option)} cheapest={idx === 0} />
           ))}
           {state.polling ? <p className="flex items-center gap-1.5 text-xs text-slate-400"><Loader2 className="h-3 w-3 animate-spin" /> Still searching more airlines…</p> : null}
         </div>
@@ -222,7 +222,7 @@ function LegColumn({
   );
 }
 
-function LegOptionCard({ option, selected, onSelect }: { option: FlightOptionDto; selected: boolean; onSelect: () => void }) {
+function LegOptionCard({ option, selected, onSelect, cheapest }: { option: FlightOptionDto; selected: boolean; onSelect: () => void; cheapest?: boolean }) {
   const firstLeg = option.legs[0];
   const lastLeg = option.legs[option.legs.length - 1];
   if (!firstLeg || !lastLeg) return null;
@@ -231,8 +231,11 @@ function LegOptionCard({ option, selected, onSelect }: { option: FlightOptionDto
     <button
       type="button"
       onClick={onSelect}
-      className={`flat-card flex items-center justify-between gap-3 p-4 text-left transition-colors ${selected ? "border-2 border-brand bg-brand/5" : "hover:border-brand/40"}`}
+      className={`flat-card relative flex items-center justify-between gap-3 p-4 text-left transition-colors ${selected ? "border-2 border-brand bg-brand/5" : "hover:border-brand/40"}`}
     >
+      {cheapest ? (
+        <span className="absolute -top-2 left-3 rounded-full bg-accent px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-navy-deep shadow-sm">Cheapest</span>
+      ) : null}
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
           {selected ? <CheckCircle2 className="h-5 w-5 text-brand" strokeWidth={2} /> : <Plane className="h-4 w-4" strokeWidth={1.75} />}

@@ -6,6 +6,7 @@ import type { FlightBookingDto, FlightLegDto, FlightTripDto } from "@paxbook/typ
 import { customerFetch, CustomerApiError } from "@/lib/customer-api";
 import { formatDateTimeLong, formatMinutes } from "@/lib/flights";
 import { AirlineLogo } from "@/components/AirlineLogo";
+import { BookingConfirmedBanner } from "@/components/BookingConfirmedBanner";
 
 export const metadata: Metadata = { title: "Round Trip Booking" };
 
@@ -19,7 +20,7 @@ const STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Cancelled",
 };
 
-export default async function FlightTripDetailPage({ params }: { params: { tripId: string } }) {
+export default async function FlightTripDetailPage({ params, searchParams }: { params: { tripId: string }; searchParams?: { justBooked?: string } }) {
   let trip: FlightTripDto;
   try {
     trip = await customerFetch<FlightTripDto>(`/customer/flight-trips/${params.tripId}`);
@@ -28,11 +29,19 @@ export default async function FlightTripDetailPage({ params }: { params: { tripI
     throw err;
   }
 
+  const bothConfirmed = trip.onward.status === "CONFIRMED" && trip.return.status === "CONFIRMED";
+
   return (
     <div>
       <Link href="/account/flight-bookings" className="text-sm font-medium text-slate-500 hover:text-brand">
         ← Back to my flight bookings
       </Link>
+
+      {searchParams?.justBooked === "1" && bothConfirmed ? (
+        <div className="mt-3">
+          <BookingConfirmedBanner pnr={trip.onward.pnr && trip.return.pnr ? `${trip.onward.pnr} / ${trip.return.pnr}` : trip.onward.pnr ?? trip.return.pnr} />
+        </div>
+      ) : null}
 
       <div className="mt-3">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">

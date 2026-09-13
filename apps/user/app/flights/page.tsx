@@ -47,16 +47,24 @@ export default function FlightsLandingPage() {
 
       <div className="shell pb-6 pt-8">
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Popular routes</p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="rail mt-3">
           {POPULAR_ROUTES.map((r) => (
             <Link
               key={`${r.from}-${r.to}`}
               href={`/flights/results?tripType=0&serType=1&depCity=${r.from}&arrCity=${r.to}&onDate=${onDate}&adt=1&chd=0&inf=0&cabin=E&fareType=A`}
-              className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-600 transition-colors hover:border-brand hover:text-brand"
+              className="flat-card group w-44 shrink-0 overflow-hidden sm:w-52"
             >
-              {r.fromCity}
-              <ArrowRight className="h-3.5 w-3.5 text-slate-300" strokeWidth={2.5} />
-              {r.toCity}
+              <div className="flex h-20 items-center justify-center bg-gradient-to-br from-brand to-navy-deep">
+                <Plane className="h-7 w-7 text-white/90 transition-transform duration-300 group-hover:translate-x-1.5" strokeWidth={1.5} />
+              </div>
+              <div className="p-3">
+                <p className="flex items-center gap-1 text-sm font-bold text-navy-deep">
+                  {r.fromCity} <ArrowRight className="h-3 w-3 shrink-0 text-slate-300" strokeWidth={2.5} /> {r.toCity}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {r.from} - {r.to}
+                </p>
+              </div>
             </Link>
           ))}
         </div>

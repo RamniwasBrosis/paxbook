@@ -10,11 +10,18 @@ import { findAirport } from "@/lib/airports";
 import { FlightDateStrip } from "@/components/FlightDateStrip";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
+import { FlightSearchSummaryBar } from "@/components/FlightSearchSummaryBar";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
-type SortKey = "price" | "duration" | "departure";
+type SortKey = "price" | "duration" | "best";
+const SORT_TABS: { key: SortKey; label: string }[] = [
+  { key: "price", label: "Cheapest" },
+  { key: "duration", label: "Fastest" },
+  { key: "best", label: "Best" },
+];
 type TimeBucket = "before6" | "morning" | "afternoon" | "evening";
+type DurationBucket = "short" | "medium" | "long";
 
 const TIME_BUCKETS: { key: TimeBucket; label: string; range: string }[] = [
   { key: "before6", label: "Before 6 AM", range: "12:00 AM - 5:59 AM" },
@@ -23,12 +30,33 @@ const TIME_BUCKETS: { key: TimeBucket; label: string; range: string }[] = [
   { key: "evening", label: "After 6 PM", range: "6:00 PM - 11:59 PM" },
 ];
 
+const DURATION_BUCKETS: { key: DurationBucket; label: string }[] = [
+  { key: "short", label: "Up to 3h" },
+  { key: "medium", label: "3h – 6h" },
+  { key: "long", label: "6h+" },
+];
+
 function timeBucketOf(iso: string): TimeBucket {
   const hour = new Date(iso).getHours();
   if (hour < 6) return "before6";
   if (hour < 12) return "morning";
   if (hour < 18) return "afternoon";
   return "evening";
+}
+
+function durationBucketOf(mins: number): DurationBucket {
+  if (mins <= 180) return "short";
+  if (mins <= 360) return "medium";
+  return "long";
+}
+
+/** Toggle-membership helper for the multi-select filter checkboxes below — returns a new Set with
+ * `value` added/removed, never mutates the one passed in (so it plays nicely with React state). */
+function toggled<T>(set: Set<T>, value: T): Set<T> {
+  const next = new Set(set);
+  if (next.has(value)) next.delete(value);
+  else next.add(value);
+  return next;
 }
 
 export function FlightResultsList() {
@@ -40,9 +68,13 @@ export function FlightResultsList() {
   const [polling, setPolling] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [sortKey, setSortKey] = React.useState<SortKey>("price");
-  const [maxStops, setMaxStops] = React.useState<number | null>(null);
-  const [airlineFilter, setAirlineFilter] = React.useState<string | null>(null);
-  const [timeOfDay, setTimeOfDay] = React.useState<TimeBucket | null>(null);
+  const [stopsFilter, setStopsFilter] = React.useState<Set<number>>(new Set());
+  const [airlineFilters, setAirlineFilters] = React.useState<Set<string>>(new Set());
+  const [depTimeFilters, setDepTimeFilters] = React.useState<Set<TimeBucket>>(new Set());
+  const [arrTimeFilters, setArrTimeFilters] = React.useState<Set<TimeBucket>>(new Set());
+  const [durationFilters, setDurationFilters] = React.useState<Set<DurationBucket>>(new Set());
+  const [layoverFilters, setLayoverFilters] = React.useState<Set<string>>(new Set());
+  const [minPrice, setMinPrice] = React.useState<number | null>(null);
   const [maxPrice, setMaxPrice] = React.useState<number | null>(null);
   const [refundableOnly, setRefundableOnly] = React.useState(false);
 
@@ -113,33 +145,82 @@ export function FlightResultsList() {
   }, [result]);
 
   const stopsCounts = React.useMemo(() => {
-    const counts = { nonstop: 0, oneOrFewer: 0 };
+    const counts = { 0: 0, 1: 0, 2: 0 } as Record<number, number>;
     (result?.options ?? []).forEach((o) => {
-      if (o.stops === 0) counts.nonstop += 1;
-      if (o.stops <= 1) counts.oneOrFewer += 1;
+      counts[Math.min(o.stops, 2)] = (counts[Math.min(o.stops, 2)] ?? 0) + 1;
     });
     return counts;
   }, [result]);
 
+  const layoverCities = React.useMemo(() => {
+    const cities = new Set<string>();
+    (result?.options ?? []).forEach((o) => {
+      o.legs.slice(0, -1).forEach((leg) => {
+        if (leg.arrCityName) cities.add(leg.arrCityName);
+      });
+    });
+    return Array.from(cities).sort();
+  }, [result]);
+
   const priceBounds = React.useMemo(() => {
     const prices = (result?.options ?? []).map((o) => o.fare.total);
-    return prices.length > 0 ? { min: Math.min(...prices), max: Math.max(...prices) } : { min: 0, max: 0 };
+    return prices.length > 0 ? { min: Math.floor(Math.min(...prices)), max: Math.ceil(Math.max(...prices)) } : { min: 0, max: 0 };
   }, [result]);
+
+  const durationBounds = React.useMemo(() => {
+    const durations = (result?.options ?? []).map((o) => o.durationTotalMinutes);
+    return durations.length > 0 ? { min: Math.min(...durations), max: Math.max(...durations) } : { min: 0, max: 0 };
+  }, [result]);
+
+  const bestScore = React.useCallback(
+    (o: FlightOptionDto) => {
+      const priceScore = priceBounds.max > priceBounds.min ? (o.fare.total - priceBounds.min) / (priceBounds.max - priceBounds.min) : 0;
+      const durationScore = durationBounds.max > durationBounds.min ? (o.durationTotalMinutes - durationBounds.min) / (durationBounds.max - durationBounds.min) : 0;
+      return priceScore * 0.6 + durationScore * 0.4;
+    },
+    [priceBounds, durationBounds],
+  );
 
   const visibleOptions = React.useMemo(() => {
     if (!result) return [];
     let options = result.options;
-    if (maxStops !== null) options = options.filter((o) => o.stops <= maxStops);
-    if (airlineFilter) options = options.filter((o) => o.legs[0]?.airlineName === airlineFilter);
-    if (timeOfDay) options = options.filter((o) => o.legs[0] && timeBucketOf(o.legs[0].depDateTime) === timeOfDay);
+    if (stopsFilter.size > 0) options = options.filter((o) => stopsFilter.has(Math.min(o.stops, 2)));
+    if (airlineFilters.size > 0) options = options.filter((o) => o.legs[0] && airlineFilters.has(o.legs[0].airlineName));
+    if (depTimeFilters.size > 0) options = options.filter((o) => o.legs[0] && depTimeFilters.has(timeBucketOf(o.legs[0].depDateTime)));
+    if (arrTimeFilters.size > 0) options = options.filter((o) => o.legs.length > 0 && arrTimeFilters.has(timeBucketOf(o.legs[o.legs.length - 1]!.arrDateTime)));
+    if (durationFilters.size > 0) options = options.filter((o) => durationFilters.has(durationBucketOf(o.durationTotalMinutes)));
+    if (layoverFilters.size > 0) options = options.filter((o) => o.legs.slice(0, -1).some((leg) => layoverFilters.has(leg.arrCityName)));
+    if (minPrice !== null) options = options.filter((o) => o.fare.total >= minPrice);
     if (maxPrice !== null) options = options.filter((o) => o.fare.total <= maxPrice);
     if (refundableOnly) options = options.filter((o) => o.fare.refundable);
     const sorted = [...options];
     if (sortKey === "price") sorted.sort((a, b) => a.fare.total - b.fare.total);
     if (sortKey === "duration") sorted.sort((a, b) => a.durationTotalMinutes - b.durationTotalMinutes);
-    if (sortKey === "departure") sorted.sort((a, b) => new Date(a.legs[0]?.depDateTime ?? 0).getTime() - new Date(b.legs[0]?.depDateTime ?? 0).getTime());
+    if (sortKey === "best") sorted.sort((a, b) => bestScore(a) - bestScore(b));
     return sorted;
-  }, [result, sortKey, maxStops, airlineFilter, timeOfDay, maxPrice, refundableOnly]);
+  }, [
+    result,
+    sortKey,
+    stopsFilter,
+    airlineFilters,
+    depTimeFilters,
+    arrTimeFilters,
+    durationFilters,
+    layoverFilters,
+    minPrice,
+    maxPrice,
+    refundableOnly,
+    bestScore,
+  ]);
+
+  const cheapestId = React.useMemo(
+    () => (result?.options ?? []).reduce((best: FlightOptionDto | null, o) => (!best || o.fare.total < best.fare.total ? o : best), null)?.id,
+    [result],
+  );
+  const fastestId = React.useMemo(
+    () => (result?.options ?? []).reduce((best: FlightOptionDto | null, o) => (!best || o.durationTotalMinutes < best.durationTotalMinutes ? o : best), null)?.id,
+    [result],
+  );
 
   const refundableCount = React.useMemo(() => (result?.options ?? []).filter((o) => o.fare.refundable).length, [result]);
 
@@ -149,21 +230,36 @@ export function FlightResultsList() {
   const arrCityLabel =
     result?.options[0]?.legs[result.options[0].legs.length - 1]?.arrCityName || findAirport(searchContext?.arrCity ?? "")?.city || searchContext?.arrCity || "";
 
+  const STOPS_LABEL: Record<number, string> = { 0: "Non-stop", 1: "1 stop", 2: "2+ stops" };
+
   const appliedFilters = React.useMemo(() => {
     const chips: { key: string; label: string; onRemove: () => void }[] = [];
-    if (maxStops === 0) chips.push({ key: "stops", label: "Non-stop", onRemove: () => setMaxStops(null) });
-    if (maxStops === 1) chips.push({ key: "stops", label: "1 stop or fewer", onRemove: () => setMaxStops(null) });
-    if (timeOfDay) chips.push({ key: "time", label: TIME_BUCKETS.find((b) => b.key === timeOfDay)?.label ?? "", onRemove: () => setTimeOfDay(null) });
-    if (airlineFilter) chips.push({ key: "airline", label: airlineFilter, onRemove: () => setAirlineFilter(null) });
-    if (maxPrice !== null) chips.push({ key: "price", label: `Up to ₹${maxPrice.toLocaleString("en-IN")}`, onRemove: () => setMaxPrice(null) });
+    stopsFilter.forEach((s) => chips.push({ key: `stops-${s}`, label: STOPS_LABEL[s] ?? String(s), onRemove: () => setStopsFilter((prev) => toggled(prev, s)) }));
+    depTimeFilters.forEach((t) =>
+      chips.push({ key: `dep-${t}`, label: `Departs: ${TIME_BUCKETS.find((b) => b.key === t)?.label ?? t}`, onRemove: () => setDepTimeFilters((prev) => toggled(prev, t)) }),
+    );
+    arrTimeFilters.forEach((t) =>
+      chips.push({ key: `arr-${t}`, label: `Arrives: ${TIME_BUCKETS.find((b) => b.key === t)?.label ?? t}`, onRemove: () => setArrTimeFilters((prev) => toggled(prev, t)) }),
+    );
+    durationFilters.forEach((d) =>
+      chips.push({ key: `dur-${d}`, label: DURATION_BUCKETS.find((b) => b.key === d)?.label ?? d, onRemove: () => setDurationFilters((prev) => toggled(prev, d)) }),
+    );
+    layoverFilters.forEach((c) => chips.push({ key: `layover-${c}`, label: `Via ${c}`, onRemove: () => setLayoverFilters((prev) => toggled(prev, c)) }));
+    airlineFilters.forEach((a) => chips.push({ key: `airline-${a}`, label: a, onRemove: () => setAirlineFilters((prev) => toggled(prev, a)) }));
+    if (minPrice !== null) chips.push({ key: "minPrice", label: `From ₹${minPrice.toLocaleString("en-IN")}`, onRemove: () => setMinPrice(null) });
+    if (maxPrice !== null) chips.push({ key: "maxPrice", label: `Up to ₹${maxPrice.toLocaleString("en-IN")}`, onRemove: () => setMaxPrice(null) });
     if (refundableOnly) chips.push({ key: "refundable", label: "Refundable only", onRemove: () => setRefundableOnly(false) });
     return chips;
-  }, [maxStops, timeOfDay, airlineFilter, maxPrice, refundableOnly]);
+  }, [stopsFilter, depTimeFilters, arrTimeFilters, durationFilters, layoverFilters, airlineFilters, minPrice, maxPrice, refundableOnly]);
 
   function clearAllFilters() {
-    setMaxStops(null);
-    setAirlineFilter(null);
-    setTimeOfDay(null);
+    setStopsFilter(new Set());
+    setAirlineFilters(new Set());
+    setDepTimeFilters(new Set());
+    setArrTimeFilters(new Set());
+    setDurationFilters(new Set());
+    setLayoverFilters(new Set());
+    setMinPrice(null);
     setMaxPrice(null);
     setRefundableOnly(false);
   }
@@ -211,28 +307,19 @@ export function FlightResultsList() {
 
         <div className="flat-card p-4">
           <p className="text-xs font-semibold uppercase text-slate-400">Stops</p>
-          <div className="mt-2 flex flex-col gap-1.5 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="radio" checked={maxStops === null} onChange={() => setMaxStops(null)} className="accent-brand" />
-              Any
-            </label>
-            <label className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2">
-                <input type="radio" checked={maxStops === 0} onChange={() => setMaxStops(0)} className="accent-brand" />
-                Non-stop
-              </span>
-              <span className="text-xs text-slate-400">{stopsCounts.nonstop}</span>
-            </label>
-            <label className="flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2">
-                <input type="radio" checked={maxStops === 1} onChange={() => setMaxStops(1)} className="accent-brand" />
-                1 stop or fewer
-              </span>
-              <span className="text-xs text-slate-400">{stopsCounts.oneOrFewer}</span>
-            </label>
+          <div className="mt-2 flex flex-col text-sm">
+            {[0, 1, 2].map((s) => (
+              <label key={s} className="filter-check justify-between">
+                <span className="flex items-center gap-2">
+                  <input type="checkbox" checked={stopsFilter.has(s)} onChange={() => setStopsFilter((prev) => toggled(prev, s))} className="accent-brand" />
+                  {STOPS_LABEL[s]}
+                </span>
+                <span className="text-xs text-slate-400">{stopsCounts[s] ?? 0}</span>
+              </label>
+            ))}
           </div>
           {refundableCount > 0 ? (
-            <label className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-3 text-sm">
+            <label className="filter-check mt-2 justify-between border-t border-slate-100 pt-3">
               <span className="flex items-center gap-2">
                 <input type="checkbox" checked={refundableOnly} onChange={(e) => setRefundableOnly(e.target.checked)} className="accent-brand" />
                 Refundable fares
@@ -244,29 +331,67 @@ export function FlightResultsList() {
 
         {priceBounds.max > priceBounds.min ? (
           <div className="flat-card p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">Max price</p>
-            <input
-              type="range"
-              min={priceBounds.min}
-              max={priceBounds.max}
-              value={maxPrice ?? priceBounds.max}
-              onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="mt-3 w-full accent-brand"
-            />
-            <p className="mt-1 text-sm font-semibold text-navy-deep">Up to ₹{(maxPrice ?? priceBounds.max).toLocaleString("en-IN")}</p>
+            <p className="text-xs font-semibold uppercase text-slate-400">Price range</p>
+            <p className="mt-1 text-sm font-semibold text-navy-deep">
+              ₹{(minPrice ?? priceBounds.min).toLocaleString("en-IN")} – ₹{(maxPrice ?? priceBounds.max).toLocaleString("en-IN")}
+            </p>
+            <div className="mt-2">
+              <label className="text-[11px] text-slate-400">Min</label>
+              <input
+                type="range"
+                min={priceBounds.min}
+                max={priceBounds.max}
+                value={minPrice ?? priceBounds.min}
+                onChange={(e) => setMinPrice(Math.min(Number(e.target.value), maxPrice ?? priceBounds.max))}
+                className="block w-full accent-brand"
+              />
+            </div>
+            <div className="mt-1">
+              <label className="text-[11px] text-slate-400">Max</label>
+              <input
+                type="range"
+                min={priceBounds.min}
+                max={priceBounds.max}
+                value={maxPrice ?? priceBounds.max}
+                onChange={(e) => setMaxPrice(Math.max(Number(e.target.value), minPrice ?? priceBounds.min))}
+                className="block w-full accent-brand"
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {durationBounds.max > durationBounds.min ? (
+          <div className="flat-card p-4">
+            <p className="text-xs font-semibold uppercase text-slate-400">Duration</p>
+            <div className="mt-2 flex flex-col text-sm">
+              {DURATION_BUCKETS.map((b) => (
+                <label key={b.key} className="filter-check">
+                  <input type="checkbox" checked={durationFilters.has(b.key)} onChange={() => setDurationFilters((prev) => toggled(prev, b.key))} className="accent-brand" />
+                  {b.label}
+                </label>
+              ))}
+            </div>
           </div>
         ) : null}
 
         <div className="flat-card p-4">
           <p className="text-xs font-semibold uppercase text-slate-400">Departure time</p>
-          <div className="mt-2 flex flex-col gap-1.5 text-sm">
-            <label className="flex items-center gap-2">
-              <input type="radio" checked={timeOfDay === null} onChange={() => setTimeOfDay(null)} className="accent-brand" />
-              Any time
-            </label>
+          <div className="mt-2 flex flex-col text-sm">
             {TIME_BUCKETS.map((b) => (
-              <label key={b.key} className="flex items-center gap-2" title={b.range}>
-                <input type="radio" checked={timeOfDay === b.key} onChange={() => setTimeOfDay(b.key)} className="accent-brand" />
+              <label key={b.key} className="filter-check" title={b.range}>
+                <input type="checkbox" checked={depTimeFilters.has(b.key)} onChange={() => setDepTimeFilters((prev) => toggled(prev, b.key))} className="accent-brand" />
+                {b.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        <div className="flat-card p-4">
+          <p className="text-xs font-semibold uppercase text-slate-400">Arrival time</p>
+          <div className="mt-2 flex flex-col text-sm">
+            {TIME_BUCKETS.map((b) => (
+              <label key={b.key} className="filter-check" title={b.range}>
+                <input type="checkbox" checked={arrTimeFilters.has(b.key)} onChange={() => setArrTimeFilters((prev) => toggled(prev, b.key))} className="accent-brand" />
                 {b.label}
               </label>
             ))}
@@ -276,17 +401,13 @@ export function FlightResultsList() {
         {airlineCounts.size > 0 ? (
           <div className="flat-card p-4">
             <p className="text-xs font-semibold uppercase text-slate-400">Airline</p>
-            <div className="mt-2 flex flex-col gap-1.5 text-sm">
-              <label className="flex items-center gap-2">
-                <input type="radio" checked={airlineFilter === null} onChange={() => setAirlineFilter(null)} className="accent-brand" />
-                All airlines
-              </label>
+            <div className="mt-2 flex flex-col text-sm">
               {Array.from(airlineCounts.entries())
                 .sort((a, b) => a[0].localeCompare(b[0]))
                 .map(([name, { code, count }]) => (
-                  <label key={name} className="flex items-center justify-between gap-2">
+                  <label key={name} className="filter-check justify-between">
                     <span className="flex items-center gap-2">
-                      <input type="radio" checked={airlineFilter === name} onChange={() => setAirlineFilter(name)} className="accent-brand" />
+                      <input type="checkbox" checked={airlineFilters.has(name)} onChange={() => setAirlineFilters((prev) => toggled(prev, name))} className="accent-brand" />
                       <AirlineLogo code={code} size={18} />
                       {name}
                     </span>
@@ -296,12 +417,24 @@ export function FlightResultsList() {
             </div>
           </div>
         ) : null}
+
+        {layoverCities.length > 0 ? (
+          <div className="flat-card p-4">
+            <p className="text-xs font-semibold uppercase text-slate-400">Layover city</p>
+            <div className="mt-2 flex flex-col text-sm">
+              {layoverCities.map((city) => (
+                <label key={city} className="filter-check">
+                  <input type="checkbox" checked={layoverFilters.has(city)} onChange={() => setLayoverFilters((prev) => toggled(prev, city))} className="accent-brand" />
+                  Via {city}
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </aside>
 
       <div>
-        <Link href="/flights" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
-          ← Modify search
-        </Link>
+        <FlightSearchSummaryBar context={searchContext} />
         <div className="flat-card mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
           <div>
             <p className="font-bold text-navy-deep">
@@ -313,19 +446,13 @@ export function FlightResultsList() {
               {polling ? " · still searching more airlines…" : ""}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase text-slate-400">Sort</span>
-            {(["price", "duration", "departure"] as SortKey[]).map((key) => (
-              <button
-                key={key}
-                type="button"
-                onClick={() => setSortKey(key)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold capitalize ${sortKey === key ? "border-brand bg-brand text-white" : "border-slate-200 text-slate-600"}`}
-              >
-                {key}
+          <div className="flex items-center gap-1">
+            {SORT_TABS.map((tab) => (
+              <button key={tab.key} type="button" className="tab-underline px-2" data-active={sortKey === tab.key} onClick={() => setSortKey(tab.key)}>
+                {tab.label}
               </button>
             ))}
-            <button type="button" onClick={runSearch} aria-label="Refresh results" className="rounded-full border border-slate-200 p-1.5 text-slate-500 hover:border-brand hover:text-brand">
+            <button type="button" onClick={runSearch} aria-label="Refresh results" className="ml-2 rounded-full border border-slate-200 p-1.5 text-slate-500 hover:border-brand hover:text-brand">
               <RefreshCw className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
           </div>
@@ -355,8 +482,20 @@ export function FlightResultsList() {
         ) : (
           <div className="flex flex-col gap-3">
             {visibleOptions.map((option) => (
-              <FlightOptionCard key={option.id} option={option} query={searchContextToQuery(searchContext)} refId={result!.refId} />
+              <FlightOptionCard
+                key={option.id}
+                option={option}
+                query={searchContextToQuery(searchContext)}
+                refId={result!.refId}
+                badge={option.id === cheapestId ? "cheapest" : option.id === fastestId ? "fastest" : null}
+              />
             ))}
+            {polling ? (
+              <>
+                <ResultCardSkeleton />
+                <ResultCardSkeleton />
+              </>
+            ) : null}
           </div>
         )}
       </div>
@@ -373,7 +512,36 @@ function lowestSeatCount(seatsAvailable: string): number | null {
   return nums.length > 0 ? Math.min(...nums) : null;
 }
 
-function FlightOptionCard({ option, query, refId }: { option: FlightOptionDto; query: string; refId: string }) {
+/** Skeleton placeholder shown below already-loaded results while the provider streams in more
+ * airlines, so the page doesn't jump back to a full-screen spinner once real results exist. */
+function ResultCardSkeleton() {
+  return (
+    <div className="flat-card animate-pulse p-4">
+      <div className="flex items-center gap-3">
+        <div className="h-10 w-10 shrink-0 rounded-lg bg-slate-100" />
+        <div className="flex-1 space-y-2">
+          <div className="h-3 w-40 rounded bg-slate-100" />
+          <div className="h-3 w-56 rounded bg-slate-100" />
+        </div>
+        <div className="h-6 w-16 shrink-0 rounded bg-slate-100" />
+      </div>
+    </div>
+  );
+}
+
+const BADGE_LABEL: Record<"cheapest" | "fastest", string> = { cheapest: "Cheapest", fastest: "Fastest" };
+
+function FlightOptionCard({
+  option,
+  query,
+  refId,
+  badge,
+}: {
+  option: FlightOptionDto;
+  query: string;
+  refId: string;
+  badge?: "cheapest" | "fastest" | null;
+}) {
   const [detailsOpen, setDetailsOpen] = React.useState(false);
   const firstLeg = option.legs[0];
   const lastLeg = option.legs[option.legs.length - 1];
@@ -381,7 +549,12 @@ function FlightOptionCard({ option, query, refId }: { option: FlightOptionDto; q
   const seats = lowestSeatCount(option.fare.seatsAvailable);
 
   return (
-    <div className="flat-card p-4">
+    <div className="flat-card relative p-4">
+      {badge ? (
+        <span className="absolute -top-2.5 left-4 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-navy-deep shadow-sm">
+          {BADGE_LABEL[badge]}
+        </span>
+      ) : null}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <AirlineLogo code={firstLeg.airlineCode} size={40} />

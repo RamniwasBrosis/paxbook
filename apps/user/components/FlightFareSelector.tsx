@@ -79,13 +79,16 @@ export function FlightFareSelector() {
   }
 
   const legs = result.options[0]!.legs;
+  const sortedOptions = [...result.options].sort((a, b) => a.fare.total - b.fare.total);
+  const recommendedId =
+    sortedOptions.find((o) => o.fare.refundable && !o.validation.isLowCostCarrier)?.id ?? sortedOptions[Math.floor(sortedOptions.length / 2)]?.id;
 
   return (
     <div className="flex flex-col gap-6">
       <Link href={`/flights/results?${passThroughQuery}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
         ← Back to results
       </Link>
-      <div className="flat-card p-5">
+      <div className="flat-card sticky top-4 z-10 p-5">
         <p className="mb-3 text-xs font-semibold uppercase text-slate-400">Flight details</p>
         <div className="flex flex-col gap-3">
           {legs.map((leg, idx) => (
@@ -108,21 +111,80 @@ export function FlightFareSelector() {
       <div>
         <p className="mb-3 text-sm font-bold text-navy-deep">Choose your fare</p>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {result.options.map((option) => (
-            <FareCard key={option.id} option={option} refId={result.refId} query={passThroughQuery} />
+          {sortedOptions.map((option, idx) => (
+            <FareCard key={option.id} option={option} refId={result.refId} query={passThroughQuery} tierIndex={idx} recommended={option.id === recommendedId} />
           ))}
         </div>
       </div>
+
+      {sortedOptions.length > 1 ? (
+        <div>
+          <p className="mb-3 text-sm font-bold text-navy-deep">Compare fares in detail</p>
+          <div className="overflow-x-auto rounded-2xl border border-slate-200">
+            <table className="w-full min-w-[520px] text-left text-sm">
+              <thead>
+                <tr className="border-b border-slate-100 bg-mist/60">
+                  <th className="p-3 text-xs font-semibold uppercase text-slate-400">Feature</th>
+                  {sortedOptions.map((option) => (
+                    <th key={option.id} className="p-3">
+                      <p className="font-bold text-navy-deep">{option.fare.fareTypeLabel || "Standard fare"}</p>
+                      <p className="text-sm font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                <ComparisonRow label="Baggage check-in" values={sortedOptions.map((o) => o.fare.baggageCheckIn || "—")} />
+                <ComparisonRow label="Baggage cabin" values={sortedOptions.map((o) => o.fare.baggageCabin || "—")} />
+                <ComparisonRow label="Refundable" values={sortedOptions.map((o) => (o.fare.refundable ? "Yes" : "No"))} />
+                <ComparisonRow label="Free meal" values={sortedOptions.map((o) => (o.validation.freeMeal ? "Yes" : "No"))} />
+                <ComparisonRow label="Seats left" values={sortedOptions.map((o) => o.fare.seatsAvailable || "—")} />
+                <ComparisonRow label="GST" values={sortedOptions.map((o) => GST_LABELS[o.validation.gstIndicator] ?? "—")} />
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
 
 const GST_LABELS: Record<number, string> = { 0: "GST not applicable", 1: "GST mandatory for this fare", 2: "GST invoice available on request" };
+const TIER_BAR_COLORS = ["bg-brand", "bg-accent", "bg-slate-400"];
 
-function FareCard({ option, refId, query }: { option: FlightOptionDto; refId: string; query: string }) {
+function ComparisonRow({ label, values }: { label: string; values: string[] }) {
   return (
-    <div className="flat-card flex flex-col gap-3 p-5">
-      <div>
+    <tr>
+      <td className="p-3 text-xs font-semibold uppercase text-slate-400">{label}</td>
+      {values.map((v, idx) => (
+        <td key={idx} className="p-3 text-slate-600">
+          {v}
+        </td>
+      ))}
+    </tr>
+  );
+}
+
+function FareCard({
+  option,
+  refId,
+  query,
+  tierIndex,
+  recommended,
+}: {
+  option: FlightOptionDto;
+  refId: string;
+  query: string;
+  tierIndex: number;
+  recommended: boolean;
+}) {
+  return (
+    <div className={`flat-card relative flex flex-col gap-3 overflow-hidden p-5 ${recommended ? "border-2 border-accent" : ""}`}>
+      <div className={`absolute inset-x-0 top-0 h-1.5 ${TIER_BAR_COLORS[tierIndex % TIER_BAR_COLORS.length]}`} aria-hidden />
+      {recommended ? (
+        <span className="absolute right-3 top-3 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-navy-deep">Recommended</span>
+      ) : null}
+      <div className="mt-1">
         <p className="flex items-center gap-1.5 font-bold text-navy-deep">
           {option.fare.fareTypeLabel || "Standard fare"}
           {option.validation.isLowCostCarrier ? <span className="rounded-full bg-mist px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">LCC</span> : null}

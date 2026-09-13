@@ -213,6 +213,60 @@ body {
   .persona-cutout {
     border-radius: 50% 50% 14px 14px / 38% 38% 14px 14px;
   }
+
+  /* Numbered-circle step indicator for multi-step flows (flight booking passenger/review steps) —
+     tenant-themed via the same CSS vars brand/DEFAULT resolves to, so it stays on-brand per tenant. */
+  .step-circle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    flex-shrink: 0;
+    border-radius: 9999px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    border: 2px solid rgb(203 213 225);
+    color: rgb(100 116 139);
+    background: #fff;
+    transition:
+      border-color 0.3s ease,
+      background 0.3s ease,
+      color 0.3s ease;
+  }
+  .step-circle[data-state="active"] {
+    border-color: var(--tenant-primary, #19377f);
+    color: var(--tenant-primary, #19377f);
+    background: var(--tenant-primary-light, #e6f0fa);
+  }
+  .step-circle[data-state="complete"] {
+    border-color: var(--tenant-primary, #19377f);
+    background: var(--tenant-primary, #19377f);
+    color: #fff;
+  }
+
+  .step-connector {
+    flex: 1 1 auto;
+    height: 2px;
+    min-width: 1.5rem;
+    background: rgb(203 213 225);
+  }
+  .step-connector[data-complete="true"] {
+    background: var(--tenant-primary, #19377f);
+  }
+
+  /* Consistent hover/padding wrapper for multi-select filter checkboxes on the results page. */
+  .filter-check {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-block: 0.3rem;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  .filter-check:hover {
+    color: var(--tenant-primary, #19377f);
+  }
 }
 
 :root {

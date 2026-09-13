@@ -5,7 +5,17 @@ import { useRouter } from "next/navigation";
 import { XCircle } from "lucide-react";
 import { Modal } from "@/components/Modal";
 
-export function CancelFlightBookingButton({ bookingId }: { bookingId: string }) {
+export function CancelFlightBookingButton({
+  bookingId,
+  refundable,
+  totalAmount,
+  currency,
+}: {
+  bookingId: string;
+  refundable?: boolean | null;
+  totalAmount?: number;
+  currency?: string;
+}) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [reason, setReason] = React.useState("");
@@ -53,6 +63,17 @@ export function CancelFlightBookingButton({ bookingId }: { bookingId: string }) 
           Cancelling contacts the airline immediately to cancel every passenger&apos;s ticket. Any refund due will be reviewed and processed by our team
           separately — you&apos;ll see it reflected here once it is.
         </p>
+        {refundable === true ? (
+          <p className="mt-3 rounded-xl bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+            This fare is refundable. You paid {currency} {totalAmount?.toLocaleString("en-IN")} — your eligible refund (after any airline cancellation
+            charge) will be calculated and processed to your original payment method.
+          </p>
+        ) : refundable === false ? (
+          <p className="mt-3 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+            This fare is non-refundable. Airline cancellation charges are likely to apply — any partial refund will be confirmed by our team after
+            cancellation.
+          </p>
+        ) : null}
         <label className="mt-4 block text-sm font-medium text-slate-700">
           Reason for cancellation
           <textarea

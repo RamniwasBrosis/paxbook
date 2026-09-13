@@ -9,6 +9,7 @@ import { FlightBookingPaymentPanel } from "@/components/FlightBookingPaymentPane
 import { RefreshFlightStatusButton } from "@/components/RefreshFlightStatusButton";
 import { CancelFlightBookingButton } from "@/components/CancelFlightBookingButton";
 import { AirlineLogo } from "@/components/AirlineLogo";
+import { BookingConfirmedBanner } from "@/components/BookingConfirmedBanner";
 
 export const metadata: Metadata = { title: "Flight Booking Details" };
 
@@ -26,7 +27,7 @@ const CANCELLABLE_STATUSES = new Set(["CONFIRMED", "PENDING_CONFIRMATION"]);
 
 const TYPE_LABEL: Record<string, string> = { A: "Adult", C: "Child", I: "Infant" };
 
-export default async function FlightBookingDetailPage({ params }: { params: { id: string } }) {
+export default async function FlightBookingDetailPage({ params, searchParams }: { params: { id: string }; searchParams?: { justBooked?: string } }) {
   let booking: FlightBookingDto;
   try {
     booking = await customerFetch<FlightBookingDto>(`/customer/flight-bookings/${params.id}`);
@@ -43,6 +44,8 @@ export default async function FlightBookingDetailPage({ params }: { params: { id
         ← Back to my flight bookings
       </Link>
 
+      {searchParams?.justBooked === "1" && booking.status === "CONFIRMED" ? <div className="mt-3"><BookingConfirmedBanner pnr={booking.pnr} /></div> : null}
+
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
@@ -54,7 +57,14 @@ export default async function FlightBookingDetailPage({ params }: { params: { id
             {booking.status === "FAILED" || booking.status === "CANCELLED" ? <XCircle className="h-4 w-4 text-red-500" /> : null}
             {STATUS_LABEL[booking.status] ?? booking.status} · Payment: {booking.paymentStatus}
             {booking.status === "PENDING_CONFIRMATION" ? <RefreshFlightStatusButton bookingId={booking.id} /> : null}
-            {CANCELLABLE_STATUSES.has(booking.status) ? <CancelFlightBookingButton bookingId={booking.id} /> : null}
+            {CANCELLABLE_STATUSES.has(booking.status) ? (
+              <CancelFlightBookingButton
+                bookingId={booking.id}
+                refundable={booking.fare?.refundable ?? null}
+                totalAmount={booking.totalAmount}
+                currency={booking.currency}
+              />
+            ) : null}
           </p>
         </div>
         <div className="flex items-center gap-3">

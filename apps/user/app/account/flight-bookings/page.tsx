@@ -1,31 +1,10 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Plane } from "lucide-react";
 import type { FlightBookingDto } from "@paxbook/types";
 import { customerFetch } from "@/lib/customer-api";
+import { FlightBookingsStatusTabs, type FlightBookingRow } from "@/components/FlightBookingsStatusTabs";
 
 export const metadata: Metadata = { title: "My Flight Bookings" };
-
-const STATUS_TONE: Record<string, string> = {
-  DRAFT: "bg-slate-100 text-slate-600",
-  PENDING_PAYMENT: "bg-amber-50 text-amber-700",
-  PENDING_CONFIRMATION: "bg-blue-50 text-blue-700",
-  CONFIRMED: "bg-emerald-50 text-emerald-700",
-  FAILED: "bg-red-50 text-red-700",
-  CANCELLATION_PENDING: "bg-amber-50 text-amber-700",
-  CANCELLED: "bg-red-50 text-red-700",
-};
-
-interface Row {
-  key: string;
-  href: string;
-  route: string;
-  subtitle: string;
-  status: string;
-  amount: number;
-  currency: string;
-  createdAt: string;
-}
 
 export default async function MyFlightBookingsPage() {
   const bookings = await customerFetch<FlightBookingDto[]>("/customer/flight-bookings");
@@ -44,18 +23,21 @@ export default async function MyFlightBookingsPage() {
     }
   }
 
-  const rows: Row[] = [
-    ...standalone.map((b): Row => ({
-      key: b.id,
-      href: `/account/flight-bookings/${b.id}`,
-      route: `${b.depCity} → ${b.arrCity}`,
-      subtitle: `${b.onDate} · ${b.pnr ? `PNR ${b.pnr}` : "Booked"} ${new Date(b.createdAt).toLocaleDateString("en-IN")}`,
-      status: b.status,
-      amount: b.totalAmount,
-      currency: b.currency,
-      createdAt: b.createdAt,
-    })),
-    ...Array.from(byTripId.entries()).map(([tripId, legs]): Row => {
+  const rows: FlightBookingRow[] = [
+    ...standalone.map(
+      (b): FlightBookingRow => ({
+        key: b.id,
+        href: `/account/flight-bookings/${b.id}`,
+        route: `${b.depCity} → ${b.arrCity}`,
+        subtitle: `${b.onDate} · ${b.pnr ? `PNR ${b.pnr}` : "Booked"} ${new Date(b.createdAt).toLocaleDateString("en-IN")}`,
+        status: b.status,
+        amount: b.totalAmount,
+        currency: b.currency,
+        createdAt: b.createdAt,
+        travelDate: b.reDate || b.onDate,
+      }),
+    ),
+    ...Array.from(byTripId.entries()).map(([tripId, legs]): FlightBookingRow => {
       const onward = legs.find((l) => l.tripRole === "ONWARD") ?? legs[0]!;
       const returnLeg = legs.find((l) => l.tripRole === "RETURN");
       const amount = legs.reduce((sum, l) => sum + l.totalAmount, 0);
@@ -70,6 +52,7 @@ export default async function MyFlightBookingsPage() {
         amount,
         currency: onward.currency,
         createdAt: onward.createdAt,
+        travelDate: returnLeg?.onDate ?? onward.onDate,
       };
     }),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -89,27 +72,7 @@ export default async function MyFlightBookingsPage() {
           to get started.
         </p>
       ) : (
-        <div className="mt-6 flex flex-col gap-3">
-          {rows.map((r) => (
-            <Link key={r.key} href={r.href} className="flat-card flex flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
-                  <Plane className="h-4 w-4" strokeWidth={1.75} />
-                </div>
-                <div>
-                  <p className="font-bold text-navy-deep">{r.route}</p>
-                  <p className="mt-0.5 text-xs text-slate-400">{r.subtitle}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_TONE[r.status] ?? "bg-slate-100 text-slate-600"}`}>{r.status.replace(/_/g, " ")}</span>
-                <span className="font-bold text-navy-deep">
-                  {r.currency} {r.amount.toLocaleString("en-IN")}
-                </span>
-              </div>
-            </Link>
-          ))}
-        </div>
+        <FlightBookingsStatusTabs rows={rows} />
       )}
     </div>
   );

@@ -10,6 +10,7 @@ import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
+import { FlightStepper } from "@/components/FlightStepper";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -246,7 +247,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
       });
       const json = await res.json();
       if (!res.ok || json.success === false) throw new Error(json?.error?.message ?? "Payment could not be verified.");
-      router.push(`/account/flight-bookings/${id}`);
+      router.push(`/account/flight-bookings/${id}?justBooked=1`);
     } catch (err) {
       setPayError(err instanceof Error ? err.message : "Payment could not be verified.");
       setBusy(false);
@@ -297,11 +298,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             ← Change fare
           </Link>
         ) : null}
-        <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-400">
-          <span className={step === "passengers" ? "text-brand" : ""}>1. Passenger details</span>
-          <span>›</span>
-          <span className={step === "review" ? "text-brand" : ""}>2. Review &amp; pay</span>
-        </div>
+        <FlightStepper steps={["Passenger details", "Review & pay"]} activeIndex={step === "passengers" ? 0 : 1} />
 
         {unsupportedMandatory ? (
           <div className="flat-card flex items-start gap-3 border border-amber-200 bg-amber-50 p-5">

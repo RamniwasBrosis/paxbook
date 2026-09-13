@@ -3,24 +3,25 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { Plane, ArrowLeftRight, Calendar, Users, Loader2 } from "lucide-react";
-import { CABIN_LABELS, FARE_TYPE_LABELS, searchContextToQuery, toYyyymmdd } from "@/lib/flights";
+import type { SearchFlightRequestDto } from "@paxbook/types";
+import { CABIN_LABELS, FARE_TYPE_LABELS, fromYyyymmdd, searchContextToQuery, toYyyymmdd } from "@/lib/flights";
 import { AirportAutocomplete } from "@/components/AirportAutocomplete";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-export function FlightSearchForm({ compact }: { compact?: boolean }) {
+export function FlightSearchForm({ compact, initialContext }: { compact?: boolean; initialContext?: SearchFlightRequestDto }) {
   const router = useRouter();
-  const [tripType, setTripType] = React.useState<0 | 1>(0);
-  const [serType, setServType] = React.useState<1 | 2>(1);
-  const [depCity, setDepCity] = React.useState("DEL");
-  const [arrCity, setArrCity] = React.useState("BOM");
-  const [onDate, setOnDate] = React.useState("");
-  const [reDate, setReDate] = React.useState("");
-  const [adt, setAdt] = React.useState(1);
-  const [chd, setChd] = React.useState(0);
-  const [inf, setInf] = React.useState(0);
-  const [cabin, setCabin] = React.useState("E");
-  const [fareType, setFareType] = React.useState("A");
+  const [tripType, setTripType] = React.useState<0 | 1>(initialContext?.tripType === 1 ? 1 : 0);
+  const [serType, setServType] = React.useState<1 | 2>(initialContext?.serType === 2 ? 2 : 1);
+  const [depCity, setDepCity] = React.useState(initialContext?.depCity ?? "DEL");
+  const [arrCity, setArrCity] = React.useState(initialContext?.arrCity ?? "BOM");
+  const [onDate, setOnDate] = React.useState(initialContext ? fromYyyymmdd(initialContext.onDate) : "");
+  const [reDate, setReDate] = React.useState(initialContext?.reDate ? fromYyyymmdd(initialContext.reDate) : "");
+  const [adt, setAdt] = React.useState(initialContext?.adt ?? 1);
+  const [chd, setChd] = React.useState(initialContext?.chd ?? 0);
+  const [inf, setInf] = React.useState(initialContext?.inf ?? 0);
+  const [cabin, setCabin] = React.useState(initialContext?.cabin ?? "E");
+  const [fareType, setFareType] = React.useState(initialContext?.fareType ?? "A");
   const [paxOpen, setPaxOpen] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);

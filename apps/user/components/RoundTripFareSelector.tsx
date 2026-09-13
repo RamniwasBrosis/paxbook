@@ -110,8 +110,10 @@ export function RoundTripFareSelector() {
       <button type="button" onClick={() => router.back()} className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
         ← Back to results
       </button>
-      <LegFareSection title="Departure" leg={selection.onward} state={onwardState} onChoose={chooseOnward} />
-      <LegFareSection title="Return" leg={selection.return} state={returnState} onChoose={chooseReturn} />
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <LegFareSection title="Departure" leg={selection.onward} state={onwardState} onChoose={chooseOnward} />
+        <LegFareSection title="Return" leg={selection.return} state={returnState} onChoose={chooseReturn} />
+      </div>
 
       {onwardState.chosen || returnState.chosen ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
@@ -171,7 +173,7 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
       ) : state.error ? (
         <div className="flat-card p-6 text-center text-red-600">{state.error}</div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3">
           {state.options.map((option) => (
             <button key={option.id} type="button" onClick={() => onChoose(option)} className={`flat-card flex flex-col gap-3 p-5 text-left ${state.chosen?.id === option.id ? "border-2 border-brand" : ""}`}>
               <div>
