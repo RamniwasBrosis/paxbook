@@ -429,10 +429,15 @@ export class FlightsService {
       throw new BadRequestException({ code: "ROUND_TRIP_MUST_BE_DOMESTIC", message: "This round-trip flow is for domestic flights only." });
     }
     const tripId = randomUUID();
-    const legInput = (leg: { flightID: number; refID: string; searchContext: SearchFlightDto }): CreateFlightBookingDto => ({
+    // Each leg is its own one-way booking from FTD's perspective, so its own createDraftBooking()
+    // only ever reads a passenger's ssr.onward — remap whichever direction this leg represents
+    // (the customer's departure or return SSR/seat choice) into that slot. Without this, both legs
+    // would silently resolve off the exact same ssr.onward field, making it impossible to choose
+    // different baggage/meal/seats for the outbound vs return flight.
+    const legInput = (leg: { flightID: number; refID: string; searchContext: SearchFlightDto }, direction: "onward" | "return"): CreateFlightBookingDto => ({
       flightID: leg.flightID,
       refID: leg.refID,
-      passengers: dto.passengers,
+      passengers: dto.passengers.map((p) => ({ ...p, ssr: p.ssr?.[direction] ? { onward: p.ssr[direction] } : undefined })),
       mobile: dto.mobile,
       email: dto.email,
       firstPaxPanNo: dto.firstPaxPanNo,
@@ -440,8 +445,8 @@ export class FlightsService {
       searchContext: leg.searchContext,
     });
 
-    const onward = await this.createDraftBooking(tenantId, customerId, legInput(dto.onward), dto.onward.searchContext, { tripId, tripRole: "ONWARD" });
-    const returnLeg = await this.createDraftBooking(tenantId, customerId, legInput(dto.return), dto.return.searchContext, { tripId, tripRole: "RETURN" });
+    const onward = await this.createDraftBooking(tenantId, customerId, legInput(dto.onward, "onward"), dto.onward.searchContext, { tripId, tripRole: "ONWARD" });
+    const returnLeg = await this.createDraftBooking(tenantId, customerId, legInput(dto.return, "return"), dto.return.searchContext, { tripId, tripRole: "RETURN" });
 
     return { tripId, onward, return: returnLeg, totalAmount: onward.totalAmount + returnLeg.totalAmount, currency: onward.currency };
   }

@@ -60,19 +60,19 @@ function storageKey(flightId: string, refId: string) {
   return `pb_flight_pax_${flightId}_${refId}`;
 }
 
-interface SsrLegChoice {
+export interface SsrLegChoice {
   baggageId?: string;
   mealIds?: string[];
   seatId?: string;
 }
-interface PassengerSsrChoice {
+export interface PassengerSsrChoice {
   onward?: SsrLegChoice;
   return?: SsrLegChoice;
 }
 
 /** Sums the real amounts of a passenger's chosen options against the SSR list actually quoted —
  * display-only; the server independently re-validates and recomputes this from scratch on submit. */
-function sumSsrChoice(choice: PassengerSsrChoice | undefined, ssr: FlightSsrDto | null): number {
+export function sumSsrChoice(choice: PassengerSsrChoice | undefined, ssr: FlightSsrDto | null): number {
   if (!choice || !ssr) return 0;
   const addLeg = (leg: SsrLegChoice | undefined, legSsr: { baggage: FlightBaggageOptionDto[]; meals: FlightMealOptionDto[] } | undefined) => {
     if (!leg || !legSsr) return 0;
@@ -86,7 +86,7 @@ function sumSsrChoice(choice: PassengerSsrChoice | undefined, ssr: FlightSsrDto 
 
 /** Seat prices live in the separately-fetched seat map, not FlightSsrDto — sums against whichever
  * seat maps were actually loaded (undefined for a fare with no seat map, e.g. skipped seat step). */
-function sumSeatChoice(choices: Record<number, PassengerSsrChoice>, seatMap: FlightSeatLookupResultDto | null): number {
+export function sumSeatChoice(choices: Record<number, PassengerSsrChoice>, seatMap: FlightSeatLookupResultDto | null): number {
   if (!seatMap) return 0;
   const flatten = (maps: typeof seatMap.onward | undefined) => (maps ?? []).flatMap((m) => m.seatMap);
   const onwardSeats = flatten(seatMap.onward);
@@ -100,7 +100,7 @@ function sumSeatChoice(choices: Record<number, PassengerSsrChoice>, seatMap: Fli
 }
 
 /** Drops empty legs so the create-booking payload only ever carries a passenger's real selections. */
-function cleanSsrChoice(choice: PassengerSsrChoice | undefined): FlightPassengerSsrInputDto | undefined {
+export function cleanSsrChoice(choice: PassengerSsrChoice | undefined): FlightPassengerSsrInputDto | undefined {
   if (!choice) return undefined;
   const cleanLeg = (leg: SsrLegChoice | undefined) => {
     if (!leg) return undefined;
@@ -772,7 +772,7 @@ function ssrOptionMatchesPax(optionPaxType: "Adult" | "Child" | "All", pType: "A
  * grouped by leg direction and (for meals) by legRef, since a connecting flight's segments can each
  * offer different meals. Rendered inside each passenger's own card since FTD prices these per
  * passenger, per direction, not once for the whole booking. */
-function SsrPicker({
+export function SsrPicker({
   ssr,
   pType,
   choice,

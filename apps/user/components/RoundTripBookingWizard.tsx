@@ -5,12 +5,14 @@ import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { Loader2, Plane, AlertTriangle } from "lucide-react";
-import type { FlightPassengerInputDto, FlightPriceCheckDto, SearchFlightRequestDto } from "@paxbook/types";
+import type { FlightPassengerInputDto, FlightPriceCheckDto, FlightSeatLookupResultDto, SearchFlightRequestDto } from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
 import { FlightStepper } from "@/components/FlightStepper";
+import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
+import { SsrPicker, sumSsrChoice, sumSeatChoice, cleanSsrChoice, type PassengerSsrChoice } from "@/components/FlightBookingWizard";
 import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -88,12 +90,19 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
       .finally(() => setLoadingPrice(false));
   }, [selection]);
 
-  const [step, setStep] = React.useState<"passengers" | "review">("passengers");
+  const [step, setStep] = React.useState<"passengers" | "seats" | "review">("passengers");
   const [passengers, setPassengers] = React.useState<PassengerForm[]>([]);
+  const [ssrChoices, setSsrChoices] = React.useState<Record<number, PassengerSsrChoice>>({});
   const [mobile, setMobile] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [panNo, setPanNo] = React.useState("");
   const [formError, setFormError] = React.useState<string | null>(null);
+
+  const [onwardSeatMap, setOnwardSeatMap] = React.useState<FlightSeatLookupResultDto | null>(null);
+  const [returnSeatMap, setReturnSeatMap] = React.useState<FlightSeatLookupResultDto | null>(null);
+  const [loadingSeats, setLoadingSeats] = React.useState(false);
+  const [seatMandatoryButUnavailable, setSeatMandatoryButUnavailable] = React.useState(false);
+  const [seatDirection, setSeatDirection] = React.useState<"onward" | "return">("onward");
 
   const [isLoggedIn, setIsLoggedIn] = React.useState(initiallyLoggedIn);
   const [loginOpen, setLoginOpen] = React.useState(false);
@@ -111,6 +120,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         setMobile(parsed.mobile ?? "");
         setEmail(parsed.email ?? "");
         setPanNo(parsed.panNo ?? "");
+        setSsrChoices(parsed.ssrChoices ?? {});
         return;
       } catch {
         // fall through
@@ -127,21 +137,43 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
 
   React.useEffect(() => {
     if (passengers.length === 0) return;
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ passengers, mobile, email, panNo }));
-  }, [passengers, mobile, email, panNo]);
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ passengers, mobile, email, panNo, ssrChoices }));
+  }, [passengers, mobile, email, panNo, ssrChoices]);
 
   function updatePassenger(idx: number, patch: Partial<PassengerForm>) {
     setPassengers((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
+  }
+
+  function updatePassengerSsr(idx: number, next: PassengerSsrChoice) {
+    setSsrChoices((prev) => ({ ...prev, [idx]: next }));
+  }
+
+  function assignSeat(passengerIdx: number, direction: "onward" | "return", seatId: string | undefined) {
+    setSsrChoices((prev) => {
+      const next = { ...prev };
+      // A seat can only ever belong to one passenger per leg — clear it from whoever else had it.
+      for (const key of Object.keys(next)) {
+        const i = Number(key);
+        if (i === passengerIdx) continue;
+        const legChoice = next[i]?.[direction];
+        if (legChoice?.seatId === seatId && seatId) {
+          next[i] = { ...next[i], [direction]: { ...legChoice, seatId: undefined } };
+        }
+      }
+      const legChoice = next[passengerIdx]?.[direction] ?? {};
+      next[passengerIdx] = { ...next[passengerIdx], [direction]: { ...legChoice, seatId } };
+      return next;
+    });
   }
 
   const onwardValidation = onwardPrice?.option.validation;
   const returnValidation = returnPrice?.option.validation;
   const docMandatory = Boolean(onwardValidation?.docMandatory || returnValidation?.docMandatory);
   const panMandatory = Boolean(onwardValidation?.panMandatory || returnValidation?.panMandatory);
-  const unsupportedMandatory = Boolean(
-    onwardValidation?.seatMandatory || onwardValidation?.mealMandatory || onwardValidation?.baggageMandatory ||
-    returnValidation?.seatMandatory || returnValidation?.mealMandatory || returnValidation?.baggageMandatory,
-  );
+  // Baggage/meal are real, selectable options now (see SsrPicker below) and seats have their own
+  // step — this only blocks when a seat map turned out to be genuinely unavailable for a fare that
+  // requires one (set once the seat-map fetch settles, mirrors the one-way wizard).
+  const unsupportedMandatory = seatMandatoryButUnavailable;
 
   function validatePassengers(): string | null {
     for (const [idx, p] of passengers.entries()) {
@@ -155,12 +187,69 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     return null;
   }
 
-  function goToReview(e: React.FormEvent) {
+  function seatMapHasAnySeats(map: FlightSeatLookupResultDto | null): boolean {
+    if (!map) return false;
+    const flatten = (segs: FlightSeatLookupResultDto["onward"] | undefined) => (segs ?? []).flatMap((s) => s.seatMap);
+    return flatten(map.onward).length > 0;
+  }
+
+  // Seat selection needs real passenger names for both legs, so it can only run after the passenger
+  // form validates — fetches both legs' seat maps in parallel, one call each (each leg is its own
+  // one-way FTD lookup, so only ever populates the "onward" side of the response).
+  async function goToSeatsOrReview(e: React.FormEvent) {
     e.preventDefault();
     const err = validatePassengers();
     setFormError(err);
     if (err) return;
-    setStep("review");
+    if (!selection) return;
+
+    setLoadingSeats(true);
+    setSeatMandatoryButUnavailable(false);
+    try {
+      const fetchSeats = (leg: LegSelection) =>
+        fetch(`${API_BASE_URL}/public/flights/seats`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", ...getClientTenantHeader() },
+          body: JSON.stringify({
+            flightID: Number(leg.flightId),
+            refID: leg.refId,
+            passengers: passengers.map((p) => ({ title: p.title, fName: p.fName.trim(), lName: p.lName.trim(), pType: p.pType })),
+          }),
+        }).then(async (res) => {
+          const json = await res.json();
+          if (!json.success) throw new Error(json.error?.message ?? "Could not load seat availability.");
+          return json.data as FlightSeatLookupResultDto;
+        });
+
+      const [onwardMap, returnMap] = await Promise.all([fetchSeats(selection.onward), fetchSeats(selection.return)]);
+      setOnwardSeatMap(onwardMap);
+      setReturnSeatMap(returnMap);
+
+      const onwardHasSeats = seatMapHasAnySeats(onwardMap);
+      const returnHasSeats = seatMapHasAnySeats(returnMap);
+      const onwardBlocked = onwardValidation?.seatMandatory && !onwardHasSeats;
+      const returnBlocked = returnValidation?.seatMandatory && !returnHasSeats;
+      if (onwardBlocked || returnBlocked) {
+        setSeatMandatoryButUnavailable(true);
+        return;
+      }
+      if (!onwardHasSeats && !returnHasSeats) {
+        setStep("review");
+        return;
+      }
+      setSeatDirection(onwardHasSeats ? "onward" : "return");
+      setStep("seats");
+    } catch {
+      setOnwardSeatMap(null);
+      setReturnSeatMap(null);
+      if (onwardValidation?.seatMandatory || returnValidation?.seatMandatory) {
+        setSeatMandatoryButUnavailable(true);
+      } else {
+        setStep("review");
+      }
+    } finally {
+      setLoadingSeats(false);
+    }
   }
 
   async function handleConfirmAndPay() {
@@ -174,7 +263,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     try {
       let currentTripId = tripId;
       if (!currentTripId) {
-        const passengerPayload: FlightPassengerInputDto[] = passengers.map((p) => ({
+        const passengerPayload: FlightPassengerInputDto[] = passengers.map((p, idx) => ({
           title: p.title,
           fName: p.fName.trim(),
           lName: p.lName.trim(),
@@ -182,6 +271,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
           gender: p.gender,
           dob: isoToDdMmYyyy(p.dobIso),
           ...(p.documentId ? { documentId: p.documentId } : {}),
+          ...(cleanSsrChoice(ssrChoices[idx]) ? { ssr: cleanSsrChoice(ssrChoices[idx]) } : {}),
         }));
         const res = await fetch("/api/customer/flight-bookings/round-trip", {
           method: "POST",
@@ -290,7 +380,26 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     );
   }
 
-  const combinedTotal = onwardPrice.option.fare.total + returnPrice.option.fare.total;
+  // Each leg's own price-check is a genuine one-way lookup, so its ssr/seat data only ever populates
+  // the "onward" side of the response — merge both legs into one synthetic object so the existing
+  // (unmodified) SsrPicker/sumSsrChoice/sumSeatChoice from the one-way wizard render correctly
+  // labeled "Departure"/"Return" sections and sum both legs' choices in one call.
+  const mergedSsr = {
+    onward: onwardPrice.ssr?.onward ?? { baggage: [], meals: [] },
+    return: returnPrice.ssr?.onward,
+    webCheckinEnabled: false,
+    webCheckinAmount: 0,
+  };
+  const mergedSeatMap: FlightSeatLookupResultDto | null =
+    onwardSeatMap || returnSeatMap ? { onward: onwardSeatMap?.onward ?? [], return: returnSeatMap?.onward } : null;
+  const ssrAddOnTotal = Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, mergedSsr), 0);
+  const seatAddOnTotal = sumSeatChoice(ssrChoices, mergedSeatMap);
+  const combinedTotal = onwardPrice.option.fare.total + returnPrice.option.fare.total + ssrAddOnTotal + seatAddOnTotal;
+  const stepperSteps = ["Passenger details", "Select seats", "Review & pay"];
+  const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
+  const seatPassengers: SeatMapPassenger[] = passengers
+    .map((p, idx) => ({ index: idx, label: p.fName.trim() || `Passenger ${idx + 1}`, pType: p.pType }))
+    .filter((p): p is SeatMapPassenger => p.pType !== "I");
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
@@ -301,23 +410,32 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             ← Change fares
           </Link>
         ) : null}
-        <FlightStepper steps={["Passenger details", "Review & pay"]} activeIndex={step === "passengers" ? 0 : 1} />
+        <FlightStepper steps={stepperSteps} activeIndex={activeStepIndex} />
 
         {unsupportedMandatory ? (
           <div className="flat-card flex items-start gap-3 border border-amber-200 bg-amber-50 p-5">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" strokeWidth={2} />
             <div>
-              <p className="font-bold text-navy-deep">One of these fares needs a seat, meal, or baggage selection we don&apos;t support online yet</p>
-              <p className="mt-1 text-sm text-slate-600">Please go back and choose different fares, or contact our travel desk to complete this booking manually.</p>
+              <p className="font-bold text-navy-deep">One of these fares requires a seat selection we couldn&apos;t retrieve</p>
+              <p className="mt-1 text-sm text-slate-600">Please go back and try different fares, or contact our travel desk to complete this booking manually.</p>
               <Link href="/flights/round-trip/fare" className="mt-3 inline-block text-sm font-semibold text-brand hover:underline">
                 ← Choose different fares
               </Link>
             </div>
           </div>
         ) : step === "passengers" ? (
-          <form onSubmit={goToReview} className="flex flex-col gap-4">
+          <form onSubmit={goToSeatsOrReview} className="flex flex-col gap-4">
             {passengers.map((p, idx) => (
-              <PassengerFieldset key={idx} index={idx} passenger={p} docMandatory={docMandatory} onChange={(patch) => updatePassenger(idx, patch)} />
+              <PassengerFieldset
+                key={idx}
+                index={idx}
+                passenger={p}
+                docMandatory={docMandatory}
+                onChange={(patch) => updatePassenger(idx, patch)}
+                ssr={mergedSsr}
+                ssrChoice={ssrChoices[idx]}
+                onSsrChange={(next) => updatePassengerSsr(idx, next)}
+              />
             ))}
 
             <div className="flat-card p-5">
@@ -337,20 +455,78 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
 
-            <button type="submit" className="self-start rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark">
-              Continue to review
+            <button
+              type="submit"
+              disabled={loadingSeats}
+              className="flex items-center gap-2 self-start rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
+            >
+              {loadingSeats ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+              Continue
             </button>
           </form>
+        ) : step === "seats" ? (
+          <div className="flex flex-col gap-4">
+            <div className="flat-card p-5">
+              <p className="mb-1 text-sm font-bold text-navy-deep">Choose your seats</p>
+              <p className="mb-4 text-xs text-slate-500">Optional for most passengers — tap a passenger, then tap a seat to assign it.</p>
+              <div className="mb-4 flex gap-2">
+                {(["onward", "return"] as const).map((dir) =>
+                  seatMapHasAnySeats(dir === "onward" ? onwardSeatMap : returnSeatMap) ? (
+                    <button
+                      key={dir}
+                      type="button"
+                      onClick={() => setSeatDirection(dir)}
+                      className={`rounded-full border px-4 py-1.5 text-xs font-semibold transition-colors ${
+                        seatDirection === dir ? "border-brand bg-brand text-white" : "border-slate-200 text-slate-600 hover:border-brand"
+                      }`}
+                    >
+                      {dir === "onward" ? "Departure" : "Return"}
+                    </button>
+                  ) : null,
+                )}
+              </div>
+              {(seatDirection === "onward" ? onwardSeatMap : returnSeatMap) ? (
+                <SeatMapPicker
+                  segments={(seatDirection === "onward" ? onwardSeatMap : returnSeatMap)?.onward ?? []}
+                  passengers={seatPassengers}
+                  assigned={Object.fromEntries(seatPassengers.map((p) => [p.index, ssrChoices[p.index]?.[seatDirection]?.seatId]))}
+                  onAssign={(passengerIdx, seatId) => assignSeat(passengerIdx, seatDirection, seatId)}
+                />
+              ) : null}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
+                ← Edit passengers
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep("review")}
+                className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+              >
+                Continue to review
+              </button>
+            </div>
+          </div>
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flat-card p-5">
               <p className="mb-3 text-sm font-bold text-navy-deep">Passengers</p>
               <ul className="flex flex-col gap-1.5 text-sm text-slate-600">
-                {passengers.map((p, idx) => (
-                  <li key={idx}>
-                    {p.title} {p.fName} {p.lName} <span className="text-xs text-slate-400">({p.pType === "A" ? "Adult" : p.pType === "C" ? "Child" : "Infant"})</span>
-                  </li>
-                ))}
+                {passengers.map((p, idx) => {
+                  const onwardSeat = ssrChoices[idx]?.onward?.seatId;
+                  const returnSeat = ssrChoices[idx]?.return?.seatId;
+                  return (
+                    <li key={idx}>
+                      {p.title} {p.fName} {p.lName} <span className="text-xs text-slate-400">({p.pType === "A" ? "Adult" : p.pType === "C" ? "Child" : "Infant"})</span>
+                      {onwardSeat || returnSeat ? (
+                        <span className="ml-1 text-xs text-slate-400">
+                          · Seats: {[onwardSeat, returnSeat].filter(Boolean).join(" / ")}
+                        </span>
+                      ) : null}
+                    </li>
+                  );
+                })}
               </ul>
               <p className="mt-3 text-sm text-slate-600">
                 Contact: {mobile} · {email}
@@ -363,6 +539,11 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
                 ← Edit passengers
               </button>
+              {seatMapHasAnySeats(onwardSeatMap) || seatMapHasAnySeats(returnSeatMap) ? (
+                <button type="button" onClick={() => setStep("seats")} className="text-sm font-semibold text-slate-500 hover:text-brand">
+                  ← Edit seats
+                </button>
+              ) : null}
               <button
                 type="button"
                 onClick={handleConfirmAndPay}
@@ -392,6 +573,18 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             <span>Return fare</span>
             <span>₹{returnPrice.option.fare.total.toLocaleString("en-IN")}</span>
           </div>
+          {ssrAddOnTotal > 0 ? (
+            <div className="flex justify-between text-slate-500">
+              <span>Extras (baggage/meals)</span>
+              <span>₹{ssrAddOnTotal.toLocaleString("en-IN")}</span>
+            </div>
+          ) : null}
+          {seatAddOnTotal > 0 ? (
+            <div className="flex justify-between text-slate-500">
+              <span>Seats</span>
+              <span>₹{seatAddOnTotal.toLocaleString("en-IN")}</span>
+            </div>
+          ) : null}
           <div className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-bold text-navy-deep">
             <span>Total</span>
             <span>₹{combinedTotal.toLocaleString("en-IN")}</span>
@@ -439,11 +632,17 @@ function PassengerFieldset({
   passenger,
   docMandatory,
   onChange,
+  ssr,
+  ssrChoice,
+  onSsrChange,
 }: {
   index: number;
   passenger: PassengerForm;
   docMandatory: boolean;
   onChange: (patch: Partial<PassengerForm>) => void;
+  ssr: React.ComponentProps<typeof SsrPicker>["ssr"];
+  ssrChoice: PassengerSsrChoice | undefined;
+  onSsrChange: (next: PassengerSsrChoice) => void;
 }) {
   const typeLabel = passenger.pType === "A" ? "Adult" : passenger.pType === "C" ? "Child" : "Infant";
   return (
@@ -481,6 +680,7 @@ function PassengerFieldset({
           />
         </div>
       ) : null}
+      {passenger.pType !== "I" ? <SsrPicker ssr={ssr} pType={passenger.pType} choice={ssrChoice} onChange={onSsrChange} /> : null}
     </div>
   );
 }
