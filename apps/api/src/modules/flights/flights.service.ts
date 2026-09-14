@@ -358,7 +358,14 @@ export class FlightsService {
         return: mergeLeg(resolvedSsr[idx]?.return, resolvedSeats[idx]?.return),
       };
     });
-    const totalAmount = priceCheck.option.fare.total + ssrTotal + seatTotal;
+    // Real web check-in purchase: a single whole-booking flag, never per-passenger (FTD: "All PAX
+    // will chosen for web checkin and partial selection is not allowed") — re-validated against the
+    // same fresh price-check's own ssr.webCheckinEnabled/Amount, never trusting a client amount.
+    if (dto.webCheckin && !priceCheck.ssr?.webCheckinEnabled) {
+      throw new BadRequestException({ code: "WEB_CHECKIN_UNAVAILABLE", message: "Web check-in is not available for this fare." });
+    }
+    const webCheckinTotal = dto.webCheckin ? (priceCheck.ssr?.webCheckinAmount ?? 0) : 0;
+    const totalAmount = priceCheck.option.fare.total + ssrTotal + seatTotal + webCheckinTotal;
 
     const booking = await this.prisma.flightBooking.create({
       data: {
@@ -441,6 +448,7 @@ export class FlightsService {
       mobile: dto.mobile,
       email: dto.email,
       firstPaxPanNo: dto.firstPaxPanNo,
+      webCheckin: dto.webCheckin,
       gst: dto.gst,
       searchContext: leg.searchContext,
     });

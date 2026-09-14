@@ -96,6 +96,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   const [mobile, setMobile] = React.useState("");
   const [email, setEmail] = React.useState("");
   const [panNo, setPanNo] = React.useState("");
+  const [wantsWebCheckin, setWantsWebCheckin] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
 
   const [onwardSeatMap, setOnwardSeatMap] = React.useState<FlightSeatLookupResultDto | null>(null);
@@ -121,6 +122,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         setEmail(parsed.email ?? "");
         setPanNo(parsed.panNo ?? "");
         setSsrChoices(parsed.ssrChoices ?? {});
+        setWantsWebCheckin(parsed.wantsWebCheckin ?? false);
         return;
       } catch {
         // fall through
@@ -137,8 +139,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
 
   React.useEffect(() => {
     if (passengers.length === 0) return;
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ passengers, mobile, email, panNo, ssrChoices }));
-  }, [passengers, mobile, email, panNo, ssrChoices]);
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ passengers, mobile, email, panNo, ssrChoices, wantsWebCheckin }));
+  }, [passengers, mobile, email, panNo, ssrChoices, wantsWebCheckin]);
 
   function updatePassenger(idx: number, patch: Partial<PassengerForm>) {
     setPassengers((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
@@ -283,6 +285,10 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             mobile,
             email,
             ...(panNo ? { firstPaxPanNo: panNo } : {}),
+            // Only ever sent true when both legs' own price-check confirmed web check-in is
+            // available (see bothLegsSupportWebCheckin) — the checkbox itself is hidden otherwise,
+            // so this can't request something the backend would reject.
+            webCheckin: Boolean(wantsWebCheckin && onwardPrice?.ssr?.webCheckinEnabled && returnPrice?.ssr?.webCheckinEnabled),
           }),
         });
         const json = await res.json();
@@ -394,7 +400,12 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     onwardSeatMap || returnSeatMap ? { onward: onwardSeatMap?.onward ?? [], return: returnSeatMap?.onward } : null;
   const ssrAddOnTotal = Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, mergedSsr), 0);
   const seatAddOnTotal = sumSeatChoice(ssrChoices, mergedSeatMap);
-  const combinedTotal = onwardPrice.option.fare.total + returnPrice.option.fare.total + ssrAddOnTotal + seatAddOnTotal;
+  // Only offered when BOTH legs' own fare supports it — a single shared checkbox covering the whole
+  // trip, since a customer can't reasonably add web check-in to just one direction (and the backend
+  // would reject a request where one leg doesn't support it, so this is never even attempted).
+  const bothLegsSupportWebCheckin = Boolean(onwardPrice.ssr?.webCheckinEnabled && returnPrice.ssr?.webCheckinEnabled);
+  const webCheckinTotal = wantsWebCheckin && bothLegsSupportWebCheckin ? (onwardPrice.ssr?.webCheckinAmount ?? 0) + (returnPrice.ssr?.webCheckinAmount ?? 0) : 0;
+  const combinedTotal = onwardPrice.option.fare.total + returnPrice.option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal;
   const stepperSteps = ["Passenger details", "Select seats", "Review & pay"];
   const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
   const seatPassengers: SeatMapPassenger[] = passengers
@@ -451,6 +462,12 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
                   className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-2"
                 />
               </div>
+              {bothLegsSupportWebCheckin ? (
+                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                  <input type="checkbox" checked={wantsWebCheckin} onChange={(e) => setWantsWebCheckin(e.target.checked)} />
+                  Add web check-in for both flights (+₹{((onwardPrice.ssr?.webCheckinAmount ?? 0) + (returnPrice.ssr?.webCheckinAmount ?? 0)).toLocaleString("en-IN")})
+                </label>
+              ) : null}
             </div>
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
@@ -583,6 +600,12 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             <div className="flex justify-between text-slate-500">
               <span>Seats</span>
               <span>₹{seatAddOnTotal.toLocaleString("en-IN")}</span>
+            </div>
+          ) : null}
+          {webCheckinTotal > 0 ? (
+            <div className="flex justify-between text-slate-500">
+              <span>Web check-in</span>
+              <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
             </div>
           ) : null}
           <div className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-bold text-navy-deep">

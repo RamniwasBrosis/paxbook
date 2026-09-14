@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsEmail, IsInt, IsObject, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
+import { IsBoolean, IsEmail, IsInt, IsObject, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
 import { SearchFlightDto } from "./search-flight.dto";
 import { FlightGstInputDto, FlightPassengerInputDto } from "./create-flight-booking.dto";
 
@@ -42,6 +42,13 @@ export class CreateRoundTripFlightBookingDto {
   @IsOptional()
   @IsString()
   firstPaxPanNo?: string;
+
+  /** Applies identically to both legs — the frontend only ever offers this when both legs' own
+   * price-check confirms web check-in is available, so per-leg validation in createDraftBooking
+   * never has a reason to reject it. */
+  @IsOptional()
+  @IsBoolean()
+  webCheckin?: boolean;
 
   @IsOptional()
   @IsObject()

@@ -133,6 +133,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const [panNo, setPanNo] = React.useState("");
   const [wantsGst, setWantsGst] = React.useState(false);
   const [gst, setGst] = React.useState({ number: "", email: "", mobile: "", address: "", company: "" });
+  const [wantsWebCheckin, setWantsWebCheckin] = React.useState(false);
   const [formError, setFormError] = React.useState<string | null>(null);
 
   const [seatMap, setSeatMap] = React.useState<FlightSeatLookupResultDto | null>(null);
@@ -180,6 +181,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         setEmail(parsed.email ?? "");
         setPanNo(parsed.panNo ?? "");
         setSsrChoices(parsed.ssrChoices ?? {});
+        setWantsWebCheckin(parsed.wantsWebCheckin ?? false);
         return;
       } catch {
         // fall through to fresh slots
@@ -197,8 +199,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   // Persist in-progress entries so a login-modal round trip (or accidental refresh) doesn't lose typed data.
   React.useEffect(() => {
     if (!flightId || !refId || passengers.length === 0) return;
-    window.sessionStorage.setItem(storageKey(flightId, refId), JSON.stringify({ passengers, mobile, email, panNo, ssrChoices }));
-  }, [passengers, mobile, email, panNo, ssrChoices, flightId, refId]);
+    window.sessionStorage.setItem(storageKey(flightId, refId), JSON.stringify({ passengers, mobile, email, panNo, ssrChoices, wantsWebCheckin }));
+  }, [passengers, mobile, email, panNo, ssrChoices, wantsWebCheckin, flightId, refId]);
 
   function updatePassenger(idx: number, patch: Partial<PassengerForm>) {
     setPassengers((prev) => prev.map((p, i) => (i === idx ? { ...p, ...patch } : p)));
@@ -328,7 +330,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           mobile,
           email,
           ...(panNo ? { firstPaxPanNo: panNo } : {}),
-          webCheckin: false,
+          webCheckin: wantsWebCheckin,
           ...(wantsGst ? { gst } : {}),
           searchContext,
         };
@@ -427,7 +429,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const { option, ssr } = priceCheck;
   const ssrAddOnTotal = Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, ssr), 0);
   const seatAddOnTotal = sumSeatChoice(ssrChoices, seatMap);
-  const displayTotal = option.fare.total + ssrAddOnTotal + seatAddOnTotal;
+  const webCheckinTotal = wantsWebCheckin && ssr?.webCheckinEnabled ? ssr.webCheckinAmount : 0;
+  const displayTotal = option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal;
   const stepperSteps = ["Passenger details", "Select seats", "Review & pay"];
   const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
   const seatPassengers: SeatMapPassenger[] = passengers
@@ -502,6 +505,12 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                   className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-2"
                 />
               </div>
+              {ssr?.webCheckinEnabled ? (
+                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                  <input type="checkbox" checked={wantsWebCheckin} onChange={(e) => setWantsWebCheckin(e.target.checked)} />
+                  Add web check-in for all passengers (+₹{ssr.webCheckinAmount.toLocaleString("en-IN")})
+                </label>
+              ) : null}
               <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
                 <input type="checkbox" checked={wantsGst} onChange={(e) => setWantsGst(e.target.checked)} />
                 Add GST details for a business invoice
@@ -668,6 +677,12 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             <div className="flex justify-between text-slate-500">
               <span>Seats</span>
               <span>₹{seatAddOnTotal.toLocaleString("en-IN")}</span>
+            </div>
+          ) : null}
+          {webCheckinTotal > 0 ? (
+            <div className="flex justify-between text-slate-500">
+              <span>Web check-in</span>
+              <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
             </div>
           ) : null}
           <div className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-bold text-navy-deep">
