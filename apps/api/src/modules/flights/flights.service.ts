@@ -3,6 +3,7 @@ import { BadRequestException, ForbiddenException, Injectable, NotFoundException,
 import type {
   AdminFlightSearchResultDto,
   CreateFlightBookingRequestDto,
+  FareRulesDto,
   FlightApiStatusDto,
   FlightBaggageOptionDto,
   FlightBookingDto,
@@ -22,7 +23,7 @@ import { RazorpayService } from "../customer-portal/razorpay.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
-import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapPriceCheck, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
+import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto, FlightSsrSelectionDto } from "./dto/create-flight-booking.dto";
 import type { FlightSeatLookupPassengerDto } from "./dto/flight-seat-lookup.dto";
@@ -133,6 +134,13 @@ export class FlightsService {
 
   async fareRules(flightID: number): Promise<Record<string, unknown>> {
     return this.ftd.fareRules(flightID);
+  }
+
+  /** Real cancellation/fare terms for a customer to read before booking — same underlying FTD call
+   * and mapper the cancellation-estimate feature uses, just exposed publicly and typed instead of
+   * the raw passthrough `fareRules()` above (which stays raw for the admin debugging tool). */
+  async fareRulesForCustomer(flightID: number): Promise<FareRulesDto> {
+    return mapFareRules(await this.ftd.fareRules(flightID));
   }
 
   /** Real seat-map lookup — needs actual passenger names (an FTD requirement), so unlike

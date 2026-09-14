@@ -8,6 +8,7 @@ import type { FlightOptionDto, FlightSearchResultDto, SearchFlightRequestDto } f
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader } from "@/lib/flights";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
+import { FareRulesLink } from "@/components/FareRulesLink";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -175,34 +176,37 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
       ) : (
         <div className="grid grid-cols-1 gap-3">
           {state.options.map((option) => (
-            <button key={option.id} type="button" onClick={() => onChoose(option)} className={`flat-card flex flex-col gap-3 p-5 text-left ${state.chosen?.id === option.id ? "border-2 border-brand" : ""}`}>
-              <div>
-                <p className="flex items-center gap-1.5 font-bold text-navy-deep">
-                  {option.fare.fareTypeLabel || "Standard fare"}
-                  {option.validation.isLowCostCarrier ? <span className="rounded-full bg-mist px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">LCC</span> : null}
-                </p>
-                <p className="text-2xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
-                <p className="text-xs text-slate-400">
-                  Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
-                </p>
-              </div>
-              {option.fare.popupMessage ? (
-                <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
-                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} /> {option.fare.popupMessage}
-                </p>
-              ) : null}
-              <div className="flex flex-col gap-1.5 text-xs text-slate-600">
-                <span className="flex items-center gap-1.5">
-                  <Luggage className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} /> Check-in: {option.fare.baggageCheckIn || "—"} · Cabin: {option.fare.baggageCabin || "—"}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  {option.fare.refundable ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" strokeWidth={2} /> : <ShieldOff className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />}
-                  {option.fare.refundable ? "Refundable" : "Non-refundable"}
-                </span>
-                <span>Seats left: {option.fare.seatsAvailable || "—"}</span>
-                {GST_LABELS[option.validation.gstIndicator] ? <span className="text-slate-400">{GST_LABELS[option.validation.gstIndicator]}</span> : null}
-              </div>
-            </button>
+            <div key={option.id} className={`flat-card flex flex-col gap-3 p-5 ${state.chosen?.id === option.id ? "border-2 border-brand" : ""}`}>
+              <button type="button" onClick={() => onChoose(option)} className="flex flex-col gap-3 text-left">
+                <div>
+                  <p className="flex items-center gap-1.5 font-bold text-navy-deep">
+                    {option.fare.fareTypeLabel || "Standard fare"}
+                    {option.validation.isLowCostCarrier ? <span className="rounded-full bg-mist px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">LCC</span> : null}
+                  </p>
+                  <p className="text-2xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+                  <p className="text-xs text-slate-400">
+                    Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
+                  </p>
+                </div>
+                {option.fare.popupMessage ? (
+                  <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} /> {option.fare.popupMessage}
+                  </p>
+                ) : null}
+                <div className="flex flex-col gap-1.5 text-xs text-slate-600">
+                  <span className="flex items-center gap-1.5">
+                    <Luggage className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} /> Check-in: {option.fare.baggageCheckIn || "—"} · Cabin: {option.fare.baggageCabin || "—"}
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    {option.fare.refundable ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" strokeWidth={2} /> : <ShieldOff className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />}
+                    {option.fare.refundable ? "Refundable" : "Non-refundable"}
+                  </span>
+                  <span>Seats left: {option.fare.seatsAvailable || "—"}</span>
+                  {GST_LABELS[option.validation.gstIndicator] ? <span className="text-slate-400">{GST_LABELS[option.validation.gstIndicator]}</span> : null}
+                </div>
+              </button>
+              <FareRulesLink flightId={option.id} />
+            </div>
           ))}
         </div>
       )}

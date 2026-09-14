@@ -46,6 +46,6 @@ export class PublicFlightsController {
 
   @Get("fare-rules")
   fareRules(@Query() dto: FareRulesLookupDto) {
-    return this.flightsService.fareRules(dto.flightID);
+    return this.flightsService.fareRulesForCustomer(dto.flightID);
   }
 }

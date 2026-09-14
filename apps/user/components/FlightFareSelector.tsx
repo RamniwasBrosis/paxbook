@@ -8,6 +8,7 @@ import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatDateTimeLong, formatMinutes, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
+import { FareRulesLink } from "@/components/FareRulesLink";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -220,6 +221,7 @@ function FareCard({
         {GST_LABELS[option.validation.gstIndicator] ? <span className="text-slate-400">{GST_LABELS[option.validation.gstIndicator]}</span> : null}
         {option.validation.remarks ? <span className="text-slate-400">{option.validation.remarks}</span> : null}
       </div>
+      <FareRulesLink flightId={option.id} />
       <Link
         href={`/flights/passengers?flightId=${option.id}&refId=${encodeURIComponent(refId)}&${query}`}
         className="mt-1 rounded-full bg-accent px-4 py-2.5 text-center text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"

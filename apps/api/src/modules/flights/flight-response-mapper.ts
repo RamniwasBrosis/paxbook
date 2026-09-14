@@ -366,14 +366,20 @@ function mapCancellationWindow(w: Raw): FareRuleWindowDto {
 
 /** postFareRules returns ONE of two shapes ("Either of them will be available" per the provider's
  * own spec, Section 14) — a structured `policy.{cancellation,reissue,noshow,seat}` schedule, or
- * just `html`. Never assume the structured shape is present; check for `html` first. */
+ * just `html`. Never assume the structured shape is present; check for `html` first.
+ *
+ * `policy` and `html` are siblings of `farerule` at the top level of the response (confirmed
+ * against real captured responses), not nested inside `farerule` itself — only `genRemarks` lives
+ * there. Checking both locations defensively since FTD's raw JSON is independently known to be
+ * inconsistent between endpoints (see flight-pricing/ftd-travel-air-api notes elsewhere). */
 export function mapFareRules(raw: Raw): FareRulesDto {
   const fareRule: Raw = raw.farerule ?? raw.farRule ?? raw.FareRule ?? {};
   const genRemarks: string | null = fareRule.genRemarks ?? null;
-  if (fareRule.html !== undefined) {
-    return { kind: "html", genRemarks, html: String(fareRule.html ?? "") };
+  const html = raw.html ?? fareRule.html;
+  if (html !== undefined) {
+    return { kind: "html", genRemarks, html: String(html ?? "") };
   }
-  const policy: Raw = fareRule.policy ?? {};
+  const policy: Raw = raw.policy ?? fareRule.policy ?? {};
   return {
     kind: "structured",
     genRemarks,
