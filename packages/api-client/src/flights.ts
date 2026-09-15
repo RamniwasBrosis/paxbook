@@ -169,10 +169,18 @@ export function useAdminFlightBookings(status?: string) {
   });
 }
 
+export interface FlightBookingStatusHistoryEntryDto {
+  id: string;
+  fromStatus: string | null;
+  toStatus: string;
+  note: string | null;
+  changedAt: string;
+}
+
 export function useAdminFlightBooking(id: string | null) {
   return useQuery({
     queryKey: ["admin-flight-bookings", "detail", id],
-    queryFn: () => apiFetch<FlightBookingDto>(`/admin/flights/bookings/${id}`),
+    queryFn: () => apiFetch<FlightBookingDto & { statusHistory: FlightBookingStatusHistoryEntryDto[] }>(`/admin/flights/bookings/${id}`),
     enabled: Boolean(id),
   });
 }

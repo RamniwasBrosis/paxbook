@@ -20,6 +20,9 @@ import type {
 } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { RazorpayService } from "../customer-portal/razorpay.service";
+import { CustomerNotificationsService } from "../customer-portal/customer-notifications.service";
+import { EmailService } from "../../common/email/email.service";
+import { SmsService } from "../../common/sms/sms.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
@@ -50,6 +53,9 @@ export class FlightsService {
     private readonly razorpay: RazorpayService,
     private readonly pricing: FlightPricingService,
     private readonly cancellationEstimate: FlightCancellationEstimateService,
+    private readonly notifications: CustomerNotificationsService,
+    private readonly email: EmailService,
+    private readonly sms: SmsService,
   ) {}
 
   /** Applies our margin/discount in place, keyed off the leg data actually returned (not the search
@@ -659,6 +665,10 @@ export class FlightsService {
         ),
       ]);
 
+      if (newStatus === "CONFIRMED") {
+        await this.notifyConfirmed(tenantId, customerId, booking.depCity, booking.arrCity, booking.onDate, firstPnr);
+      }
+
       return this.toDto(await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } }));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not reach the flight provider.";
@@ -667,11 +677,95 @@ export class FlightsService {
     }
   }
 
+  /**
+   * Marks a booking FAILED and, if a payment was already captured for it, automatically refunds it
+   * in full via Razorpay — unlike a voluntary cancellation, there's no fee schedule to apply here:
+   * the provider never delivered a booking at all, so the whole amount always goes back. Both the
+   * refund attempt and the customer alert are best-effort and must never throw back into the booking
+   * flow — a failed refund/notification leaves a status-history note for admin to follow up on
+   * manually via the (now FAILED-aware) admin refund endpoint, but the booking itself still ends up
+   * correctly marked FAILED either way.
+   */
   private async markFailed(flightBookingId: string, message: string): Promise<void> {
     await this.prisma.$transaction([
       this.prisma.flightBooking.update({ where: { id: flightBookingId }, data: { status: "FAILED", errorMessage: message } }),
       this.prisma.flightBookingStatusHistory.create({ data: { flightBookingId, toStatus: "FAILED", note: message } }),
     ]);
+    await this.handleFailureRefundAndAlert(flightBookingId);
+  }
+
+  /** Shared by markFailed (booking never went through) and refreshStatus (a booking that was stuck
+   * PENDING_CONFIRMATION comes back REJECTED on a later poll) — either way, by the time a booking is
+   * FAILED its status row is already saved; this only handles the money/notification side-effects. */
+  private async handleFailureRefundAndAlert(flightBookingId: string): Promise<void> {
+    const booking = await this.prisma.flightBooking.findUnique({
+      where: { id: flightBookingId },
+      include: { payments: { where: { status: "CAPTURED" }, orderBy: { createdAt: "desc" }, take: 1 } },
+    });
+    if (!booking) return;
+
+    let refundNote = "";
+    const payment = booking.payments[0];
+    if (payment?.providerPaymentId) {
+      const amount = payment.amount.toNumber();
+      try {
+        const result = await this.razorpay.refund(booking.tenantId, payment.providerPaymentId, amount, {
+          note: "Automatic refund — the flight provider could not complete this booking",
+        });
+        await this.prisma.$transaction([
+          this.prisma.flightBooking.update({
+            where: { id: flightBookingId },
+            data: { paymentStatus: "REFUNDED", refundAmount: amount, refundedAt: new Date(), refundReference: result.refundId },
+          }),
+          this.prisma.flightPayment.update({ where: { id: payment.id }, data: { status: "REFUNDED" } }),
+          this.prisma.flightBookingStatusHistory.create({ data: { flightBookingId, toStatus: "FAILED", note: `Automatic refund of ${booking.currency} ${amount} issued (ref ${result.refundId}).` } }),
+        ]);
+        refundNote = `We've automatically refunded ${booking.currency} ${amount.toLocaleString("en-IN")} to your original payment method.`;
+      } catch (err) {
+        const errMessage = err instanceof Error ? err.message : "Unknown error.";
+        await this.prisma.flightBookingStatusHistory
+          .create({ data: { flightBookingId, toStatus: "FAILED", note: `Automatic refund attempt failed (${errMessage}) — needs manual admin refund.` } })
+          .catch(() => undefined);
+        refundNote = "Our team will process your refund shortly.";
+      }
+    }
+
+    await this.alertCustomer(booking.tenantId, booking.customerId, {
+      type: "FLIGHT_BOOKING_FAILED",
+      title: "Flight booking could not be completed",
+      inAppBody: `We couldn't complete your flight booking (${booking.depCity} → ${booking.arrCity}) on ${booking.onDate}. ${refundNote}`,
+      emailSubject: "Your flight booking could not be completed",
+      emailHtml: `<p>Hi,</p><p>Unfortunately we couldn't complete your flight booking from <b>${booking.depCity}</b> to <b>${booking.arrCity}</b> on ${booking.onDate}.</p><p>${refundNote}</p><p>We're sorry for the inconvenience — please contact support if you have any questions.</p>`,
+      whatsappBody: `We couldn't complete your Paxbook flight booking (${booking.depCity} → ${booking.arrCity}). ${refundNote}`,
+    });
+  }
+
+  private async notifyConfirmed(tenantId: string, customerId: string, depCity: string, arrCity: string, onDate: string, pnr: string | null): Promise<void> {
+    await this.alertCustomer(tenantId, customerId, {
+      type: "FLIGHT_BOOKING_CONFIRMED",
+      title: "Flight booking confirmed",
+      inAppBody: `Your flight ${depCity} → ${arrCity} on ${onDate} is confirmed. PNR: ${pnr ?? "—"}.`,
+      emailSubject: "Your flight booking is confirmed",
+      emailHtml: `<p>Hi,</p><p>Your flight booking from <b>${depCity}</b> to <b>${arrCity}</b> on ${onDate} is confirmed.</p><p>PNR: <b>${pnr ?? "—"}</b></p><p>You can view your e-ticket anytime from your Paxbook account.</p>`,
+      whatsappBody: `Your Paxbook flight booking (${depCity} → ${arrCity}) is confirmed. PNR: ${pnr ?? "—"}.`,
+    });
+  }
+
+  /** Best-effort in-app + email + WhatsApp alert for a booking lifecycle event — never allowed to
+   * throw back into a booking/cancellation flow just because a notification channel had a bad moment. */
+  private async alertCustomer(
+    tenantId: string,
+    customerId: string,
+    opts: { type: string; title: string; inAppBody: string; emailSubject: string; emailHtml: string; whatsappBody: string },
+  ): Promise<void> {
+    await this.notifications.create(tenantId, customerId, opts.type, opts.title, opts.inAppBody).catch(() => undefined);
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId }, select: { email: true, phone: true } }).catch(() => null);
+    if (customer?.email) {
+      await this.email.send(tenantId, customer.email, opts.emailSubject, opts.emailHtml).catch(() => undefined);
+    }
+    if (customer?.phone) {
+      await this.sms.sendWhatsapp(tenantId, customer.phone, opts.whatsappBody).catch(() => undefined);
+    }
   }
 
   async findAllForCustomer(tenantId: string, customerId: string): Promise<FlightBookingDto[]> {
@@ -698,10 +792,16 @@ export class FlightsService {
     const mapped = mapBookingResponse(raw);
     const newStatus = mapped.status.toLowerCase() === "success" ? "CONFIRMED" : mapped.status.toLowerCase() === "rejected" ? "FAILED" : "PENDING_CONFIRMATION";
     if (newStatus !== booking.status) {
+      const resolvedPnr = mapped.onward?.passengers[0]?.pnr ?? booking.pnr;
       await this.prisma.$transaction([
-        this.prisma.flightBooking.update({ where: { id: booking.id }, data: { status: newStatus, providerStatus: mapped.status, pnr: mapped.onward?.passengers[0]?.pnr ?? booking.pnr } }),
+        this.prisma.flightBooking.update({ where: { id: booking.id }, data: { status: newStatus, providerStatus: mapped.status, pnr: resolvedPnr } }),
         this.prisma.flightBookingStatusHistory.create({ data: { flightBookingId: booking.id, fromStatus: booking.status, toStatus: newStatus, note: `Provider status refresh: ${mapped.status}` } }),
       ]);
+      if (newStatus === "CONFIRMED") {
+        await this.notifyConfirmed(tenantId, customerId, booking.depCity, booking.arrCity, booking.onDate, resolvedPnr);
+      } else if (newStatus === "FAILED") {
+        await this.handleFailureRefundAndAlert(booking.id);
+      }
     } else {
       await this.prisma.flightBooking.update({ where: { id: booking.id }, data: { updatedAt: new Date() } });
     }
@@ -772,6 +872,19 @@ export class FlightsService {
         data: { flightBookingId: booking.id, fromStatus: booking.status, toStatus: newStatus, note: `Cancellation requested (${reason}) — provider: ${statusSummary}` },
       }),
     ]);
+
+    const refundLine =
+      refundEstimate.available && refundEstimate.estimatedRefundAmount != null
+        ? `Estimated refund: ${booking.currency} ${refundEstimate.estimatedRefundAmount.toLocaleString("en-IN")}.`
+        : "Our team will confirm your refund amount and process it shortly.";
+    await this.alertCustomer(tenantId, booking.customerId, {
+      type: "FLIGHT_BOOKING_CANCELLED",
+      title: allCancelled ? "Flight booking cancelled" : "Flight cancellation in progress",
+      inAppBody: `Your flight ${booking.depCity} → ${booking.arrCity} on ${booking.onDate} has been ${allCancelled ? "cancelled" : "submitted for cancellation"}. ${refundLine}`,
+      emailSubject: allCancelled ? "Your flight booking has been cancelled" : "Your flight cancellation is in progress",
+      emailHtml: `<p>Hi,</p><p>Your flight booking from <b>${booking.depCity}</b> to <b>${booking.arrCity}</b> on ${booking.onDate} has been ${allCancelled ? "cancelled" : "submitted for cancellation"}.</p><p>${refundLine}</p>`,
+      whatsappBody: `Your Paxbook flight booking (${booking.depCity} → ${booking.arrCity}) has been ${allCancelled ? "cancelled" : "submitted for cancellation"}. ${refundLine}`,
+    });
 
     return this.toDto(await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } }));
   }

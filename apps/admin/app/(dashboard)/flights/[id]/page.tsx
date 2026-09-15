@@ -29,7 +29,7 @@ const STATUS_TONE: Record<FlightBookingStatus, "neutral" | "info" | "success" | 
 };
 const PAYMENT_TONE = { PENDING: "warning", PARTIAL: "info", PAID: "success", REFUNDED: "neutral" } as const;
 const CANCELLABLE_STATUSES = new Set<FlightBookingStatus>(["CONFIRMED", "PENDING_CONFIRMATION"]);
-const REFUNDABLE_STATUSES = new Set<FlightBookingStatus>(["CANCELLED", "CANCELLATION_PENDING"]);
+const REFUNDABLE_STATUSES = new Set<FlightBookingStatus>(["CANCELLED", "CANCELLATION_PENDING", "FAILED"]);
 
 const CAN_MODES = [
   { value: 5, label: "Customer cancel" },
@@ -128,6 +128,29 @@ export default function FlightBookingDetailPage() {
           />
         </CardContent>
       </Card>
+
+      {booking.statusHistory.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Status history</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3 text-sm">
+            {booking.statusHistory
+              .slice()
+              .reverse()
+              .map((h) => (
+                <div key={h.id} className="border-l-2 border-slate-200 pl-3">
+                  <p className="font-medium text-slate-900">
+                    {h.fromStatus ? `${h.fromStatus.replace(/_/g, " ")} → ` : ""}
+                    {h.toStatus.replace(/_/g, " ")}
+                    <span className="ml-2 text-xs font-normal text-slate-400">{new Date(h.changedAt).toLocaleString("en-IN")}</span>
+                  </p>
+                  {h.note ? <p className="text-slate-500">{h.note}</p> : null}
+                </div>
+              ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {(booking.cancellationReason || CANCELLABLE_STATUSES.has(booking.status) || REFUNDABLE_STATUSES.has(booking.status)) && canWrite ? (
         <CancellationCard booking={booking} />
@@ -268,7 +291,12 @@ function CancellationCard({ booking }: { booking: NonNullable<ReturnType<typeof 
         {REFUNDABLE_STATUSES.has(booking.status) && booking.paymentStatus === "PAID" ? (
           <form onSubmit={handleRefund} className="flex flex-col gap-3 border-t border-slate-100 pt-4">
             <p className="text-xs font-semibold uppercase text-slate-400">Process refund to customer</p>
-            {booking.estimatedRefundAmount != null ? (
+            {booking.status === "FAILED" ? (
+              <p className="text-xs text-slate-500">
+                This booking could not be completed by the flight provider, but the customer was already charged. An automatic full refund is normally attempted the
+                moment this happens — if that failed (see the status history above) or this is a manual top-up, issue the remaining amount here via Razorpay.
+              </p>
+            ) : booking.estimatedRefundAmount != null ? (
               <p className="text-xs text-slate-500">
                 Pre-filled from an automatic estimate based on the airline&apos;s fare rules
                 {booking.estimatedCancellationFee != null ? ` (₹${booking.estimatedCancellationFee.toLocaleString("en-IN")} airline cancellation fee already deducted; our margin is never refunded)` : ""}

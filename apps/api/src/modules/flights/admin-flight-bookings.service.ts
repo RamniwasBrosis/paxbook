@@ -25,8 +25,8 @@ export class AdminFlightBookingsService {
       include: { passengers: true, payments: { where: { status: "CAPTURED" }, orderBy: { createdAt: "desc" }, take: 1 } },
     });
     if (!booking) throw new NotFoundException({ code: "FLIGHT_BOOKING_NOT_FOUND", message: "Booking does not exist." });
-    if (booking.status !== "CANCELLED" && booking.status !== "CANCELLATION_PENDING") {
-      throw new BadRequestException({ code: "REFUND_NOT_ALLOWED", message: "Only a cancelled booking can be refunded." });
+    if (booking.status !== "CANCELLED" && booking.status !== "CANCELLATION_PENDING" && booking.status !== "FAILED") {
+      throw new BadRequestException({ code: "REFUND_NOT_ALLOWED", message: "Only a cancelled or failed booking can be refunded." });
     }
     const payment = booking.payments[0];
     if (!payment?.providerPaymentId) {

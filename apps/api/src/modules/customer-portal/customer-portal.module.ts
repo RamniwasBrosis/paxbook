@@ -42,6 +42,6 @@ import { CustomerUploadsController } from "./customer-uploads.controller";
     CustomerReviewsService,
     AdminCancellationRequestsService,
   ],
-  exports: [RazorpayService],
+  exports: [RazorpayService, CustomerNotificationsService],
 })
 export class CustomerPortalModule {}
