@@ -8,6 +8,7 @@ import { formatDateTimeLong, formatMinutes } from "@/lib/flights";
 import { FlightBookingPaymentPanel } from "@/components/FlightBookingPaymentPanel";
 import { RefreshFlightStatusButton } from "@/components/RefreshFlightStatusButton";
 import { CancelFlightBookingButton } from "@/components/CancelFlightBookingButton";
+import { RequestDateChangeButton } from "@/components/RequestDateChangeButton";
 import { AirlineLogo } from "@/components/AirlineLogo";
 import { BookingConfirmedBanner } from "@/components/BookingConfirmedBanner";
 
@@ -65,6 +66,7 @@ export default async function FlightBookingDetailPage({ params, searchParams }: 
                 currency={booking.currency}
               />
             ) : null}
+            {booking.status === "CONFIRMED" ? <RequestDateChangeButton bookingId={booking.id} /> : null}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -104,6 +106,17 @@ export default async function FlightBookingDetailPage({ params, searchParams }: 
           ) : booking.status === "CANCELLED" ? (
             <p className="mt-1 text-slate-500">Your refund, if any, is being reviewed and will be processed shortly.</p>
           ) : null}
+        </div>
+      ) : null}
+
+      {booking.dateChangeRequestedAt ? (
+        <div className="mt-4 rounded-lg bg-mist px-4 py-3 text-sm text-slate-600">
+          <p>
+            <span className="font-semibold text-slate-800">Date change requested:</span> to {booking.dateChangeNewDate} on{" "}
+            {new Date(booking.dateChangeRequestedAt).toLocaleDateString("en-IN")}
+            {booking.dateChangeReissueId ? ` (ref ${booking.dateChangeReissueId})` : ""}
+          </p>
+          <p className="mt-1 text-slate-500">Our team will confirm any fare difference and get back to you to complete the change.</p>
         </div>
       ) : null}
 

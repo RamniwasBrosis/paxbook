@@ -82,6 +82,7 @@ export class AdminFlightBookingsService {
     cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
     refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
     estimatedRefundAmount: { toNumber(): number } | null; estimatedCancellationFee: { toNumber(): number } | null; refundEstimateComputedAt: Date | null; refundEstimateNote: string | null;
+    dateChangeRequestedAt: Date | null; dateChangeNewDate: string | null; dateChangeRemarks: string | null; dateChangeReissueId: string | null; dateChangeStatus: string | null;
     tripId: string | null; tripRole: string | null;
     createdAt: Date; updatedAt: Date;
     customer?: { name: string; email: string } | null;
@@ -121,6 +122,11 @@ export class AdminFlightBookingsService {
       estimatedCancellationFee: b.estimatedCancellationFee ? b.estimatedCancellationFee.toNumber() : null,
       refundEstimateComputedAt: b.refundEstimateComputedAt ? b.refundEstimateComputedAt.toISOString() : null,
       refundEstimateNote: b.refundEstimateNote,
+      dateChangeRequestedAt: b.dateChangeRequestedAt ? b.dateChangeRequestedAt.toISOString() : null,
+      dateChangeNewDate: b.dateChangeNewDate,
+      dateChangeRemarks: b.dateChangeRemarks,
+      dateChangeReissueId: b.dateChangeReissueId,
+      dateChangeStatus: b.dateChangeStatus,
       tripId: b.tripId,
       tripRole: b.tripRole as FlightBookingDto["tripRole"],
       createdAt: b.createdAt.toISOString(),

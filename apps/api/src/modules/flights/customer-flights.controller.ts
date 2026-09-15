@@ -10,6 +10,7 @@ import { CreateFlightBookingDto } from "./dto/create-flight-booking.dto";
 import { CreateRoundTripFlightBookingDto } from "./dto/create-round-trip-flight-booking.dto";
 import { VerifyFlightPaymentDto } from "./dto/verify-flight-payment.dto";
 import { RequestFlightCancellationDto } from "./dto/cancel-flight-booking.dto";
+import { RequestDateChangeDto } from "./dto/request-date-change.dto";
 
 @ApiTags("flights")
 @Public()
@@ -67,5 +68,10 @@ export class CustomerFlightsController {
   @Get(":id/cancellation-estimate")
   cancellationEstimate(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string) {
     return this.flightsService.previewCancellationEstimate(customer.tenantId, customer.sub, id);
+  }
+
+  @Post(":id/date-change-request")
+  requestDateChange(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string, @Body() dto: RequestDateChangeDto) {
+    return this.flightsService.requestDateChange(customer.tenantId, customer.sub, id, dto);
   }
 }

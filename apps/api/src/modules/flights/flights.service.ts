@@ -27,7 +27,7 @@ import { SmsService } from "../../common/sms/sms.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
-import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
+import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapRescheduleResponse, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
 import { buildBookingConfirmedEmailHtml } from "./flight-email-templates";
 import { buildTicketPdf } from "./flight-ticket-pdf";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
@@ -983,6 +983,80 @@ export class FlightsService {
     });
   }
 
+  private static readonly DATE_CHANGE_ELIGIBLE_STATUSES = new Set(["CONFIRMED"]);
+
+  /**
+   * Submits a real date-change request to FTD's "Reissue Quotation" endpoint. Per FTD's own spec
+   * this only files the request and returns a tracking ID — "No changes are done in this request"
+   * and there is no separate confirm/execute endpoint — so the actual fare difference and rebooking
+   * happen out-of-band, tracked here via dateChangeReissueId, mirroring how a cancellation's refund
+   * also needs admin follow-up for the parts FTD doesn't automate.
+   */
+  async requestDateChange(tenantId: string, customerId: string, flightBookingId: string, dto: { newTravelDate: string; remarks: string }): Promise<FlightBookingDto> {
+    const booking = await this.getOwned(tenantId, customerId, flightBookingId);
+    if (!FlightsService.DATE_CHANGE_ELIGIBLE_STATUSES.has(booking.status)) {
+      throw new BadRequestException({ code: "DATE_CHANGE_NOT_ALLOWED", message: `A booking with status ${booking.status} is not eligible for a date change request.` });
+    }
+    if (!booking.refId) {
+      throw new BadRequestException({ code: "MISSING_REF_ID", message: "This booking is missing its provider reference and cannot request a date change. Please contact support." });
+    }
+    const paxIds = booking.passengers.map((p) => p.paxId).filter((id): id is string => Boolean(id));
+    if (paxIds.length === 0) {
+      throw new BadRequestException({ code: "NO_PROVIDER_PAX_ID", message: "This booking has no provider passenger IDs on file. Please contact support." });
+    }
+    const { legs } = extractFlightSnapshot(booking.fareSnapshot);
+    const firstLeg = legs[0];
+    if (!firstLeg) {
+      throw new BadRequestException({ code: "MISSING_FLIGHT_DETAILS", message: "Could not determine this booking's flight details. Please contact support." });
+    }
+
+    const newTravelDate = dto.newTravelDate.slice(0, 10);
+    const [year, month, day] = newTravelDate.split("-");
+    const raw = await this.ftd.reschedule({
+      refID: booking.refId,
+      paxId: paxIds.join(","),
+      paxIdr: "",
+      travelDate: `${day}-${month}-${year}`,
+      flightDetail: `${firstLeg.airlineCode}-${firstLeg.flightNo}`,
+      travelDater: "",
+      flightDetailr: "",
+      reissueRemarks: dto.remarks,
+    });
+    const mapped = mapRescheduleResponse(raw);
+
+    await this.prisma.$transaction([
+      this.prisma.flightBooking.update({
+        where: { id: booking.id },
+        data: {
+          dateChangeRequestedAt: new Date(),
+          dateChangeNewDate: newTravelDate,
+          dateChangeRemarks: dto.remarks,
+          dateChangeReissueId: mapped.reissueId || null,
+          dateChangeStatus: mapped.status || "submitted",
+        },
+      }),
+      this.prisma.flightBookingStatusHistory.create({
+        data: {
+          flightBookingId: booking.id,
+          fromStatus: booking.status,
+          toStatus: booking.status,
+          note: `Date change requested to ${newTravelDate} (reissue ref ${mapped.reissueId || "—"}) — ${dto.remarks}`,
+        },
+      }),
+    ]);
+
+    await this.alertCustomer(tenantId, customerId, {
+      type: "FLIGHT_DATE_CHANGE_REQUESTED",
+      title: "Date change request submitted",
+      inAppBody: `Your request to change your flight (${booking.depCity} → ${booking.arrCity}) to ${newTravelDate} has been submitted. Our team will confirm the fare difference and process it shortly.`,
+      emailSubject: "Your date change request has been submitted",
+      emailHtml: `<p>Hi,</p><p>We've submitted your request to change your flight from <b>${booking.depCity}</b> to <b>${booking.arrCity}</b> to <b>${newTravelDate}</b>.</p><p>Our team will confirm the fare difference (if any) and get back to you shortly to complete the change.</p><p>Reference: <b>${mapped.reissueId || "—"}</b></p>`,
+      whatsappBody: `Your Paxbook date change request (${booking.depCity} → ${booking.arrCity}, new date ${newTravelDate}) has been submitted. We'll confirm shortly.`,
+    });
+
+    return this.toDto(await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } }));
+  }
+
   private async getOwned(tenantId: string, customerId: string, id: string) {
     const booking = await this.prisma.flightBooking.findFirst({ where: { id, tenantId, customerId }, include: { passengers: true } });
     if (!booking) throw new NotFoundException({ code: "FLIGHT_BOOKING_NOT_FOUND", message: "Booking does not exist." });
@@ -996,6 +1070,7 @@ export class FlightsService {
     providerStatus: string | null; errorMessage: string | null; cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
     refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
     estimatedRefundAmount: { toNumber(): number } | null; estimatedCancellationFee: { toNumber(): number } | null; refundEstimateComputedAt: Date | null; refundEstimateNote: string | null;
+    dateChangeRequestedAt: Date | null; dateChangeNewDate: string | null; dateChangeRemarks: string | null; dateChangeReissueId: string | null; dateChangeStatus: string | null;
     tripId: string | null; tripRole: string | null; createdAt: Date; updatedAt: Date;
     passengers: Array<{ id: string; title: string; fName: string; lName: string; pType: string; gender: string; dob: string; documentId: string | null; ppNo: string | null; ppNat: string | null; paxId: string | null; pnr: string | null; ticketNo: string | null }>;
   }): FlightBookingDto {
@@ -1033,6 +1108,11 @@ export class FlightsService {
       estimatedCancellationFee: b.estimatedCancellationFee ? b.estimatedCancellationFee.toNumber() : null,
       refundEstimateComputedAt: b.refundEstimateComputedAt ? b.refundEstimateComputedAt.toISOString() : null,
       refundEstimateNote: b.refundEstimateNote,
+      dateChangeRequestedAt: b.dateChangeRequestedAt ? b.dateChangeRequestedAt.toISOString() : null,
+      dateChangeNewDate: b.dateChangeNewDate,
+      dateChangeRemarks: b.dateChangeRemarks,
+      dateChangeReissueId: b.dateChangeReissueId,
+      dateChangeStatus: b.dateChangeStatus,
       tripId: b.tripId,
       tripRole: b.tripRole as FlightBookingDto["tripRole"],
       createdAt: b.createdAt.toISOString(),

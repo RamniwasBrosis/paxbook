@@ -365,6 +365,14 @@ export interface FlightBookingDto {
    * standalone one-way booking, or for the onward leg of a genuine FTD-bundled international round trip. */
   tripId: string | null;
   tripRole: "ONWARD" | "RETURN" | null;
+  /** Customer-requested date change via FTD's Reissue Quotation endpoint — a real submitted request,
+   * not an instant self-service change. FTD's spec: "No changes are done in this request"; any further
+   * processing (fare difference, rebooking) happens out-of-band using dateChangeReissueId. */
+  dateChangeRequestedAt: string | null;
+  dateChangeNewDate: string | null;
+  dateChangeRemarks: string | null;
+  dateChangeReissueId: string | null;
+  dateChangeStatus: string | null;
   createdAt: string;
   updatedAt: string;
   passengers: FlightPassengerDto[];

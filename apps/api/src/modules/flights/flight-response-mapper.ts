@@ -351,6 +351,24 @@ export function mapCancelResponse(raw: Raw): MappedCancelResponse {
   };
 }
 
+export interface MappedRescheduleResponse {
+  reissueId: string;
+  status: string;
+}
+
+/** FTD's Reissue Quotation ("reschedule") response — just an acknowledgement, no fare/fee data:
+ * "No changes are done in this request", any further processing happens out-of-band via reissueID.
+ * The real response nests both fields under Status (confirmed against a live call), unlike the
+ * flat shape the spec's sample implies — check both, matching this file's established defensive
+ * pattern for this provider's inconsistent JSON (see mapCancelResponse). */
+export function mapRescheduleResponse(raw: Raw): MappedRescheduleResponse {
+  const status = raw.Status ?? raw.status ?? {};
+  return {
+    reissueId: String(status.reissueID ?? status.reissueId ?? raw.reissueID ?? raw.reissueId ?? ""),
+    status: String(status.status ?? raw.status ?? ""),
+  };
+}
+
 function mapCancellationWindow(w: Raw): FareRuleWindowDto {
   return {
     journeySegment: String(w.journey_segment ?? ""),

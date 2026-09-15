@@ -1179,6 +1179,17 @@ model FlightBooking {
   /// this estimate was derived from — raw audit trail, mirrors fareSnapshot's existing role of
   /// freezing provider data as JSON rather than adding a column per field.
   refundEstimateSnapshot   Json?
+  /// Customer-requested date change via FTD's "Reissue Quotation" endpoint — a real API call that
+  /// submits the request and returns a tracking ID, but per FTD's own spec "No changes are done in
+  /// this request"; there is no separate confirm/execute endpoint, so any further processing (fare
+  /// difference, rebooking) happens out-of-band using dateChangeReissueId. This is inherently a
+  /// request-and-wait flow, not instant self-service, mirroring how cancellation refunds also need
+  /// admin follow-up for the parts FTD doesn't automate.
+  dateChangeRequestedAt DateTime?
+  dateChangeNewDate     String?
+  dateChangeRemarks     String?
+  dateChangeReissueId   String?
+  dateChangeStatus      String?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 

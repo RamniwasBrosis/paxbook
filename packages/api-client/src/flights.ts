@@ -111,6 +111,15 @@ export function useCancelFlightBooking() {
   });
 }
 
+export function useRequestFlightDateChange() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ bookingId, newTravelDate, remarks }: { bookingId: string; newTravelDate: string; remarks: string }) =>
+      apiFetch<FlightBookingDto>(`/customer/flight-bookings/${bookingId}/date-change-request`, { method: "POST", body: { newTravelDate, remarks } }),
+    onSuccess: (_data, vars) => invalidateMyFlightBookings(queryClient, vars.bookingId),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Admin — live API test tool + call log
 // ---------------------------------------------------------------------------
