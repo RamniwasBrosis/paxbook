@@ -1345,6 +1345,21 @@ model FlightApiLog {
   @@map("flight_api_logs")
 }
 
+/// FTD's real daily transaction statement (booking fees, refunds, commission, markup, TDS, payment
+/// charges), fetched via FtdClientService.statement() and cached per date — FTD's own spec asks
+/// clients to "save it at your end and do not hit us again for the same date again and again".
+/// Admin can still force a fresh pull for today's date, since that day's ledger can still be growing.
+model FlightStatementDay {
+  id        String   @id @default(uuid())
+  tenantId  String
+  date      String
+  raw       Json
+  fetchedAt DateTime @default(now())
+
+  @@unique([tenantId, date])
+  @@map("flight_statement_days")
+}
+
 // ============================================================================
 // Finance (Checkpoint 5)
 // ============================================================================

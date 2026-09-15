@@ -13,6 +13,7 @@ import type {
   FlightPricingSettingDto,
   FlightRoutePricingRuleDto,
   FlightSearchResultDto,
+  FlightStatementResultDto,
   SaveAirportDto,
   SaveFlightRoutePricingRuleDto,
   SearchFlightRequestDto,
@@ -151,6 +152,14 @@ export function useAdminPriceCheck() {
 export function useAdminFareRules() {
   return useMutation({
     mutationFn: (flightID: number) => apiFetch<Record<string, unknown>>(`/admin/flights/api/fare-rules?flightID=${flightID}`),
+  });
+}
+
+export function useAdminFlightStatement(date: string | null, options?: { refresh?: boolean; enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["admin-flight-statement", date, options?.refresh],
+    queryFn: () => apiFetch<FlightStatementResultDto>(`/admin/flights/statement?date=${date}${options?.refresh ? "&refresh=true" : ""}`),
+    enabled: Boolean(date) && (options?.enabled ?? true),
   });
 }
 

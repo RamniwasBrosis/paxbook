@@ -9,6 +9,7 @@ import { PublicFlightsController } from "./public-flights.controller";
 import { CustomerFlightsController } from "./customer-flights.controller";
 import { CustomerFlightTripsController } from "./customer-flight-trips.controller";
 import { AdminFlightApiController } from "./admin-flight-api.controller";
+import { AdminFlightStatementController } from "./admin-flight-statement.controller";
 import { AdminFlightBookingsController } from "./admin-flight-bookings.controller";
 import { AdminFlightBookingsService } from "./admin-flight-bookings.service";
 import { AdminFlightPricingController } from "./admin-flight-pricing.controller";
@@ -24,6 +25,7 @@ import { AirportsService } from "./airports.service";
     CustomerFlightsController,
     CustomerFlightTripsController,
     AdminFlightApiController,
+    AdminFlightStatementController,
     AdminFlightBookingsController,
     AdminFlightPricingController,
     AdminFlightDashboardController,

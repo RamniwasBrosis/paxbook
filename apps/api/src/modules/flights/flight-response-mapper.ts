@@ -351,6 +351,47 @@ export function mapCancelResponse(raw: Raw): MappedCancelResponse {
   };
 }
 
+export interface MappedStatementEntry {
+  sNo: number;
+  valueDate: string;
+  transactionType: string;
+  transactionRef: string;
+  debit: number;
+  credit: number;
+  transactionAmount: number;
+  commission: number;
+  txnFees: number;
+  tds: number;
+  paymentCharge: number;
+  bookingBalance: number;
+  markup: number;
+  insuranceCharge: number;
+  remarks: string;
+}
+
+/** FTD's real daily transaction statement — one row per booking/refund/etc that touched the
+ * agency's FTD wallet balance that day. */
+export function mapStatementResponse(raw: Raw): MappedStatementEntry[] {
+  const rows: Raw[] = raw.data ?? raw.Data ?? [];
+  return rows.map((r) => ({
+    sNo: toNum(r.s_no),
+    valueDate: String(r.value_date ?? ""),
+    transactionType: String(r.transaction_type ?? ""),
+    transactionRef: String(r.transaction_ref ?? ""),
+    debit: toNum(r.debit),
+    credit: toNum(r.credit),
+    transactionAmount: toNum(r.transaction_amount),
+    commission: toNum(r.commission ?? r.Commission),
+    txnFees: toNum(r.txn_fees),
+    tds: toNum(r.tds),
+    paymentCharge: toNum(r.payment_charge),
+    bookingBalance: toNum(r.booking_balance),
+    markup: toNum(r.markup),
+    insuranceCharge: toNum(r.insurance_charge),
+    remarks: String(r.remarks ?? ""),
+  }));
+}
+
 export interface MappedRescheduleResponse {
   reissueId: string;
   status: string;

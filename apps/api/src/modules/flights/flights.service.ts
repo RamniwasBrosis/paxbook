@@ -16,6 +16,7 @@ import type {
   FlightSearchResultDto,
   FlightSeatLookupResultDto,
   FlightSeatOptionDto,
+  FlightStatementResultDto,
   FlightTripDto,
   VerifyFlightPaymentDto,
 } from "@paxbook/types";
@@ -27,7 +28,7 @@ import { SmsService } from "../../common/sms/sms.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
-import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapRescheduleResponse, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
+import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapRescheduleResponse, mapSearchOrFareDetails, mapSeats, mapStatementResponse } from "./flight-response-mapper";
 import { buildBookingConfirmedEmailHtml } from "./flight-email-templates";
 import { buildTicketPdf } from "./flight-ticket-pdf";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
@@ -111,6 +112,26 @@ export class FlightsService {
       }
     }
     return { configured, mode: Number(process.env.FTD_MODE ?? "0"), balance };
+  }
+
+  /** FTD's real daily transaction statement — cached per (tenant, date) since FTD's own spec asks
+   * clients not to re-fetch the same date repeatedly. `forceRefresh` bypasses the cache (for today's
+   * date, whose ledger can still be growing through the day). */
+  async getStatement(tenantId: string, date: string, forceRefresh = false): Promise<FlightStatementResultDto> {
+    if (!forceRefresh) {
+      const cached = await this.prisma.flightStatementDay.findUnique({ where: { tenantId_date: { tenantId, date } } });
+      if (cached) {
+        return { date, entries: mapStatementResponse(cached.raw as Record<string, unknown>), fetchedAt: cached.fetchedAt.toISOString(), fromCache: true };
+      }
+    }
+    const raw = await this.ftd.statement(date);
+    const entries = mapStatementResponse(raw);
+    const saved = await this.prisma.flightStatementDay.upsert({
+      where: { tenantId_date: { tenantId, date } },
+      create: { tenantId, date, raw: raw as object },
+      update: { raw: raw as object, fetchedAt: new Date() },
+    });
+    return { date, entries, fetchedAt: saved.fetchedAt.toISOString(), fromCache: false };
   }
 
   async search(dto: SearchFlightDto): Promise<FlightSearchResultDto> {

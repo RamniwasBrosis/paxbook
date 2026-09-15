@@ -566,6 +566,36 @@ export interface FlightApiStatusDto {
 }
 
 // ---------------------------------------------------------------------------
+// Admin — FTD's real daily transaction statement (booking fees, refunds, commission,
+// markup, TDS, payment charges) — cached per date server-side, see FlightStatementDay.
+// ---------------------------------------------------------------------------
+
+export interface FlightStatementEntryDto {
+  sNo: number;
+  valueDate: string;
+  transactionType: string;
+  transactionRef: string;
+  debit: number;
+  credit: number;
+  transactionAmount: number;
+  commission: number;
+  txnFees: number;
+  tds: number;
+  paymentCharge: number;
+  bookingBalance: number;
+  markup: number;
+  insuranceCharge: number;
+  remarks: string;
+}
+
+export interface FlightStatementResultDto {
+  date: string;
+  entries: FlightStatementEntryDto[];
+  fetchedAt: string;
+  fromCache: boolean;
+}
+
+// ---------------------------------------------------------------------------
 // Admin — airport reference data (drives the public search autocomplete)
 // ---------------------------------------------------------------------------
 

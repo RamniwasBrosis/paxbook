@@ -56,6 +56,9 @@ export default function FlightsPage() {
           <Link href="/flights/api-tool" className="text-sm font-medium text-brand hover:underline">
             Flight API test tool →
           </Link>
+          <Link href="/flights/statement" className="text-sm font-medium text-brand hover:underline">
+            FTD statement →
+          </Link>
         </div>
       </div>
 
