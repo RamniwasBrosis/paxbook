@@ -34,8 +34,18 @@ export default async function FlightTicketPage({ params }: { params: { id: strin
             </div>
           </div>
           <div className="text-right text-sm">
-            <p className="font-semibold text-slate-900">PNR {booking.pnr ?? "—"}</p>
             <p className="text-slate-400">Booked {new Date(booking.createdAt).toLocaleDateString("en-IN")}</p>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-xl border border-slate-100 text-sm">
+          <div className={`px-4 py-3 ${isTicketed ? "bg-emerald-50" : "bg-amber-50"}`}>
+            <p className="text-xs font-semibold uppercase text-slate-400">Booking status</p>
+            <p className={`text-base font-bold ${isTicketed ? "text-emerald-700" : "text-amber-700"}`}>{booking.status.replace(/_/g, " ")}</p>
+          </div>
+          <div className="border-l border-slate-100 bg-mist px-4 py-3">
+            <p className="text-xs font-semibold uppercase text-slate-400">Reference number</p>
+            <p className="text-base font-bold text-slate-900">{booking.pnr ?? "—"}</p>
           </div>
         </div>
 
@@ -93,12 +103,14 @@ export default async function FlightTicketPage({ params }: { params: { id: strin
           </div>
         ) : null}
 
-        <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
-          <p className="font-semibold text-slate-900">Total paid</p>
-          <p className="text-2xl font-bold text-slate-900">
-            {booking.currency} {booking.totalAmount.toLocaleString("en-IN")}
-          </p>
-        </div>
+        {booking.fare ? <FareBreakdown booking={booking} fare={booking.fare} /> : (
+          <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
+            <p className="font-semibold text-slate-900">Total paid</p>
+            <p className="text-2xl font-bold text-slate-900">
+              {booking.currency} {booking.totalAmount.toLocaleString("en-IN")}
+            </p>
+          </div>
+        )}
 
         <p className="mt-6 text-xs text-slate-400">
           Please carry a valid photo ID matching the passenger name(s) above. Arrive at the airport at least 2 hours before domestic departure. This document
@@ -143,6 +155,48 @@ function TicketSection({ title, legs }: { title: string; legs: FlightLegDto[] })
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function FareBreakdown({ booking, fare }: { booking: FlightBookingDto; fare: NonNullable<FlightBookingDto["fare"]> }) {
+  const base = fare.base;
+  const taxes = fare.tax + fare.tds;
+  const providerFare = booking.providerFareAmount ?? fare.total;
+  // Everything charged beyond the provider's own fare — seats, baggage, meals, web check-in.
+  const addons = Math.max(0, booking.totalAmount - providerFare);
+
+  return (
+    <div className="mt-8 border-t border-slate-100 pt-6">
+      <p className="text-xs font-semibold uppercase text-slate-400">Fare summary</p>
+      <table className="mt-3 w-full text-left text-sm">
+        <thead className="text-xs uppercase text-slate-400">
+          <tr>
+            <th className="py-1 pr-4 font-medium">Base fare</th>
+            <th className="py-1 pr-4 font-medium">Taxes &amp; charges</th>
+            {addons > 0 ? <th className="py-1 pr-4 font-medium">Add-ons</th> : null}
+            <th className="py-1 font-medium">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr className="border-t border-slate-50">
+            <td className="py-2 pr-4 text-slate-700">
+              {booking.currency} {base.toLocaleString("en-IN")}
+            </td>
+            <td className="py-2 pr-4 text-slate-700">
+              {booking.currency} {taxes.toLocaleString("en-IN")}
+            </td>
+            {addons > 0 ? (
+              <td className="py-2 pr-4 text-slate-700">
+                {booking.currency} {addons.toLocaleString("en-IN")}
+              </td>
+            ) : null}
+            <td className="py-2 text-base font-bold text-slate-900">
+              {booking.currency} {booking.totalAmount.toLocaleString("en-IN")}
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   );
 }

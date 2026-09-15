@@ -11,6 +11,15 @@ body {
   color: rgb(30 41 59); /* slate-800 */
 }
 
+/* The site header/footer wrap every page (including print-to-PDF pages like the e-ticket) —
+   without this, printing a ticket also prints the nav bar and full marketing footer. */
+@media print {
+  header,
+  footer {
+    display: none !important;
+  }
+}
+
 /* Ported 1:1 from the approved Lovable reference (src/styles.css @utility blocks),
    translated from Tailwind v4 CSS-nesting syntax to plain Tailwind v3 @layer utilities. */
 @layer utilities {

@@ -24,7 +24,13 @@ export class EmailService {
     private readonly configService: ConfigService,
   ) {}
 
-  async send(tenantId: string, to: string, subject: string, html: string): Promise<EmailSendResult> {
+  async send(
+    tenantId: string,
+    to: string,
+    subject: string,
+    html: string,
+    attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>,
+  ): Promise<EmailSendResult> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },
       select: { smtpHost: true, smtpPort: true, smtpUser: true, smtpPasswordEncrypted: true, smtpFromEmail: true },
@@ -43,7 +49,7 @@ export class EmailService {
         secure: tenant.smtpPort === 465,
         auth: tenant.smtpUser ? { user: tenant.smtpUser, pass: password } : undefined,
       });
-      await transport.sendMail({ from: tenant.smtpFromEmail, to, subject, html });
+      await transport.sendMail({ from: tenant.smtpFromEmail, to, subject, html, attachments });
       return { sent: true };
     } catch (err) {
       this.logger.warn(`Email send failed for tenant ${tenantId}: ${(err as Error).message}`);

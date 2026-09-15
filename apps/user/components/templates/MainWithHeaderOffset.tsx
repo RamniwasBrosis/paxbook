@@ -11,5 +11,5 @@ export function MainWithHeaderOffset({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const isHome = pathname === "/";
 
-  return <main className={isHome ? "flex-1" : "flex-1 pt-16 lg:pt-[4.5rem]"}>{children}</main>;
+  return <main className={isHome ? "flex-1 print:pt-0" : "flex-1 pt-16 lg:pt-[4.5rem] print:pt-0"}>{children}</main>;
 }

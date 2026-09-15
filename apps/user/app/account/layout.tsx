@@ -14,8 +14,8 @@ const NAV = [
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="bg-mist/60">
-      <div className="shell grid grid-cols-1 gap-8 py-10 lg:grid-cols-[240px_1fr]">
-        <aside className="flat-card flex flex-row gap-1 overflow-x-auto p-2 lg:flex-col">
+      <div className="shell grid grid-cols-1 gap-8 py-10 print:block print:gap-0 print:p-0 lg:grid-cols-[240px_1fr]">
+        <aside className="flat-card flex flex-row gap-1 overflow-x-auto p-2 print:hidden lg:flex-col">
           {NAV.map((item) => (
             <Link
               key={item.href}

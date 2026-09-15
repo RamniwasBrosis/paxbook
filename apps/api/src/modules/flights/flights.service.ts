@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type {
   AdminFlightSearchResultDto,
   CreateFlightBookingRequestDto,
@@ -27,6 +28,8 @@ import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
 import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapSearchOrFareDetails, mapSeats } from "./flight-response-mapper";
+import { buildBookingConfirmedEmailHtml } from "./flight-email-templates";
+import { buildTicketPdf } from "./flight-ticket-pdf";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto, FlightSsrSelectionDto } from "./dto/create-flight-booking.dto";
 import type { FlightSeatLookupPassengerDto } from "./dto/flight-seat-lookup.dto";
@@ -56,6 +59,7 @@ export class FlightsService {
     private readonly notifications: CustomerNotificationsService,
     private readonly email: EmailService,
     private readonly sms: SmsService,
+    private readonly config: ConfigService,
   ) {}
 
   /** Applies our margin/discount in place, keyed off the leg data actually returned (not the search
@@ -666,7 +670,7 @@ export class FlightsService {
       ]);
 
       if (newStatus === "CONFIRMED") {
-        await this.notifyConfirmed(tenantId, customerId, booking.depCity, booking.arrCity, booking.onDate, firstPnr);
+        await this.notifyConfirmed(tenantId, customerId, booking, firstPnr);
       }
 
       return this.toDto(await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } }));
@@ -740,14 +744,59 @@ export class FlightsService {
     });
   }
 
-  private async notifyConfirmed(tenantId: string, customerId: string, depCity: string, arrCity: string, onDate: string, pnr: string | null): Promise<void> {
+  private async notifyConfirmed(
+    tenantId: string,
+    customerId: string,
+    booking: {
+      id: string;
+      status: string;
+      createdAt: Date;
+      depCity: string;
+      arrCity: string;
+      onDate: string;
+      fareSnapshot: unknown;
+      providerFareAmount: { toNumber(): number } | null;
+      totalAmount: { toNumber(): number };
+      currency: string;
+      passengers: Array<{ title: string; fName: string; lName: string; pType: string; ticketNo: string | null; pnr: string | null }>;
+    },
+    resolvedPnr: string | null,
+  ): Promise<void> {
+    const { legs, returnLegs, fare } = extractFlightSnapshot(booking.fareSnapshot);
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId }, select: { name: true } }).catch(() => null);
+    const frontendUrl = this.config.get<string>("FRONTEND_URL", "http://localhost:3001");
+    const ticketUrl = `${frontendUrl}/account/flight-bookings/${booking.id}/ticket`;
+
+    // A PDF-rendering bug must never block the confirmation itself going out — worst case the
+    // customer just gets the email without an attachment and can still view the ticket online.
+    const pdfBuffer = await buildTicketPdf({
+      status: booking.status,
+      pnr: resolvedPnr,
+      createdAt: booking.createdAt,
+      legs,
+      returnLegs,
+      passengers: booking.passengers,
+      fare,
+      providerFareAmount: booking.providerFareAmount ? booking.providerFareAmount.toNumber() : null,
+      totalAmount: booking.totalAmount.toNumber(),
+      currency: booking.currency,
+    }).catch(() => null);
+
     await this.alertCustomer(tenantId, customerId, {
       type: "FLIGHT_BOOKING_CONFIRMED",
       title: "Flight booking confirmed",
-      inAppBody: `Your flight ${depCity} → ${arrCity} on ${onDate} is confirmed. PNR: ${pnr ?? "—"}.`,
-      emailSubject: "Your flight booking is confirmed",
-      emailHtml: `<p>Hi,</p><p>Your flight booking from <b>${depCity}</b> to <b>${arrCity}</b> on ${onDate} is confirmed.</p><p>PNR: <b>${pnr ?? "—"}</b></p><p>You can view your e-ticket anytime from your Paxbook account.</p>`,
-      whatsappBody: `Your Paxbook flight booking (${depCity} → ${arrCity}) is confirmed. PNR: ${pnr ?? "—"}.`,
+      inAppBody: `Your flight ${booking.depCity} → ${booking.arrCity} on ${booking.onDate} is confirmed. PNR: ${resolvedPnr ?? "—"}.`,
+      emailSubject: "Your booking has been confirmed",
+      emailHtml: buildBookingConfirmedEmailHtml({
+        customerName: customer?.name ?? "Traveller",
+        legs,
+        passengers: booking.passengers,
+        pnr: resolvedPnr,
+        ticketUrl,
+        hasAttachment: Boolean(pdfBuffer),
+      }),
+      whatsappBody: `Your Paxbook flight booking (${booking.depCity} → ${booking.arrCity}) is confirmed. PNR: ${resolvedPnr ?? "—"}. View your ticket: ${ticketUrl}`,
+      emailAttachments: pdfBuffer ? [{ filename: `Paxbook-eticket-${resolvedPnr ?? booking.id}.pdf`, content: pdfBuffer, contentType: "application/pdf" }] : undefined,
     });
   }
 
@@ -756,12 +805,20 @@ export class FlightsService {
   private async alertCustomer(
     tenantId: string,
     customerId: string,
-    opts: { type: string; title: string; inAppBody: string; emailSubject: string; emailHtml: string; whatsappBody: string },
+    opts: {
+      type: string;
+      title: string;
+      inAppBody: string;
+      emailSubject: string;
+      emailHtml: string;
+      whatsappBody: string;
+      emailAttachments?: Array<{ filename: string; content: Buffer; contentType?: string }>;
+    },
   ): Promise<void> {
     await this.notifications.create(tenantId, customerId, opts.type, opts.title, opts.inAppBody).catch(() => undefined);
     const customer = await this.prisma.customer.findUnique({ where: { id: customerId }, select: { email: true, phone: true } }).catch(() => null);
     if (customer?.email) {
-      await this.email.send(tenantId, customer.email, opts.emailSubject, opts.emailHtml).catch(() => undefined);
+      await this.email.send(tenantId, customer.email, opts.emailSubject, opts.emailHtml, opts.emailAttachments).catch(() => undefined);
     }
     if (customer?.phone) {
       await this.sms.sendWhatsapp(tenantId, customer.phone, opts.whatsappBody).catch(() => undefined);
@@ -798,7 +855,7 @@ export class FlightsService {
         this.prisma.flightBookingStatusHistory.create({ data: { flightBookingId: booking.id, fromStatus: booking.status, toStatus: newStatus, note: `Provider status refresh: ${mapped.status}` } }),
       ]);
       if (newStatus === "CONFIRMED") {
-        await this.notifyConfirmed(tenantId, customerId, booking.depCity, booking.arrCity, booking.onDate, resolvedPnr);
+        await this.notifyConfirmed(tenantId, customerId, booking, resolvedPnr);
       } else if (newStatus === "FAILED") {
         await this.handleFailureRefundAndAlert(booking.id);
       }
