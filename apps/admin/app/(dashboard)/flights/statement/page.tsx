@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { PERMISSIONS } from "@paxbook/config";
+import { ApiRequestError } from "@paxbook/auth-client";
 import { useSession, useAdminFlightStatement } from "@paxbook/api-client";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@paxbook/ui";
 
@@ -33,6 +34,16 @@ export default function FlightStatementPage() {
     (acc, e) => ({ debit: acc.debit + e.debit, credit: acc.credit + e.credit }),
     { debit: 0, credit: 0 },
   );
+  const notEnabled = statementQuery.error instanceof ApiRequestError && statementQuery.error.code === "FTD_NOT_ENABLED";
+
+  if (notEnabled) {
+    return (
+      <Card className="p-8 text-center">
+        <h2 className="text-base font-semibold text-slate-900">Flight provider not enabled</h2>
+        <p className="mt-2 text-sm text-slate-500">The FTD flight provider integration isn&apos;t enabled for your account, so there&apos;s no statement to show.</p>
+      </Card>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
