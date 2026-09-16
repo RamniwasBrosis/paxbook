@@ -93,6 +93,21 @@ function LegSection({ title, booking }: { title: string; booking: FlightBookingD
 
       {booking.errorMessage ? <p className="mt-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700">{booking.errorMessage}</p> : null}
 
+      {booking.refundedAt ? (
+        <p className="mt-4 rounded-lg bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          Refunded: {booking.currency} {booking.refundAmount?.toLocaleString("en-IN")} on {new Date(booking.refundedAt).toLocaleDateString("en-IN")}
+        </p>
+      ) : null}
+
+      {booking.dateChangeRequestedAt ? (
+        <div className="mt-4 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          <p>
+            Date change requested: to {booking.dateChangeNewDate} on {new Date(booking.dateChangeRequestedAt).toLocaleDateString("en-IN")}
+            {booking.dateChangeReissueId ? ` (ref ${booking.dateChangeReissueId})` : ""}
+          </p>
+        </div>
+      ) : null}
+
       {booking.legs.length > 0 ? (
         <div className="mt-4 flex flex-col gap-3">
           {booking.legs.map((leg, idx) => (

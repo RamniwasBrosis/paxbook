@@ -35,6 +35,8 @@ export default async function MyFlightBookingsPage() {
         currency: b.currency,
         createdAt: b.createdAt,
         travelDate: b.reDate || b.onDate,
+        hasDateChangeRequest: Boolean(b.dateChangeRequestedAt),
+        isRefunded: Boolean(b.refundedAt),
       }),
     ),
     ...Array.from(byTripId.entries()).map(([tripId, legs]): FlightBookingRow => {
@@ -53,6 +55,8 @@ export default async function MyFlightBookingsPage() {
         currency: onward.currency,
         createdAt: onward.createdAt,
         travelDate: returnLeg?.onDate ?? onward.onDate,
+        hasDateChangeRequest: legs.some((l) => l.dateChangeRequestedAt),
+        isRefunded: legs.some((l) => l.refundedAt),
       };
     }),
   ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

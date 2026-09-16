@@ -27,6 +27,11 @@ export interface FlightBookingRow {
   /** Latest travel date across the booking (return date for a round trip, else the outbound date)
    * — used only to bucket a CONFIRMED booking into Upcoming vs Completed; YYYYMMDD, FTD's format. */
   travelDate: string;
+  /** Set when a date-change request is on file for this booking (or either leg of a round trip) —
+   * surfaced here so it's visible from the list, not just after opening the booking. */
+  hasDateChangeRequest?: boolean;
+  /** Set once a refund has actually been issued (not just estimated) for this booking or either leg. */
+  isRefunded?: boolean;
 }
 
 type StatusTab = "upcoming" | "completed" | "cancelled";
@@ -94,8 +99,10 @@ export function FlightBookingsStatusTabs({ rows }: { rows: FlightBookingRow[] })
                   <p className="mt-0.5 text-xs text-slate-400">{r.subtitle}</p>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_TONE[r.status] ?? "bg-slate-100 text-slate-600"}`}>{r.status.replace(/_/g, " ")}</span>
+                {r.hasDateChangeRequest ? <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">Date change requested</span> : null}
+                {r.isRefunded ? <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Refunded</span> : null}
                 <span className="font-bold text-navy-deep">
                   {r.currency} {r.amount.toLocaleString("en-IN")}
                 </span>
