@@ -2,6 +2,8 @@ import { Controller, Get, Post, Body, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { PERMISSIONS } from "@paxbook/config";
 import { RequirePermissions } from "../../common/decorators/require-permissions.decorator";
+import { CurrentAdmin } from "../../common/decorators/current-admin.decorator";
+import type { RequestAdmin } from "../../common/types/request-admin";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { FlightsService } from "./flights.service";
 import { SearchFlightDto } from "./dto/search-flight.dto";
@@ -19,8 +21,8 @@ export class AdminFlightApiController {
 
   @Get("status")
   @RequirePermissions(PERMISSIONS.FLIGHTS_READ)
-  status() {
-    return this.flightsService.apiStatus();
+  status(@CurrentAdmin() admin: RequestAdmin) {
+    return this.flightsService.apiStatus(admin.tenantId);
   }
 
   @Post("search")

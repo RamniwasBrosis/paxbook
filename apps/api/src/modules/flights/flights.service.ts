@@ -101,7 +101,24 @@ export class FlightsService {
     return { refId: mapped.refId, isComplete: mapped.isComplete, options };
   }
 
-  async apiStatus(): Promise<FlightApiStatusDto> {
+  /** FtdClientService holds ONE global FTD credential set (env vars, no tenantId) — unlike every other
+   * integration here (Razorpay/SMTP/Twilio are all per-tenant), because there is only one real FTD
+   * agency contract today. Without this gate, any tenant's admin with flights.read could reach the
+   * shared account's real financial data (balance, daily statement) via these endpoints — a genuine
+   * cross-tenant leak. Tenant.ftdEnabled defaults false; only the tenant that actually holds the FTD
+   * relationship has it set true. */
+  private async assertFtdEnabled(tenantId: string): Promise<void> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { ftdEnabled: true } });
+    if (!tenant?.ftdEnabled) {
+      throw new ForbiddenException({ code: "FTD_NOT_ENABLED", message: "The flight provider integration is not enabled for your account." });
+    }
+  }
+
+  async apiStatus(tenantId: string): Promise<FlightApiStatusDto> {
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { ftdEnabled: true } });
+    if (!tenant?.ftdEnabled) {
+      return { configured: false, mode: Number(process.env.FTD_MODE ?? "0"), balance: null };
+    }
     const configured = await this.ftd.isConfigured();
     let balance: string | null = null;
     if (configured) {
@@ -118,6 +135,7 @@ export class FlightsService {
    * clients not to re-fetch the same date repeatedly. `forceRefresh` bypasses the cache (for today's
    * date, whose ledger can still be growing through the day). */
   async getStatement(tenantId: string, date: string, forceRefresh = false): Promise<FlightStatementResultDto> {
+    await this.assertFtdEnabled(tenantId);
     if (!forceRefresh) {
       const cached = await this.prisma.flightStatementDay.findUnique({ where: { tenantId_date: { tenantId, date } } });
       if (cached) {

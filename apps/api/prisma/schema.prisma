@@ -55,6 +55,14 @@ model Tenant {
   s3Bucket                  String?
   s3Region                  String?
   s3PublicBaseUrl           String?
+  /// Gates access to the flights module's admin-only FTD passthrough endpoints (statement, balance) —
+  /// unlike every other integration here, FtdClientService currently holds ONE global credential set
+  /// (env vars, no tenantId), because there is only one real FTD agency contract today. Without this
+  /// flag, any tenant's admin with flights.read could pull that shared account's real financial ledger
+  /// (other tenants' bookings, refunds, commission, remarks) via the statement endpoint — a genuine
+  /// cross-tenant data leak found 2026-09-15. Defaults false so new/other tenants are excluded by
+  /// default; only the tenant that actually holds the FTD relationship should have this set true.
+  ftdEnabled      Boolean      @default(false)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
