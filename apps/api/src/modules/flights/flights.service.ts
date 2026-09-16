@@ -106,8 +106,9 @@ export class FlightsService {
    * agency contract today. Without this gate, any tenant's admin with flights.read could reach the
    * shared account's real financial data (balance, daily statement) via these endpoints — a genuine
    * cross-tenant leak. Tenant.ftdEnabled defaults false; only the tenant that actually holds the FTD
-   * relationship has it set true. */
-  private async assertFtdEnabled(tenantId: string): Promise<void> {
+   * relationship has it set true. Public so the admin API-tool controller can also gate its
+   * direct/manual search-provider calls without duplicating this check. */
+  async assertFtdEnabled(tenantId: string): Promise<void> {
     const tenant = await this.prisma.tenant.findUnique({ where: { id: tenantId }, select: { ftdEnabled: true } });
     if (!tenant?.ftdEnabled) {
       throw new ForbiddenException({ code: "FTD_NOT_ENABLED", message: "The flight provider integration is not enabled for your account." });

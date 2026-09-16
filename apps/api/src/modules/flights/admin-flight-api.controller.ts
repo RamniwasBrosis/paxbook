@@ -25,27 +25,35 @@ export class AdminFlightApiController {
     return this.flightsService.apiStatus(admin.tenantId);
   }
 
+  /** These four proxy the SAME shared-FTD-account methods the real customer booking flow uses
+   * (see public-flights.controller.ts) — not gating the service itself would risk breaking real
+   * bookings for every tenant. Gating only here restricts the admin's manual debug/test tool to
+   * tenants that actually hold the FTD relationship, without touching customer-facing search. */
   @Post("search")
   @RequirePermissions(PERMISSIONS.FLIGHTS_READ)
-  search(@Body() dto: SearchFlightDto) {
+  async search(@CurrentAdmin() admin: RequestAdmin, @Body() dto: SearchFlightDto) {
+    await this.flightsService.assertFtdEnabled(admin.tenantId);
     return this.flightsService.search(dto);
   }
 
   @Post("fare-details")
   @RequirePermissions(PERMISSIONS.FLIGHTS_READ)
-  fareDetails(@Body() dto: FlightLookupDto) {
+  async fareDetails(@CurrentAdmin() admin: RequestAdmin, @Body() dto: FlightLookupDto) {
+    await this.flightsService.assertFtdEnabled(admin.tenantId);
     return this.flightsService.fareDetails(dto.flightID, dto.refID);
   }
 
   @Post("price-check")
   @RequirePermissions(PERMISSIONS.FLIGHTS_READ)
-  priceCheck(@Body() dto: FlightLookupDto) {
+  async priceCheck(@CurrentAdmin() admin: RequestAdmin, @Body() dto: FlightLookupDto) {
+    await this.flightsService.assertFtdEnabled(admin.tenantId);
     return this.flightsService.priceCheck(dto.flightID, dto.refID);
   }
 
   @Get("fare-rules")
   @RequirePermissions(PERMISSIONS.FLIGHTS_READ)
-  fareRules(@Query() dto: FareRulesLookupDto) {
+  async fareRules(@CurrentAdmin() admin: RequestAdmin, @Query() dto: FareRulesLookupDto) {
+    await this.flightsService.assertFtdEnabled(admin.tenantId);
     return this.flightsService.fareRules(dto.flightID);
   }
 
