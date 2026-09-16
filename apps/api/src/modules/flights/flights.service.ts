@@ -1037,6 +1037,12 @@ export class FlightsService {
     if (!FlightsService.DATE_CHANGE_ELIGIBLE_STATUSES.has(booking.status)) {
       throw new BadRequestException({ code: "DATE_CHANGE_NOT_ALLOWED", message: `A booking with status ${booking.status} is not eligible for a date change request.` });
     }
+    if (booking.dateChangeRequestedAt) {
+      throw new BadRequestException({
+        code: "DATE_CHANGE_ALREADY_PENDING",
+        message: "A date change request is already pending review for this booking. Our team will follow up before you can request another.",
+      });
+    }
     if (!booking.refId) {
       throw new BadRequestException({ code: "MISSING_REF_ID", message: "This booking is missing its provider reference and cannot request a date change. Please contact support." });
     }

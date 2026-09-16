@@ -66,7 +66,7 @@ export default async function FlightBookingDetailPage({ params, searchParams }: 
                 currency={booking.currency}
               />
             ) : null}
-            {booking.status === "CONFIRMED" ? <RequestDateChangeButton bookingId={booking.id} /> : null}
+            {booking.status === "CONFIRMED" && !booking.dateChangeRequestedAt ? <RequestDateChangeButton bookingId={booking.id} /> : null}
           </p>
         </div>
         <div className="flex items-center gap-3">

@@ -18,6 +18,40 @@ export class AdminFlightBookingsService {
     return this.flights.cancelBooking(tenantId, null, id, reason, canMode);
   }
 
+  /**
+   * Clears a pending date-change request's structured columns so the customer can submit a new one —
+   * FlightsService.requestDateChange() blocks resubmission while dateChangeRequestedAt is set (to stop
+   * a second request from silently overwriting the first's details), so an admin must explicitly close
+   * out the current one first, once it's been actioned (or dismissed). The full detail of what was
+   * requested is preserved forever in flightBookingStatusHistory regardless — this only resets the
+   * "current pending request" columns on FlightBooking itself.
+   */
+  async resolveDateChangeRequest(tenantId: string, id: string, note?: string): Promise<FlightBookingDto> {
+    const booking = await this.prisma.flightBooking.findFirst({ where: { id, tenantId }, include: { passengers: true } });
+    if (!booking) throw new NotFoundException({ code: "FLIGHT_BOOKING_NOT_FOUND", message: "Booking does not exist." });
+    if (!booking.dateChangeRequestedAt) {
+      throw new BadRequestException({ code: "NO_PENDING_DATE_CHANGE", message: "This booking has no pending date change request to resolve." });
+    }
+
+    await this.prisma.$transaction([
+      this.prisma.flightBooking.update({
+        where: { id: booking.id },
+        data: { dateChangeRequestedAt: null, dateChangeNewDate: null, dateChangeRemarks: null, dateChangeReissueId: null, dateChangeStatus: null },
+      }),
+      this.prisma.flightBookingStatusHistory.create({
+        data: {
+          flightBookingId: booking.id,
+          fromStatus: booking.status,
+          toStatus: booking.status,
+          note: `Date change request resolved by admin${note ? ` — ${note}` : ""}.`,
+        },
+      }),
+    ]);
+
+    const updated = await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } });
+    return this.toDto(updated);
+  }
+
   /** Admin-approved refund of an already-cancelled booking, issued against the captured Razorpay payment. */
   async refund(tenantId: string, id: string, amount: number, note?: string): Promise<FlightBookingDto> {
     const booking = await this.prisma.flightBooking.findFirst({

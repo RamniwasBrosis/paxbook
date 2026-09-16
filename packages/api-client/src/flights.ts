@@ -266,6 +266,14 @@ export function useAdminRefundFlightBooking() {
   });
 }
 
+export function useAdminResolveDateChangeRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, note }: { id: string; note?: string }) => apiFetch<FlightBookingDto>(`/admin/flights/bookings/${id}/date-change/resolve`, { method: "POST", body: { note } }),
+    onSuccess: (_data, vars) => invalidateAdminFlightBooking(queryClient, vars.id),
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Admin — pricing (margin/discount over the provider's fares)
 // ---------------------------------------------------------------------------

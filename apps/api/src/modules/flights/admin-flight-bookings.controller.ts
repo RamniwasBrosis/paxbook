@@ -7,6 +7,7 @@ import type { RequestAdmin } from "../../common/types/request-admin";
 import { AdminFlightBookingsService } from "./admin-flight-bookings.service";
 import { AdminCancelFlightBookingDto } from "./dto/cancel-flight-booking.dto";
 import { ProcessFlightRefundDto } from "./dto/process-flight-refund.dto";
+import { ResolveDateChangeDto } from "./dto/resolve-date-change.dto";
 
 @ApiTags("flights-admin")
 @ApiBearerAuth()
@@ -36,5 +37,11 @@ export class AdminFlightBookingsController {
   @RequirePermissions(PERMISSIONS.FLIGHTS_WRITE)
   refund(@CurrentAdmin() admin: RequestAdmin, @Param("id") id: string, @Body() dto: ProcessFlightRefundDto) {
     return this.service.refund(admin.tenantId, id, dto.amount, dto.note);
+  }
+
+  @Post(":id/date-change/resolve")
+  @RequirePermissions(PERMISSIONS.FLIGHTS_WRITE)
+  resolveDateChange(@CurrentAdmin() admin: RequestAdmin, @Param("id") id: string, @Body() dto: ResolveDateChangeDto) {
+    return this.service.resolveDateChangeRequest(admin.tenantId, id, dto.note);
   }
 }

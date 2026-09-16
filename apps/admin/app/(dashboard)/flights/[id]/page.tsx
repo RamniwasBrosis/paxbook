@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { PERMISSIONS } from "@paxbook/config";
-import { useSession, useAdminFlightBooking, useAdminCancelFlightBooking, useAdminRefundFlightBooking } from "@paxbook/api-client";
+import { useSession, useAdminFlightBooking, useAdminCancelFlightBooking, useAdminRefundFlightBooking, useAdminResolveDateChangeRequest } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
 import type { FlightBookingStatus, FlightLegDto } from "@paxbook/types";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input } from "@paxbook/ui";
@@ -155,6 +155,8 @@ export default function FlightBookingDetailPage() {
       {(booking.cancellationReason || CANCELLABLE_STATUSES.has(booking.status) || REFUNDABLE_STATUSES.has(booking.status)) && canWrite ? (
         <CancellationCard booking={booking} />
       ) : null}
+
+      {booking.dateChangeRequestedAt ? <DateChangeCard booking={booking} canWrite={canWrite} /> : null}
 
       <Card>
         <CardHeader>
@@ -328,6 +330,52 @@ function CancellationCard({ booking }: { booking: NonNullable<ReturnType<typeof 
             {refundError ? <p className="text-sm text-red-600">{refundError}</p> : null}
           </form>
         ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function DateChangeCard({ booking, canWrite }: { booking: NonNullable<ReturnType<typeof useAdminFlightBooking>["data"]>; canWrite: boolean }) {
+  const resolve = useAdminResolveDateChangeRequest();
+  const [note, setNote] = React.useState("");
+  const [error, setError] = React.useState<string | null>(null);
+
+  async function handleResolve(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    try {
+      await resolve.mutateAsync({ id: booking.id, note: note || undefined });
+      setNote("");
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : "Could not resolve this date change request.");
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Date change request</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4 text-sm">
+        <div className="rounded-lg bg-mist p-3">
+          <Field label="Requested" value={booking.dateChangeRequestedAt ? new Date(booking.dateChangeRequestedAt).toLocaleString("en-IN") : "—"} />
+          <Field label="New travel date" value={booking.dateChangeNewDate ?? "—"} className="mt-2" />
+          <Field label="Remarks" value={booking.dateChangeRemarks ?? "—"} className="mt-2" />
+          <Field label="Provider reissue ref" value={booking.dateChangeReissueId ?? "—"} className="mt-2" />
+        </div>
+        <p className="text-xs text-slate-500">
+          FTD only files a reissue quotation here — it doesn&apos;t apply the change automatically. Confirm the fare difference with the airline, action the change
+          out-of-band, then mark this resolved so the customer can request again if needed (a second request is blocked while one is pending).
+        </p>
+        {canWrite ? (
+          <form onSubmit={handleResolve} className="flex flex-wrap items-end gap-3 border-t border-slate-100 pt-4">
+            <Input label="Resolution note (optional)" value={note} onChange={(e) => setNote(e.target.value)} className="min-w-[240px] flex-1" />
+            <Button type="submit" isLoading={resolve.isPending}>
+              Mark resolved
+            </Button>
+          </form>
+        ) : null}
+        {error ? <p className="text-sm text-red-600">{error}</p> : null}
       </CardContent>
     </Card>
   );
