@@ -16,8 +16,8 @@ export class AdminFlightBookingsController {
 
   @Get()
   @RequirePermissions(PERMISSIONS.FLIGHTS_READ)
-  findAll(@CurrentAdmin() admin: RequestAdmin, @Query("status") status?: string) {
-    return this.service.findAll(admin.tenantId, status);
+  findAll(@CurrentAdmin() admin: RequestAdmin, @Query("status") status?: string, @Query("dateChangeRequested") dateChangeRequested?: string) {
+    return this.service.findAll(admin.tenantId, status, dateChangeRequested === "true");
   }
 
   @Get(":id")

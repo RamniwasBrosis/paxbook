@@ -23,7 +23,8 @@ export default function FlightsPage() {
   const { hasPermission } = useSession();
   const canRead = hasPermission(PERMISSIONS.FLIGHTS_READ);
   const [status, setStatus] = React.useState("");
-  const bookingsQuery = useAdminFlightBookings(status || undefined);
+  const [dateChangeRequested, setDateChangeRequested] = React.useState(false);
+  const bookingsQuery = useAdminFlightBookings(status || undefined, dateChangeRequested);
 
   if (!canRead) {
     return (
@@ -72,6 +73,10 @@ export default function FlightsPage() {
               </option>
             ))}
           </Select>
+          <label className="flex items-center gap-1.5 pb-2 text-sm text-slate-600">
+            <input type="checkbox" checked={dateChangeRequested} onChange={(e) => setDateChangeRequested(e.target.checked)} />
+            Date-change requested only
+          </label>
         </CardContent>
       </Card>
 
@@ -99,6 +104,15 @@ export default function FlightsPage() {
           },
           { header: "Status", cell: (b: FlightBookingDto) => <Badge tone={STATUS_TONE[b.status]}>{b.status.replace(/_/g, " ")}</Badge> },
           { header: "Payment", cell: (b: FlightBookingDto) => <Badge tone={PAYMENT_TONE[b.paymentStatus]}>{b.paymentStatus}</Badge> },
+          {
+            header: "Date change",
+            cell: (b: FlightBookingDto) =>
+              b.dateChangeRequestedAt ? (
+                <Badge tone="warning">Requested {new Date(b.dateChangeRequestedAt).toLocaleDateString("en-IN")}</Badge>
+              ) : (
+                <span className="text-slate-300">—</span>
+              ),
+          },
         ]}
         rows={bookingsQuery.data ?? []}
         rowKey={(b) => b.id}

@@ -180,10 +180,14 @@ export function useFlightApiLogs(filters?: { limit?: number; endpoint?: string; 
 // Admin — bookings management
 // ---------------------------------------------------------------------------
 
-export function useAdminFlightBookings(status?: string) {
+export function useAdminFlightBookings(status?: string, dateChangeRequested?: boolean) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  if (dateChangeRequested) params.set("dateChangeRequested", "true");
+  const qs = params.toString();
   return useQuery({
-    queryKey: ["admin-flight-bookings", status],
-    queryFn: () => apiFetch<FlightBookingDto[]>(`/admin/flights/bookings${status ? `?status=${status}` : ""}`),
+    queryKey: ["admin-flight-bookings", status, dateChangeRequested],
+    queryFn: () => apiFetch<FlightBookingDto[]>(`/admin/flights/bookings${qs ? `?${qs}` : ""}`),
   });
 }
 

@@ -53,9 +53,13 @@ export class AdminFlightBookingsService {
     return this.toDto(updated);
   }
 
-  async findAll(tenantId: string, status?: string): Promise<FlightBookingDto[]> {
+  async findAll(tenantId: string, status?: string, dateChangeRequested?: boolean): Promise<FlightBookingDto[]> {
     const bookings = await this.prisma.flightBooking.findMany({
-      where: { tenantId, ...(status ? { status: status as never } : {}) },
+      where: {
+        tenantId,
+        ...(status ? { status: status as never } : {}),
+        ...(dateChangeRequested ? { dateChangeRequestedAt: { not: null } } : {}),
+      },
       include: { passengers: true, customer: { select: { name: true, email: true } } },
       orderBy: { createdAt: "desc" },
       take: 200,
