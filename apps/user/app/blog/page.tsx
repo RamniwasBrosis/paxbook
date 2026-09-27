@@ -26,11 +26,8 @@ export default async function BlogPage({ searchParams }: { searchParams: { categ
       />
 
       <div className="shell py-10">
-        <div className="mb-3 flex items-center gap-2">
-          <span className="h-0.5 w-8 rounded-full bg-accent" />
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand-blue">Latest stories</p>
-        </div>
-        <h2 className="font-display text-2xl font-bold text-navy-deep sm:text-3xl">Read before you book</h2>
+        <p className="script-eyebrow mb-2 text-3xl">Latest stories</p>
+        <h2 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep sm:text-[2.6rem]">Read before you book</h2>
 
         <form method="get" className="my-6 flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 shadow-sm sm:max-w-md">
           <Search className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2} />

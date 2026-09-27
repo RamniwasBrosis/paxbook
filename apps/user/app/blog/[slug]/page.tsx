@@ -48,7 +48,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
           {post.category ? (
             <span className="mt-3 inline-block w-fit rounded-full bg-accent px-2.5 py-1 text-[0.65rem] font-bold text-navy-deep">{post.category}</span>
           ) : null}
-          <h1 className="mt-3 font-display text-2xl text-white sm:text-4xl">{post.title}</h1>
+          <h1 className="mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">{post.title}</h1>
           <div className="mt-2 flex items-center gap-2 text-xs text-white/70">
             {post.publishedAt ? <span>{new Date(post.publishedAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })}</span> : null}
             {post.readMinutes ? (
@@ -62,7 +62,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       </section>
 
       <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="max-w-none whitespace-pre-wrap leading-relaxed text-slate-700">{post.body}</div>
+        <div className="max-w-none whitespace-pre-wrap text-lg leading-relaxed text-[#3d4b72]">{post.body}</div>
       </article>
     </div>
   );

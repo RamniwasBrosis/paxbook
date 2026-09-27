@@ -9,7 +9,8 @@ function getTenantSlugFromCookie(): string | null {
   return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
-export function NewsletterForm() {
+export function NewsletterForm({ tone = "dark" }: { tone?: "dark" | "light" }) {
+  const light = tone === "light";
   const [email, setEmail] = React.useState("");
   const [status, setStatus] = React.useState<"idle" | "submitting" | "done" | "error">("idle");
 
@@ -33,7 +34,7 @@ export function NewsletterForm() {
   }
 
   if (status === "done") {
-    return <p className="mt-5 text-sm font-semibold text-accent">Thanks — we'll be in touch!</p>;
+    return <p className={`mt-5 text-sm font-semibold ${light ? "text-green-700" : "text-accent"}`}>Thanks — we'll be in touch!</p>;
   }
 
   return (
@@ -45,14 +46,18 @@ export function NewsletterForm() {
         onChange={(e) => setEmail(e.target.value)}
         placeholder="Email address"
         aria-label="Email address"
-        className="h-10 w-full rounded-full border border-white/25 bg-white/10 px-4 text-sm text-white placeholder:text-white/50 focus:border-accent focus:outline-none"
+        className={
+          light
+            ? "h-12 w-full rounded-full border border-slate-300 bg-white px-5 text-sm text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none"
+            : "h-10 w-full rounded-full border border-white/25 bg-white/10 px-4 text-sm text-white placeholder:text-white/50 focus:border-accent focus:outline-none"
+        }
       />
       <button
         type="submit"
         disabled={status === "submitting"}
-        className="h-10 shrink-0 rounded-full bg-accent px-5 text-sm font-semibold text-navy-deep transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
+        className={`${light ? "h-12 px-6 font-bold" : "h-10 px-5 font-semibold"} shrink-0 rounded-full bg-accent text-sm text-navy-deep transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60`}
       >
-        Join
+        {light ? "Subscribe" : "Join"}
       </button>
     </form>
   );

@@ -46,7 +46,7 @@ export default async function DestinationDetailPage({ params }: { params: { slug
       <PageHero
         breadcrumbs={[{ label: "Destinations", href: "/destinations" }, { label: destination.name }]}
         eyebrow={destination.countryName}
-        title={`${destination.name}, ${destination.countryName}`}
+        title={destination.countryName && destination.countryName !== destination.name ? `${destination.name}, ${destination.countryName}` : destination.name}
         subtitle={destination.description ?? undefined}
         imageUrl={destination.heroImageUrl}
         actions={
@@ -57,7 +57,7 @@ export default async function DestinationDetailPage({ params }: { params: { slug
             >
               Customize My {destination.name} Trip →
             </PlanTripButton>
-            <Button href="/visa-guide" variant="glass" size="md">
+            <Button href="/visa-guide" variant="outline" size="md">
               Visa information
             </Button>
           </>

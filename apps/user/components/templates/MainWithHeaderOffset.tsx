@@ -3,13 +3,13 @@
 import { usePathname } from "next/navigation";
 
 /**
- * The header is `fixed` so the transparent homepage variant can float over the hero
- * image. Every other route needs top padding equal to the header's height so content
- * doesn't render underneath it — the homepage intentionally gets none.
+ * The header is `fixed`, so content needs top padding equal to its height. Only the modern
+ * template floats a transparent header over a full-bleed homepage hero (`overlayOnHome`); the
+ * classic template's header is solid white everywhere, so its homepage gets the offset too.
  */
-export function MainWithHeaderOffset({ children }: { children: React.ReactNode }) {
+export function MainWithHeaderOffset({ children, overlayOnHome = false }: { children: React.ReactNode; overlayOnHome?: boolean }) {
   const pathname = usePathname();
-  const isHome = pathname === "/";
+  const noOffset = overlayOnHome && pathname === "/";
 
-  return <main className={isHome ? "flex-1 print:pt-0" : "flex-1 pt-16 lg:pt-[4.5rem] print:pt-0"}>{children}</main>;
+  return <main className={noOffset ? "flex-1 print:pt-0" : "flex-1 pt-16 lg:pt-[5rem] print:pt-0"}>{children}</main>;
 }

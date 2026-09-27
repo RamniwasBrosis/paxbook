@@ -33,51 +33,51 @@ export function RegisterForm() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
-      <h1 className="text-2xl font-bold text-slate-900">Create your account</h1>
-      <p className="mt-1 text-sm text-slate-500">Save your travelers, track bookings, and get personalized offers.</p>
+    <div className="w-full">
+      <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep">Create your account</h1>
+      <p className="mt-1 text-sm text-ink-muted">Save your travelers, track bookings, and get personalized offers.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
         <input
           required
-          placeholder="Full name"
+          placeholder="Full name" aria-label="Full name"
           value={form.name}
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="h-12 w-full rounded-xl border border-slate-200 px-4 text-[0.95rem] text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
         <input
           required
           type="email"
-          placeholder="Email address"
+          placeholder="Email address" aria-label="Email address"
           value={form.email}
           onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="h-12 w-full rounded-xl border border-slate-200 px-4 text-[0.95rem] text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
         <input
           type="tel"
-          placeholder="Mobile number (optional)"
+          placeholder="Mobile number (optional)" aria-label="Mobile number (optional)"
           value={form.phone}
           onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="h-12 w-full rounded-xl border border-slate-200 px-4 text-[0.95rem] text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
         <input
           required
           type="password"
           minLength={8}
-          placeholder="Password (min 8 characters)"
+          placeholder="Password (min 8 characters)" aria-label="Password"
           value={form.password}
           onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="h-12 w-full rounded-xl border border-slate-200 px-4 text-[0.95rem] text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <button type="submit" disabled={busy} className="rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="submit" disabled={busy} className="mt-1 h-12 rounded-full bg-accent px-4 text-base font-extrabold text-navy-deep transition-colors hover:bg-accent-dark disabled:opacity-60">
           {busy ? "Creating account…" : "Create account"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-ink-muted">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-brand hover:underline">
+        <Link href="/login" className="font-bold text-brand-blue hover:underline">
           Log in
         </Link>
       </p>

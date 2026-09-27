@@ -1,57 +1,91 @@
 import Link from "next/link";
-import type { DestinationDto } from "@paxbook/types";
+import type { DestinationDto, PackageSummaryDto } from "@paxbook/types";
 import { SectionHeading } from "@/components/SectionHeading";
 
 const BANDS = [
-  { label: "2 – 3 Days", subtitle: "Weekend resets close to home", min: 2, max: 3, destinationSlug: "goa" },
-  { label: "4 – 6 Days", subtitle: "One country, no rush", min: 4, max: 6, destinationSlug: "dubai" },
-  { label: "7 – 10 Days", subtitle: "Two bases, proper depth", min: 7, max: 10, destinationSlug: "bali" },
-  { label: "10 – 15 Days", subtitle: "Multi-country, once in a while", min: 10, max: 15, destinationSlug: "interlaken" },
+  {
+    range: "2-3",
+    label: "Quick Getaway",
+    min: 2,
+    max: 3,
+    destinationSlug: "goa",
+    tone: { card: "bg-blue-50 border-blue-100", badge: "bg-blue-600 shadow-blue-600/40", ink: "text-blue-700" },
+  },
+  {
+    range: "4-6",
+    label: "Short & Sweet",
+    min: 4,
+    max: 6,
+    destinationSlug: "maldives",
+    tone: { card: "bg-green-50 border-green-100", badge: "bg-green-600 shadow-green-600/40", ink: "text-green-700" },
+  },
+  {
+    range: "7-10",
+    label: "More to Explore",
+    min: 7,
+    max: 10,
+    destinationSlug: "thailand",
+    tone: { card: "bg-orange-50 border-orange-100", badge: "bg-orange-600 shadow-orange-600/40", ink: "text-orange-700" },
+  },
+  {
+    range: "10-15",
+    label: "The Ultimate Journey",
+    min: 10,
+    max: 15,
+    destinationSlug: "switzerland",
+    tone: { card: "bg-violet-50 border-violet-100", badge: "bg-violet-600 shadow-violet-600/40", ink: "text-violet-700" },
+  },
 ];
 
-export function PackagesByDurationSection({ destinations }: { destinations: DestinationDto[] }) {
+/**
+ * Design 2 "How Many Days?": four colour-coded duration bands, each with its day-range badge, a
+ * photo, and the destinations that actually have a package of that length.
+ */
+export function PackagesByDurationSection({ destinations, packages = [] }: { destinations: DestinationDto[]; packages?: PackageSummaryDto[] }) {
   if (destinations.length === 0) return null;
   const bySlug = Object.fromEntries(destinations.map((d) => [d.slug, d]));
+  const fallbackImages = destinations.filter((d) => d.heroImageUrl);
 
   return (
-    <section className="bg-navy-deep py-16 lg:py-20">
+    <section className="py-20 lg:py-24">
       <div className="shell">
-        <div className="mb-10">
-          <div className="mb-3 flex items-center gap-2">
-            <span className="h-0.5 w-8 rounded-full bg-accent" />
-            <p className="text-sm font-semibold uppercase tracking-wide text-accent">Packages by duration</p>
-          </div>
-          <h2 className="font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">How long do you want to escape?</h2>
-        </div>
+        <SectionHeading
+          title="How Many Days?"
+          highlight="Days?"
+          align="center"
+          subtitle="More days, more destinations, more memories!"
+        />
 
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {BANDS.map((band) => {
-            const dest = bySlug[band.destinationSlug];
+        <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+          {BANDS.map((band, i) => {
+            const image = bySlug[band.destinationSlug]?.heroImageUrl ?? fallbackImages[i % Math.max(fallbackImages.length, 1)]?.heroImageUrl;
+            const names = Array.from(
+              new Set(packages.filter((p) => p.durationDays >= band.min && p.durationDays <= band.max).map((p) => p.destinationName)),
+            );
             return (
               <Link
-                key={band.label}
+                key={band.range}
                 href={`/packages?minDuration=${band.min}&maxDuration=${band.max}`}
-                className="group relative block h-56 overflow-hidden rounded-2xl transition-transform duration-300 hover:-translate-y-1.5"
+                className={`group flex flex-col items-center gap-3 rounded-[1.75rem] border p-4 text-center sm:gap-5 sm:p-6 transition-transform duration-300 hover:-translate-y-1.5 ${band.tone.card}`}
               >
-                {dest?.heroImageUrl ? (
-                  <img
-                    src={dest.heroImageUrl}
-                    alt={band.label}
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  />
-                ) : (
-                  <div className="h-full w-full bg-brand" />
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/95 via-navy-deep/40 to-navy-deep/10" />
-                <div className="absolute inset-x-0 bottom-0 p-5">
-                  <p className="font-display text-2xl font-bold text-accent">{band.label}</p>
-                  <h3 className="mt-1 font-display text-lg text-white">{band.subtitle.split(" ").slice(0, 2).join(" ")}</h3>
-                  <p className="mt-1 text-xs text-white/60">{band.subtitle}</p>
-                </div>
+                <span className={`flex flex-col items-center rounded-2xl px-5 py-2.5 text-white shadow-lg sm:px-7 sm:py-3 ${band.tone.badge}`}>
+                  <span className="font-display text-3xl font-extrabold leading-none sm:text-4xl">{band.range}</span>
+                  <span className="mt-1 text-sm font-extrabold tracking-[0.14em]">DAYS</span>
+                </span>
+                <span className="hidden h-44 w-full overflow-hidden rounded-2xl bg-white sm:block">
+                  {image ? (
+                    <img src={image} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                  ) : null}
+                </span>
+                <span className={`rounded-xl bg-white px-3 py-2 font-display text-xs font-extrabold uppercase tracking-wide sm:px-4 sm:text-sm ${band.tone.ink}`}>{band.label}</span>
+                <span className="text-xs leading-relaxed text-ink-muted sm:text-sm">
+                  {names.length > 0 ? names.slice(0, 5).join(", ") : "Planned on request — talk to an expert"}
+                </span>
               </Link>
             );
           })}
         </div>
+        <p className="script-eyebrow mt-10 text-center text-4xl !text-violet-700">Your Journey, Your Way!</p>
       </div>
     </section>
   );

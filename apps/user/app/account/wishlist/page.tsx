@@ -11,8 +11,8 @@ export default async function WishlistPage() {
 
   return (
     <div>
-      <p className="eyebrow">Saved for later</p>
-      <h1 className="mt-1 font-display text-2xl font-bold text-navy-deep sm:text-3xl">Wishlist</h1>
+      <p className="script-eyebrow text-[1.7rem]">Saved for later</p>
+      <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep sm:text-4xl">Wishlist</h1>
       <p className="mt-1 text-sm text-slate-500">Packages you&apos;ve saved for later.</p>
 
       {items.length === 0 ? (

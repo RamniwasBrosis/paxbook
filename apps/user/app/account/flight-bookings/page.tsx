@@ -63,8 +63,8 @@ export default async function MyFlightBookingsPage() {
 
   return (
     <div>
-      <p className="eyebrow">Booking history</p>
-      <h1 className="mt-1 font-display text-2xl font-bold text-navy-deep sm:text-3xl">My Flight Bookings</h1>
+      <p className="script-eyebrow text-[1.7rem]">Booking history</p>
+      <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep sm:text-4xl">My Flight Bookings</h1>
       <p className="mt-1 text-sm text-slate-500">Status, PNR and ticket details for every flight you&apos;ve booked with us.</p>
 
       {rows.length === 0 ? (

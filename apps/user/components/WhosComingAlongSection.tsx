@@ -1,13 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Headset, ShieldCheck, Compass, LifeBuoy } from "lucide-react";
-import type { DestinationDto } from "@paxbook/types";
-
-interface TravelerCard {
-  label: string;
-  tagline: string;
-  category?: string;
-  imageUrl?: string | null;
-}
+import { Heart, Users, PartyPopper, Users2, Briefcase, User, type LucideIcon } from "lucide-react";
+import { SectionHeading } from "@/components/SectionHeading";
 
 export interface PersonaConfig {
   label: string;
@@ -16,97 +9,81 @@ export interface PersonaConfig {
   imageUrl: string | null;
 }
 
-const FALLBACK_CARDS: TravelerCard[] = [
-  { label: "Couples", tagline: "Romantic, unhurried", category: "Couple" },
-  { label: "Family", tagline: "Kid-friendly pacing", category: "Family" },
-  { label: "Friends", tagline: "Nightlife & activities", category: "Friends" },
-  { label: "Solo", tagline: "Safe, guided, flexible" },
-];
+export interface TravelerTypeConfig {
+  label: string;
+  category: string;
+  color?: string;
+}
 
-const TRUST_BULLETS = [
-  { icon: Sparkles, title: "100% Personalized Trips", description: "Every itinerary is built around your dates, pace and budget." },
-  { icon: Headset, title: "Expert Travel Assistance", description: "A named travel expert from first call to your return flight." },
-  { icon: ShieldCheck, title: "Handpicked Experiences", description: "Stays and activities we would send our own family to." },
-  { icon: LifeBuoy, title: "24×7 On-Trip Support", description: "Someone always answers, in your timezone or ours." },
-  { icon: Compass, title: "Secure Booking", description: "Clear documentation, confirmed vouchers, no hidden add-ons." },
-];
+// Ring + underline colour per CMS colour name (traveler_types block).
+const RING: Record<string, { ring: string; bar: string; soft: string; ink: string }> = {
+  rose: { ring: "border-rose-500", bar: "bg-rose-500", soft: "bg-rose-50", ink: "text-rose-600" },
+  emerald: { ring: "border-teal-500", bar: "bg-teal-500", soft: "bg-teal-50", ink: "text-teal-600" },
+  amber: { ring: "border-amber-500", bar: "bg-amber-500", soft: "bg-amber-50", ink: "text-amber-600" },
+  blue: { ring: "border-blue-500", bar: "bg-blue-500", soft: "bg-blue-50", ink: "text-blue-600" },
+  violet: { ring: "border-violet-500", bar: "bg-violet-500", soft: "bg-violet-50", ink: "text-violet-600" },
+};
+const RING_CYCLE = ["rose", "emerald", "amber", "blue", "violet"];
 
-const MARQUEE_WORD = "#PaxbookHolidays";
+const ICONS: Record<string, LucideIcon> = {
+  Couple: Heart,
+  Family: Users,
+  Friends: PartyPopper,
+  Group: Users2,
+  Corporate: Briefcase,
+  Solo: User,
+};
 
-export function WhosComingAlongSection({ destinations, personas }: { destinations: DestinationDto[]; personas?: PersonaConfig[] }) {
-  const usingPersonas = Boolean(personas && personas.length > 0);
-  const destImages = destinations.filter((d) => d.heroImageUrl);
+// "Couples" persona ↔ "Couple" traveller type: match on the category, not the display label.
+function norm(s: string) {
+  return s.toLowerCase().replace(/s$/, "");
+}
 
-  const cards: TravelerCard[] = usingPersonas
-    ? personas!
-    : destImages.length > 0
-      ? FALLBACK_CARDS.map((card, i) => ({ ...card, imageUrl: destImages[i % destImages.length]?.heroImageUrl }))
-      : [];
+/**
+ * Design 2 "Are you a?" row: round photo frames with a coloured ring per traveller type.
+ * Types (labels, order, colours) come from the CMS `traveler_types` block; photos come from the
+ * `who_coming_along` personas with the same category. A type with no photo shows its icon.
+ */
+export function WhosComingAlongSection({ personas, travelerTypes }: { personas?: PersonaConfig[]; travelerTypes?: TravelerTypeConfig[] }) {
+  const photoByCategory = new Map((personas ?? []).filter((p) => p.imageUrl).map((p) => [norm(p.category), p.imageUrl as string]));
 
-  if (cards.length === 0) return null;
+  const items =
+    travelerTypes && travelerTypes.length > 0
+      ? travelerTypes.map((t, i) => ({ label: t.label, category: t.category, color: t.color ?? RING_CYCLE[i % RING_CYCLE.length] ?? "blue", imageUrl: photoByCategory.get(norm(t.category)) ?? null }))
+      : (personas ?? []).map((p, i) => ({ label: p.label, category: p.category, color: RING_CYCLE[i % RING_CYCLE.length] ?? "blue", imageUrl: p.imageUrl }));
+
+  if (items.length === 0) return null;
 
   return (
-    <section className="relative z-10 -mt-12 overflow-hidden rounded-t-[2.5rem] bg-brand pb-0 pt-12 sm:-mt-16 sm:rounded-t-[3.5rem] sm:pt-16">
-      <div className="shell pb-16 sm:pb-20">
-        <div className="rounded-3xl border border-white/15 p-6 sm:p-10">
-          <h2 className="text-center font-display text-3xl text-white sm:text-[2.35rem]">Who&apos;s coming along?</h2>
-          <p className="mx-auto mt-3 max-w-lg text-center text-sm text-white/70">
-            Every Paxbook itinerary is shaped around who is travelling — pace, stays and experiences included.
-          </p>
-
-          <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
-            {cards.map((card) => {
-              const href = card.category ? `/destinations?category=${encodeURIComponent(card.category)}` : "/packages";
-              return (
-                <Link key={card.label} href={href} className="group relative block h-64 sm:h-80">
-                  {/* solid-color arrow card, sitting behind the lower half of the photo and holding the label */}
-                  <div className="arrow-card absolute inset-x-0 bottom-0 h-[54%] bg-navy-deep transition-transform duration-300 group-hover:-translate-y-1.5" />
-
-                  {/* tall arch-shaped cutout-style photo, standing up out of the arrow card */}
-                  {card.imageUrl ? (
-                    <div className="persona-cutout absolute inset-x-3 top-0 h-[72%] overflow-hidden shadow-float transition-transform duration-300 group-hover:-translate-y-2 sm:inset-x-5">
-                      <img src={card.imageUrl} alt={card.label} className="h-full w-full object-cover object-top" />
-                    </div>
-                  ) : null}
-
-                  <div className="absolute inset-x-0 bottom-0 p-4 pr-6">
-                    <h3 className="font-display text-lg text-white">{card.label}</h3>
-                    <p className="text-xs font-semibold text-accent">{card.tagline}</p>
-                    <span className="mt-2 inline-flex items-center gap-1 text-[0.72rem] font-bold text-white underline decoration-accent decoration-2 underline-offset-4">
-                      Start planning
-                      <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
+    <section className="py-16 lg:py-20">
+      <div className="shell">
+        <SectionHeading title="Are you a?" align="center" />
+        <div className="flex gap-6 overflow-x-auto pb-2 no-scrollbar sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-5">
+          {items.map((item) => {
+            const c = RING[item.color] ?? RING.blue!;
+            const Icon = ICONS[item.label] ?? ICONS[item.category] ?? Users;
+            return (
+              <Link
+                key={item.label}
+                href={`/destinations?category=${encodeURIComponent(item.category)}`}
+                className="group flex w-36 shrink-0 flex-col items-center gap-4 sm:w-auto"
+              >
+                <span
+                  className={`block aspect-[5/6] w-full max-w-[13rem] rounded-full border-4 p-1.5 shadow-card transition-transform duration-300 group-hover:-translate-y-1.5 ${c.ring}`}
+                >
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt={`${item.label} travellers`} className="h-full w-full rounded-full object-cover" />
+                  ) : (
+                    <span className={`grid h-full w-full place-items-center rounded-full ${c.soft}`}>
+                      <Icon className={`h-12 w-12 ${c.ink}`} strokeWidth={1.5} />
                     </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-
-          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {TRUST_BULLETS.map((b) => (
-              <div key={b.title} className="rounded-2xl border border-white/15 bg-white/5 p-4 transition-colors hover:border-accent/60">
-                <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent/20">
-                  <b.icon className="h-4 w-4 text-accent" strokeWidth={2} />
+                  )}
                 </span>
-                <p className="mt-3 text-sm font-bold text-white">{b.title}</p>
-                <p className="mt-1 text-xs text-white/60">{b.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div className="relative overflow-hidden bg-accent py-2.5">
-        <div className="flex w-max animate-marquee items-center gap-8">
-          {Array.from({ length: 2 }).map((_, groupIdx) => (
-            <div key={groupIdx} className="flex shrink-0 items-center gap-8 pr-8" aria-hidden={groupIdx === 1}>
-              {Array.from({ length: 16 }).map((_, i) => (
-                <span key={i} className="whitespace-nowrap text-sm font-bold uppercase tracking-wide text-navy-deep">
-                  {MARQUEE_WORD}
-                </span>
-              ))}
-            </div>
-          ))}
+                <span className="font-display text-base font-extrabold uppercase tracking-[0.14em] text-navy-deep sm:text-lg">{item.label}</span>
+                <span aria-hidden="true" className={`-mt-2 h-1 w-11 rounded-full ${c.bar}`} />
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

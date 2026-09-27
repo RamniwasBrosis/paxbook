@@ -55,7 +55,7 @@ export default async function VideoTestimonialPage({ params }: { params: { slug:
         </div>
 
         <aside className="rounded-2xl border border-slate-100 bg-white p-5 shadow-premium">
-          {t.title ? <h1 className="font-display text-xl text-navy-deep">{t.title}</h1> : null}
+          {t.title ? <h1 className="font-display text-2xl font-extrabold text-navy-deep sm:text-3xl">{t.title}</h1> : null}
           <p className="mt-1 text-sm font-semibold text-slate-700">{t.customerName}</p>
           {t.tripTitle ? <p className="mt-1 text-sm text-slate-500">{t.tripTitle}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">

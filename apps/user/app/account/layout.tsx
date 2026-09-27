@@ -13,14 +13,14 @@ const NAV = [
 
 export default function AccountLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="bg-mist/60">
+    <div className="bg-cream/60">
       <div className="shell grid grid-cols-1 gap-8 py-10 print:block print:gap-0 print:p-0 lg:grid-cols-[240px_1fr]">
-        <aside className="flat-card flex flex-row gap-1 overflow-x-auto p-2 print:hidden lg:flex-col">
+        <aside className="flex h-fit flex-row gap-1 overflow-x-auto rounded-3xl border border-slate-100 bg-white p-2.5 shadow-soft print:hidden lg:flex-col">
           {NAV.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-600 transition-colors hover:bg-mist hover:text-brand"
+              className="flex shrink-0 items-center gap-3 whitespace-nowrap rounded-2xl px-3.5 py-3 text-sm font-semibold text-navy-deep transition-colors hover:bg-cream hover:text-brand-blue"
             >
               <item.icon className="h-4 w-4" strokeWidth={2} />
               {item.label}

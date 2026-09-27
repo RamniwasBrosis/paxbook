@@ -20,10 +20,10 @@ interface SearchParams {
 
 const CATEGORIES = ["Honeymoon", "Family", "Adventure", "Seasonal", "Budget", "Luxury"];
 const DURATION_CHIPS = [
-  { label: "2-3 Days", subtitle: "Quick Getaway", min: 2, max: 3 },
-  { label: "4-6 Days", subtitle: "Short & Sweet", min: 4, max: 6 },
-  { label: "7-10 Days", subtitle: "More to Explore", min: 7, max: 10 },
-  { label: "10-15 Days", subtitle: "The Ultimate Journey", min: 10, max: 15 },
+  { label: "2-3 Days", subtitle: "Quick Getaway", min: 2, max: 3, on: "bg-blue-600 text-white", off: "bg-blue-50 text-blue-700" },
+  { label: "4-6 Days", subtitle: "Short & Sweet", min: 4, max: 6, on: "bg-green-600 text-white", off: "bg-green-50 text-green-700" },
+  { label: "7-10 Days", subtitle: "More to Explore", min: 7, max: 10, on: "bg-orange-600 text-white", off: "bg-orange-50 text-orange-700" },
+  { label: "10-15 Days", subtitle: "The Ultimate Journey", min: 10, max: 15, on: "bg-violet-600 text-white", off: "bg-violet-50 text-violet-700" },
 ];
 
 export default async function PackagesPage({ searchParams }: { searchParams: SearchParams }) {
@@ -55,8 +55,8 @@ export default async function PackagesPage({ searchParams }: { searchParams: Sea
             <a
               key={chip.label}
               href={`/packages?minDuration=${chip.min}&maxDuration=${chip.max}`}
-              className={`rounded-full px-4 py-1.5 text-sm ${
-                searchParams.minDuration === String(chip.min) && searchParams.maxDuration === String(chip.max) ? "bg-brand text-white" : "bg-mist text-slate-600"
+              className={`inline-flex h-11 items-center rounded-full px-5 text-sm font-bold ${
+                searchParams.minDuration === String(chip.min) && searchParams.maxDuration === String(chip.max) ? chip.on : chip.off
               }`}
             >
               {chip.label} <span className="opacity-70">· {chip.subtitle}</span>
@@ -65,8 +65,8 @@ export default async function PackagesPage({ searchParams }: { searchParams: Sea
         </div>
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[260px_1fr]">
-          <aside className="h-fit rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
-            <h2 className="font-display text-sm text-navy-deep">Filters</h2>
+          <aside className="h-fit rounded-3xl border border-slate-100 bg-white p-5 shadow-card">
+            <h2 className="font-display text-lg font-bold text-navy-deep">Filters</h2>
             <form method="get" className="mt-4 flex flex-col gap-4">
               <label className="block text-sm">
                 <span className="mb-1 block font-medium text-slate-600">Destination</span>

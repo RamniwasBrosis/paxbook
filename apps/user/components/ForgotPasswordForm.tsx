@@ -33,9 +33,9 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center sm:px-6">
-        <h1 className="text-2xl font-bold text-slate-900">Check your email</h1>
-        <p className="mt-3 text-sm text-slate-500">
+      <div className="text-center">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep">Check your email</h1>
+        <p className="mt-3 text-sm text-ink-muted">
           If <b>{email}</b> is registered with us, we&apos;ve sent a link to reset your password. The link expires in 60 minutes.
         </p>
         <Link href="/login" className="mt-6 inline-block text-sm font-semibold text-brand hover:underline">
@@ -46,26 +46,26 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
-      <h1 className="text-2xl font-bold text-slate-900">Forgot your password?</h1>
-      <p className="mt-1 text-sm text-slate-500">Enter your registered email address and we&apos;ll send you a link to reset it.</p>
+    <div className="w-full">
+      <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep">Forgot your password?</h1>
+      <p className="mt-1 text-sm text-ink-muted">Enter your registered email address and we&apos;ll send you a link to reset it.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
         <input
           required
           type="email"
-          placeholder="Registered email address"
+          placeholder="Registered email address" aria-label="Registered email address"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="h-12 w-full rounded-xl border border-slate-200 px-4 text-[0.95rem] text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <button type="submit" disabled={busy} className="rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="submit" disabled={busy} className="mt-1 h-12 rounded-full bg-accent px-4 text-base font-extrabold text-navy-deep transition-colors hover:bg-accent-dark disabled:opacity-60">
           {busy ? "Sending…" : "Send reset link"}
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-slate-500">
+      <p className="mt-6 text-center text-sm text-ink-muted">
         <Link href="/login" className="font-semibold text-brand hover:underline">
           Back to login
         </Link>

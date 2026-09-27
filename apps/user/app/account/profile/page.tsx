@@ -16,8 +16,8 @@ export default async function ProfilePage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="eyebrow">Account settings</p>
-        <h1 className="mt-1 font-display text-2xl font-bold text-navy-deep sm:text-3xl">Profile</h1>
+        <p className="script-eyebrow text-[1.7rem]">Account settings</p>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep sm:text-4xl">Profile</h1>
         <p className="mt-1 text-sm text-slate-500">Manage your contact details and traveler profiles.</p>
       </div>
 

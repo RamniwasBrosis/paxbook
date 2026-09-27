@@ -1,4 +1,4 @@
-import { Plus_Jakarta_Sans, Sora } from "next/font/google";
+import { Caveat, Plus_Jakarta_Sans, Sora } from "next/font/google";
 import Script from "next/script";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -20,6 +20,14 @@ const sora = Sora({
   display: "swap",
 });
 
+// Handwritten accent for eyebrows like "Happy Traveler, Happy Memories" — never for body copy.
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["700"],
+  variable: "--font-caveat",
+  display: "swap",
+});
+
 export const metadata = {
   title: { default: "Paxbook — Travel, Explore, Experience", template: "%s | Paxbook" },
   description: "Handpicked holiday packages, custom itineraries, and expert travel consultants.",
@@ -27,12 +35,12 @@ export const metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const branding = await getBranding();
-  const primaryColor = branding.primaryColor ?? "#0f4c81";
+  const primaryColor = branding.primaryColor ?? "#1b3f8f";
 
   return (
     <html
       lang="en"
-      className={`${jakarta.variable} ${sora.variable}`}
+      className={`${jakarta.variable} ${sora.variable} ${caveat.variable}`}
       style={
         {
           "--tenant-primary": primaryColor,
@@ -68,7 +76,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           </Script>
         ) : null}
         <Header />
-        <MainWithHeaderOffset>{children}</MainWithHeaderOffset>
+        <MainWithHeaderOffset overlayOnHome={branding.templateSlug === "modern"}>{children}</MainWithHeaderOffset>
         <Footer />
       </body>
     </html>

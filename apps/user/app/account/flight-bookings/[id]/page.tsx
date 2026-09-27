@@ -49,7 +49,7 @@ export default async function FlightBookingDetailPage({ params, searchParams }: 
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+          <h1 className="flex items-center gap-2 font-display text-3xl font-extrabold tracking-tight text-navy-deep">
             <Plane className="h-6 w-6 text-brand" strokeWidth={1.75} />
             {booking.depCity} → {booking.arrCity}
           </h1>

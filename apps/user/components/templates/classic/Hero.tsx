@@ -1,8 +1,15 @@
 import Link from "next/link";
-import { Search, Plane, Star, ArrowRight } from "lucide-react";
+import { ShieldCheck, Headset, Star, Search, Plane, Palmtree, FileCheck2 } from "lucide-react";
 import type { DestinationDto, PublicStatsDto } from "@paxbook/types";
 import { PlanTripButton } from "@/components/PlanTripButton";
 
+const TRAVEL_STYLES = ["Honeymoon", "Family", "Adventure", "Luxury", "Budget", "Seasonal"];
+
+/**
+ * Design 2 (paxbook.in pattern) homepage hero: cream band, handwritten eyebrow, headline with a
+ * gradient brand word, trust lines, and the photo standing in an arch on a dashed flight path.
+ * The search card below overlaps the band's bottom edge.
+ */
 export function ClassicHero({
   backgroundImageUrl,
   stats,
@@ -12,98 +19,145 @@ export function ClassicHero({
   stats?: PublicStatsDto;
   destinations?: DestinationDto[];
 }) {
-  const chips = destinations.slice(0, 7);
-
   return (
-    <section className="relative overflow-hidden pb-24 pt-16 text-white sm:pb-32 sm:pt-20">
-      {backgroundImageUrl ? (
-        <img src={backgroundImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      ) : (
-        <div className="absolute inset-0 bg-gradient-to-br from-navy-deep via-brand to-navy-deep" />
-      )}
-      <div className="absolute inset-0 bg-gradient-to-t from-navy-deep/95 via-navy-deep/40 to-navy-deep/10" />
-
-      <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.2em] text-accent backdrop-blur-sm">
-          <Plane className="h-3.5 w-3.5" strokeWidth={2} />
-          Travel · Explore · Experience
-        </span>
-
-        <h1 className="mx-auto mt-6 max-w-4xl font-display text-4xl uppercase leading-[1.1] tracking-tight sm:text-6xl">
-          Your Journey.
-          <br />
-          Your Way.
-        </h1>
-        <p className="mx-auto mt-5 max-w-xl text-base text-white/85 sm:text-lg">
-          Discover, customize and experience unforgettable journeys with Paxbook.
-        </p>
-
-        {stats?.averageRating ? (
-          <div className="mt-5 flex items-center justify-center gap-2 text-sm font-semibold text-white/90">
-            <span className="flex items-center gap-1 text-accent">
-              <Star className="h-4 w-4 fill-accent" strokeWidth={0} />
-              {stats.averageRating}/5
-            </span>
-            <span className="text-white/50">·</span>
-            <span>{stats.reviewCount}+ happy travellers</span>
-            <span className="text-white/50">·</span>
-            <span>{stats.tripsBookedCount}+ trips booked</span>
-          </div>
-        ) : null}
-
-        <form action="/packages" className="search-pill mx-auto mt-8 flex max-w-xl flex-col gap-2 p-2 sm:flex-row">
-          <div className="flex flex-1 items-center gap-2 px-4">
-            <Search className="h-4 w-4 shrink-0 text-slate-400" strokeWidth={2} />
-            <input
-              name="destination"
-              placeholder="Search countries, cities"
-              list="hero-destinations"
-              className="w-full rounded-full py-3 text-sm text-slate-900 focus:outline-none"
-            />
-            <datalist id="hero-destinations">
-              {destinations.map((d) => (
-                <option key={d.id} value={d.name} />
-              ))}
-            </datalist>
-          </div>
-          <button
-            type="submit"
-            className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:bg-accent-dark hover:shadow-md"
-          >
-            Start Planning
-          </button>
-        </form>
-
-        {chips.length > 0 ? (
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-            {chips.map((d) => (
-              <Link
-                key={d.id}
-                href={`/destinations/${d.slug}`}
-                className="rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur-sm transition-colors hover:border-accent hover:bg-white/20"
+    <>
+      <section className="relative overflow-hidden bg-cream">
+        <div className="mx-auto grid max-w-[90rem] items-center gap-12 px-4 pb-24 pt-12 sm:px-6 lg:grid-cols-[1.05fr_1fr] lg:px-10 lg:pb-28 lg:pt-16">
+          <div className="fade-up">
+            <p className="script-eyebrow text-3xl sm:text-4xl">Happy Traveler, Happy Memories</p>
+            <h1 className="mt-4 font-display text-[2.6rem] font-extrabold leading-[1.05] tracking-tight text-navy-deep sm:text-6xl lg:text-[4.1rem]">
+              Your next journey starts with <span className="text-gradient">Paxbook.</span>
+            </h1>
+            <p className="mt-5 max-w-xl text-lg leading-relaxed text-ink-muted">
+              Handpicked stays, honest fares, and a dedicated expert with you from booking to boarding pass.
+            </p>
+            <ul className="mt-7 space-y-3 text-[0.95rem] font-semibold text-navy-deep">
+              <li className="flex items-center gap-3">
+                <ShieldCheck className="h-6 w-6 shrink-0 text-green-600" strokeWidth={2} />
+                No scam, just the faith of lakhs of happy travellers.
+              </li>
+              <li className="flex items-center gap-3">
+                <Headset className="h-6 w-6 shrink-0 text-brand-blue" strokeWidth={2} />
+                <span>
+                  Talk to a travel expert now —{" "}
+                  <a href="tel:+917300047077" className="font-extrabold text-accent-ink hover:underline">
+                    7300047077
+                  </a>
+                </span>
+              </li>
+            </ul>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <PlanTripButton
+                destinations={destinations}
+                className="inline-flex h-12 items-center rounded-full bg-accent px-7 text-base font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
               >
-                {d.name}
+                Plan My Trip
+              </PlanTripButton>
+              <Link
+                href="/packages"
+                className="inline-flex h-12 items-center rounded-full border-2 border-navy-deep px-7 text-base font-bold text-navy-deep transition-colors hover:bg-navy-deep hover:text-white"
+              >
+                Explore Packages
               </Link>
-            ))}
+            </div>
           </div>
-        ) : null}
 
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-          <PlanTripButton
-            destinations={destinations}
-            className="flex items-center gap-1.5 rounded-full bg-accent px-6 py-2.5 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark hover:shadow-md"
-          >
-            Plan My Trip
-            <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
-          </PlanTripButton>
-          <Link
-            href="/packages"
-            className="rounded-full border border-white/50 bg-white/10 px-6 py-2.5 text-sm font-bold text-white backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:bg-white/20"
-          >
-            Explore Packages
-          </Link>
+          <div className="relative mx-auto h-[21rem] w-full max-w-[34rem] sm:h-[30rem]">
+            <svg viewBox="0 0 560 480" className="absolute inset-0 h-full w-full" aria-hidden="true" preserveAspectRatio="none">
+              <path
+                d="M 30 440 C 90 260, 200 170, 330 160 S 520 100, 540 24"
+                fill="none"
+                stroke="#1b3f8f"
+                strokeWidth="2"
+                strokeDasharray="7 8"
+                opacity="0.5"
+              />
+              <circle cx="30" cy="440" r="7" fill="#f5b73d" />
+              <circle cx="540" cy="24" r="7" fill="#db2777" />
+            </svg>
+            <div className="arch absolute left-1/2 top-6 h-[88%] w-[72%] -translate-x-1/2 overflow-hidden rounded-b-[1.75rem] border-8 border-white bg-mist shadow-float">
+              {backgroundImageUrl ? <img src={backgroundImageUrl} alt="" className="h-full w-full object-cover" /> : null}
+            </div>
+            <div className="absolute right-0 top-16 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-float sm:flex">
+              <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-100">
+                <Plane className="h-5 w-5 text-violet-700" strokeWidth={2} />
+              </span>
+              <span className="flex flex-col leading-tight">
+                <strong className="text-sm text-navy-deep">Flights, stays &amp; visas</strong>
+                <span className="text-xs text-ink-muted">One booking, one expert</span>
+              </span>
+            </div>
+            {stats?.averageRating ? (
+              <div className="absolute bottom-8 left-0 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-float">
+                <span className="flex gap-0.5 text-accent" aria-label={`Rated ${stats.averageRating} out of 5`}>
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-current" strokeWidth={0} />
+                  ))}
+                </span>
+                <span className="text-sm font-bold text-navy-deep">
+                  {stats.averageRating}/5 <span className="font-medium text-ink-muted">· {stats.reviewCount}+ reviews</span>
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <div className="relative z-10 mx-auto -mt-14 max-w-[90rem] px-4 sm:px-6 lg:px-10">
+        <div className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-float sm:p-6">
+          <div className="flex flex-wrap gap-2">
+            <span className="inline-flex h-11 items-center gap-2 rounded-full bg-navy-deep px-5 text-sm font-bold text-white">
+              <Palmtree className="h-4 w-4" strokeWidth={2} />
+              Holidays
+            </span>
+            <Link
+              href="/flights"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-5 text-sm font-semibold text-navy-deep transition-colors hover:border-brand-blue hover:text-brand-blue"
+            >
+              <Plane className="h-4 w-4" strokeWidth={2} />
+              Flights
+            </Link>
+            <Link
+              href="/visa-guide"
+              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-5 text-sm font-semibold text-navy-deep transition-colors hover:border-brand-blue hover:text-brand-blue"
+            >
+              <FileCheck2 className="h-4 w-4" strokeWidth={2} />
+              Visa
+            </Link>
+          </div>
+          <form action="/packages" className="mt-4 grid gap-3 md:grid-cols-[1.4fr_1fr_auto]">
+            <label className="flex flex-col gap-1 rounded-2xl border border-slate-200 px-4 py-3 focus-within:border-brand-blue">
+              <span className="text-xs font-bold text-ink-muted">Destination</span>
+              <select name="destination" defaultValue="" className="w-full bg-transparent text-base text-navy-deep focus:outline-none">
+                <option value="">Where do you want to go?</option>
+                {destinations.map((d) => (
+                  <option key={d.id} value={d.slug}>
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 rounded-2xl border border-slate-200 px-4 py-3 focus-within:border-brand-blue">
+              <span className="text-xs font-bold text-ink-muted">Travel style</span>
+              <select name="category" defaultValue="" className="w-full bg-transparent text-base text-navy-deep focus:outline-none">
+                <option value="">Any style</option>
+                {TRAVEL_STYLES.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="submit"
+              className="inline-flex min-h-[3.75rem] items-center justify-center gap-2 rounded-2xl bg-accent px-9 text-base font-extrabold text-navy-deep transition-colors hover:bg-accent-dark"
+            >
+              <Search className="h-5 w-5" strokeWidth={2.5} />
+              Search
+            </button>
+          </form>
         </div>
       </div>
-    </section>
+    </>
   );
 }

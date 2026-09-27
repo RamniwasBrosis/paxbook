@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, MapPin, Loader2, PartyPopper } from "lucide-react";
 import type { PublicDestinationDetailDto } from "@paxbook/types";
+import { WizardHero } from "@/components/WizardHero";
 import { CustomizeSteps, CUSTOMIZE_STEPS, type CustomizeStepName } from "@/components/CustomizeSteps";
 import { Button } from "@/components/Button";
 import { Inclusions } from "@/components/Inclusions";
@@ -113,14 +114,7 @@ export function TripCustomizerWizard({
     <div>
       {headerStep ? <CustomizeSteps steps={CUSTOMIZE_STEPS} current={headerStep} /> : null}
 
-      <div className="relative flex min-h-[14rem] items-end bg-navy-deep">
-        {destination.heroImageUrl ? <img src={destination.heroImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" /> : null}
-        <div className="hero-scrim absolute inset-0" />
-        <div className="shell relative pb-8 pt-16">
-          <p className="eyebrow on-dark-muted">Customizing your trip to</p>
-          <h1 className="display-xl on-dark mt-1 text-3xl sm:text-4xl">{destination.name}</h1>
-        </div>
-      </div>
+      <WizardHero eyebrow="Customizing your trip to" title={destination.name} imageUrl={destination.heroImageUrl} />
 
       <div className="shell py-10">
         <div className="mx-auto max-w-xl">

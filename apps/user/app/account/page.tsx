@@ -30,15 +30,15 @@ export default async function AccountOverviewPage() {
   return (
     <div className="flex flex-col gap-8">
       <div>
-        <p className="eyebrow">Welcome back</p>
-        <h1 className="mt-1 font-display text-2xl font-bold text-navy-deep sm:text-3xl">{profile.name.split(" ")[0]}</h1>
-        <p className="mt-1 text-sm text-slate-500">Here&apos;s what&apos;s happening with your trips.</p>
+        <p className="script-eyebrow text-[1.7rem]">Welcome back</p>
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep sm:text-4xl">{profile.name.split(" ")[0]}</h1>
+        <p className="mt-1 text-base text-ink-muted">Here&apos;s what&apos;s happening with your trips.</p>
       </div>
 
       {upcoming ? (
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-navy-deep via-brand to-navy-deep p-6 text-white sm:p-8">
-          <p className="eyebrow on-dark-muted">Your next trip</p>
-          <h2 className="mt-2 font-display text-2xl sm:text-3xl">{upcoming.packageTitle}</h2>
+        <div className="relative overflow-hidden rounded-[1.75rem] bg-navy-deep p-6 text-white sm:p-8">
+          <p className="script-eyebrow text-[1.7rem] !text-accent">Your next trip</p>
+          <h2 className="mt-1 font-display text-2xl font-extrabold sm:text-3xl">{upcoming.packageTitle}</h2>
           <div className="mt-3 flex flex-wrap items-center gap-4 text-sm on-dark-muted">
             {upcoming.travelStartDate ? (
               <span className="flex items-center gap-1.5">
@@ -63,21 +63,21 @@ export default async function AccountOverviewPage() {
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div className="flat-card p-5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-mist-strong text-brand">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-blue-50 text-blue-600">
             <Luggage className="h-4 w-4" strokeWidth={2} />
           </span>
           <p className="mt-3 text-xs text-slate-400">Total bookings</p>
           <p className="mt-0.5 text-2xl font-bold text-navy-deep">{bookings.length}</p>
         </div>
         <div className="flat-card p-5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-mist-strong text-brand">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-violet-50 text-violet-600">
             <Bell className="h-4 w-4" strokeWidth={2} />
           </span>
           <p className="mt-3 text-xs text-slate-400">Unread notifications</p>
           <p className="mt-0.5 text-2xl font-bold text-navy-deep">{unreadCount}</p>
         </div>
         <Link href="/packages" className="flat-card flex flex-col justify-between p-5">
-          <span className="grid h-9 w-9 place-items-center rounded-lg bg-accent/20 text-accent-dark">
+          <span className="grid h-11 w-11 place-items-center rounded-full bg-orange-50 text-orange-600">
             <Compass className="h-4 w-4" strokeWidth={2} />
           </span>
           <span className="mt-3 flex items-center gap-1 text-sm font-bold text-brand">

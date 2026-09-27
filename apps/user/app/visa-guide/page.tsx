@@ -30,11 +30,8 @@ export default async function VisaGuidePage() {
       <div className="shell py-10">
         <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
           <div>
-            <div className="mb-3 flex items-center gap-2">
-              <span className="h-0.5 w-8 rounded-full bg-accent" />
-              <p className="text-sm font-semibold uppercase tracking-wide text-brand-blue">Country-wise</p>
-            </div>
-            <h2 className="font-display text-2xl font-bold text-navy-deep sm:text-3xl">Visa requirements at a glance</h2>
+            <p className="script-eyebrow mb-2 text-3xl">Country-wise</p>
+            <h2 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep sm:text-[2.6rem]">Visa requirements at a glance</h2>
           </div>
         </div>
 

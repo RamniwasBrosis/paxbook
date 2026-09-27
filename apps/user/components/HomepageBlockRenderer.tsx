@@ -3,19 +3,32 @@ import { WhyChooseBlock } from "@/components/blocks/WhyChooseBlock";
 import { HowItWorksBlock } from "@/components/blocks/HowItWorksBlock";
 
 /**
- * "traveler_types" blocks stay admin-editable in the CMS but are intentionally not
- * rendered here — WhosComingAlongSection now owns that role on the homepage with the
- * approved design's dark overlapping panel treatment.
+ * Renders CMS homepage blocks in their admin sort order. `types` limits it to some block types so
+ * the page can place them between its own sections (Design 2 puts "Why Choose" right under the
+ * hero and "How it works" further down).
+ *
+ * "traveler_types" and "who_coming_along" blocks are not rendered here — WhosComingAlongSection
+ * reads both (types + photos) for the "Are you a?" row.
  */
-export function HomepageBlockRenderer({ blocks, stats }: { blocks: HomepageBlockDto[]; stats: PublicStatsDto }) {
-  const sorted = [...blocks].sort((a, b) => a.sortOrder - b.sortOrder);
+export function HomepageBlockRenderer({
+  blocks,
+  stats,
+  siteName,
+  types,
+}: {
+  blocks: HomepageBlockDto[];
+  stats: PublicStatsDto;
+  siteName?: string;
+  types?: string[];
+}) {
+  const sorted = [...blocks].filter((b) => !types || types.includes(b.type)).sort((a, b) => a.sortOrder - b.sortOrder);
 
   return (
     <>
       {sorted.map((block) => {
         switch (block.type) {
           case "why_choose":
-            return <WhyChooseBlock key={block.id} configJson={block.configJson} stats={stats} />;
+            return <WhyChooseBlock key={block.id} configJson={block.configJson} stats={stats} siteName={siteName} />;
           case "how_it_works":
             return <HowItWorksBlock key={block.id} configJson={block.configJson} />;
           default:

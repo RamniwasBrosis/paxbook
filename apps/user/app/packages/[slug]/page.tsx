@@ -68,7 +68,7 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
         imageUrl={pkg.coverImageUrl}
         actions={
           avgRating ? (
-            <span className="flex items-center gap-1 on-dark-muted text-sm">
+            <span className="flex items-center gap-1.5 text-sm font-semibold text-ink-muted">
               <ReviewStars rating={Math.round(avgRating)} /> {avgRating} · {pkg.reviews.length} reviews
             </span>
           ) : undefined
@@ -79,16 +79,14 @@ export default async function PackageDetailPage({ params }: { params: { slug: st
         {pkg.galleryImages.length > 0 ? (
           <div className="mb-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {pkg.galleryImages.map((g) => (
-              <img key={g.id} src={g.imageUrl} alt={pkg.title} className="h-40 w-full rounded-xl object-cover" />
+              <img key={g.id} src={g.imageUrl} alt={pkg.title} className="h-44 w-full rounded-2xl object-cover" />
             ))}
           </div>
         ) : null}
 
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.6fr_1fr]">
           <div className="flex flex-col gap-10">
-            <div className="rounded-2xl border border-slate-100 bg-mist p-4">
-              <Inclusions inclusions={pkg.inclusions} className="text-sm font-semibold" />
-            </div>
+            {pkg.inclusions.length > 0 ? <Inclusions inclusions={pkg.inclusions} variant="chips" /> : null}
 
             {pkg.itineraryDays.length > 0 ? (
               <section>

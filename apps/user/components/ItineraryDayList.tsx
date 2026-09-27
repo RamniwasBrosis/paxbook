@@ -5,6 +5,9 @@ import { Calendar, MapPin } from "lucide-react";
 import type { ItineraryDayDto, PackageFlightDto, PackageHotelDto } from "@paxbook/types";
 import { computeDayDate, formatDayDate } from "@/lib/itinerary-dates";
 
+// Design 2 timeline: each day gets its own colour tile, cycling.
+const DAY_TILES = ["bg-blue-600", "bg-green-600", "bg-orange-600", "bg-violet-600", "bg-pink-600", "bg-teal-600"];
+
 export function ItineraryDayList({
   itineraryDays,
   hotels,
@@ -19,9 +22,9 @@ export function ItineraryDayList({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-mist p-4">
-        <Calendar className="h-4 w-4 shrink-0 text-brand" strokeWidth={2} />
-        <label className="text-sm font-semibold text-slate-700">
+      <div className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-100 bg-mist p-4">
+        <Calendar className="h-5 w-5 shrink-0 text-brand-blue" strokeWidth={2} />
+        <label className="text-sm font-semibold text-navy-deep">
           Pick a departure date to see the exact calendar dates for this itinerary
         </label>
         <input
@@ -33,21 +36,26 @@ export function ItineraryDayList({
         />
       </div>
 
-      <div className="flex flex-col gap-4">
-        {itineraryDays.map((day) => {
+      <ol className="flex flex-col">
+        {itineraryDays.map((day, i) => {
           const dayDate = parsedDate ? computeDayDate(parsedDate, day.dayNumber) : null;
           const linkedHotel = hotels.find((h) => day.dayNumber >= h.checkInDay && day.dayNumber <= h.checkOutDay);
           const linkedFlight = flights.find((f) => f.dayNumber === day.dayNumber);
 
           return (
-            <div key={day.id} className="rounded-2xl border border-slate-100 bg-white p-5 shadow-sm">
+            <li key={day.id} className="grid grid-cols-[3.75rem_minmax(0,1fr)] gap-4 sm:gap-5">
+              <div className="flex flex-col items-center">
+                <span className={`flex h-[3.75rem] w-[3.75rem] shrink-0 flex-col items-center justify-center rounded-2xl leading-none text-white ${DAY_TILES[i % DAY_TILES.length]}`}>
+                  <span className="text-[0.65rem] font-bold tracking-wider">DAY</span>
+                  <span className="font-display text-2xl font-extrabold">{day.dayNumber}</span>
+                </span>
+                {i < itineraryDays.length - 1 ? <span aria-hidden="true" className="my-2 w-0 flex-1 border-l-2 border-dashed border-slate-200" /> : null}
+              </div>
+              <div className="mb-5 rounded-3xl border border-slate-100 bg-white p-5 shadow-soft">
               {day.imageUrl ? <img src={day.imageUrl} alt="" className="mb-4 h-40 w-full rounded-xl object-cover" /> : null}
 
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-wide text-accent-dark">
-                  Day {day.dayNumber}
-                  {dayDate ? <span className="ml-2 font-medium text-slate-500">{formatDayDate(dayDate)}</span> : null}
-                </p>
+                <h3 className="font-display text-lg font-bold text-navy-deep">{day.title}</h3>
                 {day.location ? (
                   <span className="flex items-center gap-1 text-xs font-medium text-slate-500">
                     <MapPin className="h-3.5 w-3.5" strokeWidth={2} /> {day.location}
@@ -55,8 +63,8 @@ export function ItineraryDayList({
                 ) : null}
               </div>
 
-              <h3 className="mt-1 font-display text-base text-navy-deep">{day.title}</h3>
-              {day.description ? <p className="mt-1 text-sm text-slate-600">{day.description}</p> : null}
+              {dayDate ? <p className="mt-0.5 text-xs font-bold uppercase tracking-wide text-accent-ink">{formatDayDate(dayDate)}</p> : null}
+              {day.description ? <p className="mt-2 text-[0.95rem] leading-relaxed text-ink-muted">{day.description}</p> : null}
 
               {day.mealsIncluded && day.mealsIncluded.length > 0 ? (
                 <div className="mt-3 flex flex-wrap gap-1.5">
@@ -100,10 +108,11 @@ export function ItineraryDayList({
               ) : null}
 
               {day.notes ? <p className="mt-3 text-xs italic text-slate-400">{day.notes}</p> : null}
-            </div>
+              </div>
+            </li>
           );
         })}
-      </div>
+      </ol>
     </div>
   );
 }

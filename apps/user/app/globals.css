@@ -8,7 +8,7 @@ body {
 }
 
 body {
-  color: rgb(30 41 59); /* slate-800 */
+  color: #1c2d5c; /* navy-tinted ink, Design 2 */
 }
 
 /* The site header/footer wrap every page (including print-to-PDF pages like the e-ticket) —
@@ -49,7 +49,52 @@ body {
     font-weight: 700;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #db940e; /* gold-deep */
+    color: #a86a06; /* accent-ink: the fill gold (#d99417) fails contrast as text on white */
+  }
+
+  /* ---- Design 2 (paxbook.in pattern) ---- */
+
+  /* Indigo → fuchsia → pink highlight for one key word in a heading ("Paxbook?", "Days?"). */
+  .text-gradient {
+    background-image: linear-gradient(90deg, #4f46e5, #a21caf, #db2777);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Handwritten eyebrow ("Happy Traveler, Happy Memories"). */
+  .script-eyebrow {
+    font-family: var(--font-caveat), cursive;
+    font-weight: 700;
+    line-height: 1;
+    color: #c27c0c;
+  }
+
+  /* Round-topped "door" frame used for hero photos and destination arches. */
+  .arch {
+    border-start-start-radius: 999px;
+    border-start-end-radius: 999px;
+  }
+
+  /* Two-tone underline under centred section titles. */
+  .title-rule {
+    display: flex;
+    justify-content: center;
+    gap: 0.375rem;
+  }
+  .title-rule::before,
+  .title-rule::after {
+    content: "";
+    height: 5px;
+    border-radius: 999px;
+  }
+  .title-rule::before {
+    width: 5.5rem;
+    background: #7c3aed;
+  }
+  .title-rule::after {
+    width: 0.5rem;
+    background: #db2777;
   }
 
   .card-lift {
@@ -183,9 +228,9 @@ body {
 
   .flat-card {
     background: #fff;
-    border: 1px solid rgb(203 213 225);
-    border-radius: 1.25rem;
-    box-shadow: 0 1px 2px rgb(15 23 55 / 0.05);
+    border: 1px solid rgb(226 232 244);
+    border-radius: 1.5rem;
+    box-shadow: 0 12px 30px -24px rgb(18 42 99 / 0.35);
     transition:
       box-shadow 0.3s ease,
       border-color 0.3s ease,

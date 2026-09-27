@@ -18,7 +18,7 @@ export default async function AiPlannerPage() {
         subtitle="Our planner drafts a realistic day-by-day outline in seconds. Your travel expert then fine-tunes stays, pace and pricing."
       />
 
-      <AiPlannerMock destinations={destinations} />
+      <AiPlannerMock destinations={destinations} showHeading={false} />
     </div>
   );
 }

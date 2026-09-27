@@ -6,12 +6,11 @@ import { ClassicHero } from "@/components/templates/classic/Hero";
 import { ModernHero } from "@/components/templates/modern/Hero";
 import { HomepageBlockRenderer } from "@/components/HomepageBlockRenderer";
 import { SectionHeading } from "@/components/SectionHeading";
-import { VideoTestimonialCard } from "@/components/VideoTestimonialCard";
 import { DestinationCard } from "@/components/DestinationCard";
 import { ReviewStars } from "@/components/ReviewStars";
 import { ScrollCarousel } from "@/components/ScrollCarousel";
 import { PlanTripButton } from "@/components/PlanTripButton";
-import { WhosComingAlongSection, type PersonaConfig } from "@/components/WhosComingAlongSection";
+import { WhosComingAlongSection, type PersonaConfig, type TravelerTypeConfig } from "@/components/WhosComingAlongSection";
 import { TripsLovingSection } from "@/components/TripsLovingSection";
 import { PackagesByStyleSection } from "@/components/PackagesByStyleSection";
 import { PackagesByDurationSection } from "@/components/PackagesByDurationSection";
@@ -19,6 +18,8 @@ import { ChooseDestinationSection } from "@/components/ChooseDestinationSection"
 import { AiPlannerMock } from "@/components/AiPlannerMock";
 import { PromoBannerStrip } from "@/components/PromoBannerStrip";
 import { PromotionalPosters } from "@/components/PromotionalPosters";
+import { FlightHelpSection } from "@/components/FlightHelpSection";
+import { ReviewCard } from "@/components/ReviewCard";
 
 export const metadata: Metadata = {
   title: "Paxbook — Travel, Explore, Experience",
@@ -32,8 +33,8 @@ export default async function HomePage() {
   ]);
 
   const heroImageUrl = "/hero.jpg";
-  const whoComingAlongBlock = home.homepageBlocks.find((b) => b.type === "who_coming_along");
-  const personas = whoComingAlongBlock ? (whoComingAlongBlock.configJson.items as PersonaConfig[]) : undefined;
+  const personas = home.homepageBlocks.find((b) => b.type === "who_coming_along")?.configJson.items as PersonaConfig[] | undefined;
+  const travelerTypes = home.homepageBlocks.find((b) => b.type === "traveler_types")?.configJson.items as TravelerTypeConfig[] | undefined;
   const priceByDestinationId = Object.fromEntries(
     home.recentPackages.reduce((map, p) => {
       const current = map.get(p.destinationId);
@@ -50,13 +51,17 @@ export default async function HomePage() {
         <ClassicHero backgroundImageUrl={heroImageUrl} stats={stats} destinations={home.featuredDestinations} />
       )}
 
-      <WhosComingAlongSection destinations={home.featuredDestinations} personas={personas} />
+      <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} siteName={branding.siteName} types={["why_choose"]} />
+
+      <WhosComingAlongSection personas={personas} travelerTypes={travelerTypes} />
 
       <PromoBannerStrip banners={home.banners} />
 
-      <TripsLovingSection packages={home.recentPackages} />
-
       <ChooseDestinationSection destinations={home.featuredDestinations} priceByDestinationId={priceByDestinationId} />
+
+      <PackagesByDurationSection destinations={home.featuredDestinations} packages={home.recentPackages} />
+
+      <TripsLovingSection packages={home.recentPackages} />
 
       {home.visaFreeDestinations.length > 0 ? (
         <section className="shell py-16 lg:py-20">
@@ -77,46 +82,57 @@ export default async function HomePage() {
 
       <PackagesByStyleSection packages={home.recentPackages} />
 
-      <PackagesByDurationSection destinations={home.featuredDestinations} />
+      <FlightHelpSection />
 
-      <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} />
+      <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} types={["how_it_works"]} />
 
       <AiPlannerMock destinations={home.featuredDestinations} />
 
       {home.featuredTestimonials.length > 0 ? (
-        <section className="shell py-16 lg:py-20">
-          <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-            <SectionHeading eyebrow="Stories of our travellers" title="Real trips, real travellers" />
+        <section className="py-16 lg:py-20">
+          <div className="shell">
+            <SectionHeading eyebrow="Words From the Road" title="Real trips, real travellers." align="center" />
             {stats.averageRating ? (
-              <span className="mb-10 inline-flex shrink-0 items-center gap-1.5 rounded-full bg-mist-strong px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-wider text-slate-500">
+              <p className="-mt-4 mb-8 flex items-center justify-center gap-2 text-sm font-semibold text-ink-muted">
                 <ReviewStars rating={Math.round(stats.averageRating)} />
                 {stats.averageRating}/5 · {stats.reviewCount}+ reviews
-              </span>
+              </p>
             ) : null}
+            <ScrollCarousel>
+              {home.featuredTestimonials.map((t) => (
+                <ReviewCard key={t.id} testimonial={t} />
+              ))}
+            </ScrollCarousel>
           </div>
-          <ScrollCarousel>
-            {home.featuredTestimonials.map((t) => (
-              <VideoTestimonialCard key={t.id} testimonial={t} />
-            ))}
-          </ScrollCarousel>
         </section>
       ) : null}
 
-      <section className="bg-navy-deep py-16 lg:py-20">
-        <div className="mx-auto max-w-2xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="font-display text-3xl font-bold text-white sm:text-[2.6rem]">Your Next Adventure Starts Here.</h2>
-          <p className="mx-auto mt-4 max-w-xl text-white/70">Tell us where you want to go. We&apos;ll help you plan the journey.</p>
-          <div className="mt-8">
+      <section className="shell pb-20 pt-4">
+        <div className="grid items-center gap-8 rounded-[2rem] bg-navy-deep px-6 py-12 text-white sm:px-12 lg:grid-cols-[1.3fr_1fr] lg:gap-12 lg:px-16 lg:py-14">
+          <div>
+            <p className="script-eyebrow text-3xl !text-accent">Your Journey, Your Way</p>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+              Not sure where to go? Talk to a Paxbook expert.
+            </h2>
+            <p className="mt-4 max-w-xl text-white/80">Tell us your dates and budget, and we&apos;ll craft a 100% customised plan for you.</p>
+          </div>
+          <div className="flex flex-col gap-3">
             <PlanTripButton
               destinations={home.featuredDestinations}
-              className="inline-flex items-center gap-1.5 rounded-full bg-accent px-8 py-3.5 text-base font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+              className="inline-flex h-14 items-center justify-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep transition-colors hover:bg-accent-dark"
             >
               Plan My Trip
             </PlanTripButton>
+            <a
+              href="tel:+917300047077"
+              className="inline-flex h-14 items-center justify-center rounded-full border-2 border-white/60 px-8 text-base font-bold text-white transition-colors hover:bg-white/10"
+            >
+              Call 7300047077
+            </a>
+            <a href="https://wa.me/917300047077" className="text-center text-sm font-semibold text-accent underline-offset-4 hover:underline">
+              Prefer WhatsApp? Chat with a travel expert
+            </a>
           </div>
-          <a href="https://wa.me/917300047077" className="mt-6 inline-block text-xs font-semibold text-accent underline-offset-4 hover:underline">
-            Prefer WhatsApp? Chat with a travel expert
-          </a>
         </div>
       </section>
 

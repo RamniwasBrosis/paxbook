@@ -45,9 +45,9 @@ export function ResetPasswordForm({ token }: { token: string | undefined }) {
 
   if (!token) {
     return (
-      <div className="mx-auto max-w-md px-4 py-16 text-center sm:px-6">
-        <h1 className="text-2xl font-bold text-slate-900">Invalid reset link</h1>
-        <p className="mt-3 text-sm text-slate-500">This password reset link is missing or malformed.</p>
+      <div className="text-center">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep">Invalid reset link</h1>
+        <p className="mt-3 text-sm text-ink-muted">This password reset link is missing or malformed.</p>
         <Link href="/forgot-password" className="mt-6 inline-block text-sm font-semibold text-brand hover:underline">
           Request a new link
         </Link>
@@ -56,31 +56,31 @@ export function ResetPasswordForm({ token }: { token: string | undefined }) {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-16 sm:px-6">
-      <h1 className="text-2xl font-bold text-slate-900">Reset your password</h1>
-      <p className="mt-1 text-sm text-slate-500">Choose a new password for your account.</p>
+    <div className="w-full">
+      <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep">Reset your password</h1>
+      <p className="mt-1 text-sm text-ink-muted">Choose a new password for your account.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
         <input
           required
           type="password"
           minLength={8}
-          placeholder="New password (min 8 characters)"
+          placeholder="New password (min 8 characters)" aria-label="New password (min 8 characters)"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="h-12 w-full rounded-xl border border-slate-200 px-4 text-[0.95rem] text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
         <input
           required
           type="password"
           minLength={8}
-          placeholder="Confirm new password"
+          placeholder="Confirm new password" aria-label="Confirm new password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          className="rounded-lg border border-slate-200 px-4 py-2.5 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+          className="h-12 w-full rounded-xl border border-slate-200 px-4 text-[0.95rem] text-navy-deep placeholder:text-ink-muted focus:border-brand-blue focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
         />
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        <button type="submit" disabled={busy} className="rounded-lg bg-brand px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60">
+        <button type="submit" disabled={busy} className="mt-1 h-12 rounded-full bg-accent px-4 text-base font-extrabold text-navy-deep transition-colors hover:bg-accent-dark disabled:opacity-60">
           {busy ? "Resetting…" : "Reset password"}
         </button>
       </form>

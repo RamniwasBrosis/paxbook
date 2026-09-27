@@ -59,7 +59,7 @@ function Chips({ options, onPick }: { options: string[]; onPick: (v: string) => 
   );
 }
 
-export function AiPlannerMock({ destinations }: { destinations: DestinationDto[] }) {
+export function AiPlannerMock({ destinations, showHeading = true }: { destinations: DestinationDto[]; showHeading?: boolean }) {
   const [step, setStep] = useState<Step>("vibe");
   const [answers, setAnswers] = useState<Answers>({
     vibe: "",
@@ -142,11 +142,13 @@ export function AiPlannerMock({ destinations }: { destinations: DestinationDto[]
 
   return (
     <section id="ai-planner" className="shell py-16 lg:py-20">
-      <SectionHeading
-        eyebrow="AI Trip Planner"
-        title="Tell us your dream trip. We'll build the plan."
-        subtitle="Answer five quick questions and see a real day-by-day draft, built from our actual destination content. Your travel expert refines it from there."
-      />
+      {showHeading ? (
+        <SectionHeading
+          eyebrow="AI Trip Planner"
+          title="Tell us your dream trip. We'll build the plan."
+          subtitle="Answer five quick questions and see a real day-by-day draft, built from our actual destination content. Your travel expert refines it from there."
+        />
+      ) : null}
 
       <div className="mx-auto max-w-lg overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-premium">
         <div className="flex items-center justify-between gap-3 border-b border-slate-100 bg-mist px-4 py-3">

@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Loader2, MapPin, MessageCircle, PartyPopper } from "lucide-react";
 import type { PublicPackageDetailDto } from "@paxbook/types";
+import { WizardHero } from "@/components/WizardHero";
 import { CustomizeSteps } from "@/components/CustomizeSteps";
 import { Button } from "@/components/Button";
 import { CITIES, TRAVELLER_TYPES } from "@/lib/trip-wizard-constants";
@@ -99,16 +100,7 @@ export function ViewPriceWizard({ pkg }: { pkg: PublicPackageDetailDto }) {
     <div>
       {headerStep ? <CustomizeSteps steps={VIEW_PRICE_STEPS} current={headerStep} /> : null}
 
-      <div className="relative flex min-h-[14rem] items-end bg-navy-deep">
-        {pkg.galleryImages[0]?.imageUrl ? (
-          <img src={pkg.galleryImages[0].imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" />
-        ) : null}
-        <div className="hero-scrim absolute inset-0" />
-        <div className="shell relative pb-8 pt-16">
-          <p className="eyebrow on-dark-muted">Get a price for</p>
-          <h1 className="display-xl on-dark mt-1 text-3xl sm:text-4xl">{pkg.title}</h1>
-        </div>
-      </div>
+      <WizardHero eyebrow="Get a price for" title={pkg.title} imageUrl={pkg.galleryImages[0]?.imageUrl ?? pkg.coverImageUrl} />
 
       <div className="shell py-10">
         <div className="mx-auto max-w-xl">

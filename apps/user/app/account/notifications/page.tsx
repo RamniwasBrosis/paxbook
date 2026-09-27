@@ -10,8 +10,8 @@ export default async function NotificationsPage() {
 
   return (
     <div>
-      <p className="eyebrow">Updates</p>
-      <h1 className="mt-1 font-display text-2xl font-bold text-navy-deep sm:text-3xl">Notifications</h1>
+      <p className="script-eyebrow text-[1.7rem]">Updates</p>
+      <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep sm:text-4xl">Notifications</h1>
       <p className="mt-1 text-sm text-slate-500">Updates on your bookings, payments, and requests.</p>
 
       {notifications.length === 0 ? (

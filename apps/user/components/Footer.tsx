@@ -21,84 +21,114 @@ function InstagramIcon() {
   );
 }
 
+const COLUMNS = [
+  {
+    title: "Holidays",
+    links: [
+      { href: "/packages", label: "All packages" },
+      { href: "/destinations", label: "Destinations" },
+      { href: "/packages?category=Honeymoon", label: "Honeymoon" },
+      { href: "/packages?category=Family", label: "Family trips" },
+      { href: "/packages?category=Adventure", label: "Adventure" },
+    ],
+  },
+  {
+    title: "Services",
+    links: [
+      { href: "/flights", label: "Flights" },
+      { href: "/visa-guide", label: "Visa Guide" },
+      { href: "/ai-planner", label: "AI Planner" },
+      { href: "/blog", label: "Travel Guides" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { href: "/contact", label: "Contact us" },
+      { href: "/account", label: "My account" },
+      { href: "/account/bookings", label: "My bookings" },
+    ],
+  },
+];
+
 export async function Footer() {
   const branding = await getBranding();
   return (
-    <footer className="border-t border-white/10 bg-brand">
-      <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+    <footer className="bg-cream">
+      <div className="mx-auto grid max-w-[90rem] gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-10">
         <div>
-          <div className="inline-flex rounded-xl bg-white px-3 py-2">
+          <Link href="/" className="inline-flex rounded-2xl bg-white px-3.5 py-2.5 shadow-soft">
             {branding.logoUrl ? (
-              <img src={branding.logoUrl} alt={branding.siteName} className="h-9 w-auto" />
+              <img src={branding.logoUrl} alt={branding.siteName} className="h-12 w-auto" />
             ) : (
-              <span className="text-lg font-extrabold tracking-tight text-brand">
-                Pax<span className="text-accent">Book</span>
-              </span>
+              <span className="font-display text-xl font-extrabold tracking-tight text-navy-deep">{branding.siteName}</span>
             )}
-          </div>
-          <p className="mt-4 text-sm font-semibold uppercase tracking-[0.18em] text-accent">Travel | Explore | Experience</p>
-          <p className="mt-3 max-w-xs text-sm text-white/70">
+          </Link>
+          <p className="mt-5 max-w-sm text-[0.95rem] leading-relaxed text-ink-muted">
             Handpicked stays, honest fares, and a dedicated expert with you from booking to boarding pass.
           </p>
+          <div className="mt-5 space-y-2.5">
+            <a href="tel:+917300047077" className="flex items-center gap-2.5 font-display text-xl font-extrabold text-navy-deep hover:text-brand-blue">
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-accent/25">
+                <Phone className="h-4 w-4 text-accent-ink" strokeWidth={2.25} />
+              </span>
+              7300047077
+            </a>
+            <a href="mailto:planners@paxbook.in" className="flex items-center gap-2.5 text-sm font-semibold text-ink-muted hover:text-brand-blue">
+              <Mail className="h-4 w-4" strokeWidth={2} />
+              planners@paxbook.in
+            </a>
+          </div>
           <div className="mt-5 flex gap-2">
             <a
               href="#"
               aria-label="Facebook"
-              className="grid h-9 w-9 place-items-center rounded-full border border-white/25 text-accent transition-colors hover:bg-white/10"
+              className="grid h-10 w-10 place-items-center rounded-full bg-white text-navy-deep shadow-soft transition-colors hover:bg-navy-deep hover:text-white"
             >
               <FacebookIcon />
             </a>
             <a
               href="#"
               aria-label="Instagram"
-              className="grid h-9 w-9 place-items-center rounded-full border border-white/25 text-accent transition-colors hover:bg-white/10"
+              className="grid h-10 w-10 place-items-center rounded-full bg-white text-navy-deep shadow-soft transition-colors hover:bg-navy-deep hover:text-white"
             >
               <InstagramIcon />
             </a>
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-white">Explore</h3>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            <li><Link href="/destinations" className="text-white/70 transition-colors hover:text-accent">Destinations</Link></li>
-            <li><Link href="/packages" className="text-white/70 transition-colors hover:text-accent">Holiday Packages</Link></li>
-            <li><Link href="/packages?category=Honeymoon" className="text-white/70 transition-colors hover:text-accent">Honeymoon</Link></li>
-            <li><Link href="/packages?category=Family" className="text-white/70 transition-colors hover:text-accent">Family</Link></li>
-            <li><Link href="/packages?category=Adventure" className="text-white/70 transition-colors hover:text-accent">Adventure</Link></li>
-            <li><Link href="/packages?category=Luxury" className="text-white/70 transition-colors hover:text-accent">Luxury</Link></li>
-          </ul>
-        </div>
+        {COLUMNS.map((col) => (
+          <nav key={col.title} aria-label={col.title}>
+            <h3 className="font-display text-base font-bold text-navy-deep">{col.title}</h3>
+            <ul className="mt-4 space-y-3 text-[0.95rem]">
+              {col.links.map((link) => (
+                <li key={link.href}>
+                  <Link href={link.href} className="text-ink-muted transition-colors hover:text-brand-blue">
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+      </div>
 
-        <div>
-          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-white">Travel Resources</h3>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            <li><Link href="/visa-guide" className="text-white/70 transition-colors hover:text-accent">Visa Guide</Link></li>
-            <li><Link href="/blog" className="text-white/70 transition-colors hover:text-accent">Travel Guides</Link></li>
-          </ul>
-        </div>
-
-        <div>
-          <h3 className="text-sm font-bold uppercase tracking-[0.16em] text-white">Company</h3>
-          <ul className="mt-4 space-y-2.5 text-sm">
-            <li><Link href="/account" className="text-white/70 transition-colors hover:text-accent">My Account</Link></li>
-          </ul>
-          <div className="mt-5 space-y-2 text-sm">
-            <a href="tel:+917300047077" className="flex items-center gap-2 font-semibold text-white">
-              <Phone className="h-4 w-4" strokeWidth={2} />
-              +91 73000 47077
-            </a>
-            <a href="mailto:planners@paxbook.in" className="flex items-center gap-2 text-white/70">
-              <Mail className="h-4 w-4" strokeWidth={2} />
-              planners@paxbook.in
-            </a>
+      <div className="mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-10">
+        <div className="flex flex-col gap-4 rounded-3xl bg-white p-6 shadow-soft sm:flex-row sm:items-center sm:justify-between sm:p-8">
+          <div>
+            <p className="script-eyebrow text-2xl">Travel dates, not spam</p>
+            <p className="mt-1 font-display text-lg font-bold text-navy-deep">Get new journeys and offers in your inbox.</p>
           </div>
-          <NewsletterForm />
+          <div className="w-full sm:max-w-md [&>form]:mt-0">
+            <NewsletterForm tone="light" />
+          </div>
         </div>
       </div>
-      <div className="border-t border-white/15">
-        <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+
+      <div className="mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-10">
+        <div className="mt-10 flex flex-col gap-2 border-t border-[#e3dcc6] py-6 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Paxbook. All journeys reserved.</p>
+          <p>Travel · Explore · Experience</p>
         </div>
       </div>
     </footer>

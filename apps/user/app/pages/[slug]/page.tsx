@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { PageDto } from "@paxbook/types";
 import { publicFetchOrNull } from "@/lib/api";
+import { PageHero } from "@/components/PageHero";
 
 async function getPage(slug: string) {
   return publicFetchOrNull<PageDto>(`/public/pages/${slug}`);
@@ -22,9 +23,11 @@ export default async function StaticPage({ params }: { params: { slug: string } 
   if (!page) notFound();
 
   return (
-    <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="text-3xl font-bold text-slate-900">{page.title}</h1>
-      <div className="mt-8 whitespace-pre-wrap leading-relaxed text-slate-700">{page.body}</div>
-    </article>
+    <div>
+      <PageHero breadcrumbs={[{ label: page.title }]} title={page.title} />
+      <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="whitespace-pre-wrap text-lg leading-relaxed text-ink-muted">{page.body}</div>
+      </article>
+    </div>
   );
 }

@@ -89,7 +89,7 @@ export function FlightFareSelector() {
       <Link href={`/flights/results?${passThroughQuery}`} className="inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
         ← Back to results
       </Link>
-      <div className="flat-card sticky top-4 z-10 p-5">
+      <div className="flat-card sticky top-24 z-10 p-5 lg:top-28">
         <p className="mb-3 text-xs font-semibold uppercase text-slate-400">Flight details</p>
         <div className="flex flex-col gap-3">
           {legs.map((leg, idx) => (

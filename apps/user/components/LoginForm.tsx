@@ -124,10 +124,10 @@ export function LoginForm({
   }
 
   return (
-    <div className={embedded ? "" : "mx-auto max-w-md px-4 py-16 sm:px-6"}>
+    <div className={embedded ? "" : "w-full"}>
       {embedded ? null : (
         <>
-          <h1 className="text-2xl font-bold text-slate-900">Welcome back</h1>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight text-navy-deep">Welcome back</h1>
           <p className="mt-1 text-sm text-slate-500">Log in to unlock prices, book trips, and track your bookings.</p>
         </>
       )}
