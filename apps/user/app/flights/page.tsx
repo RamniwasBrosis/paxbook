@@ -33,7 +33,7 @@ export default async function FlightsLandingPage() {
 
   return (
     <div>
-      <section className="relative overflow-hidden bg-cream pb-10 pt-10 sm:pb-14 sm:pt-12">
+      <section className="relative overflow-x-clip bg-cream pb-10 pt-10 sm:pb-14 sm:pt-12">
         <svg viewBox="0 0 600 200" className="pointer-events-none absolute right-0 top-6 hidden h-44 w-auto opacity-60 lg:block" aria-hidden="true">
           <path d="M 10 180 C 120 60, 300 40, 440 90 S 580 60, 595 12" fill="none" stroke="#1b3f8f" strokeWidth="2" strokeDasharray="7 8" />
           <circle cx="10" cy="180" r="6" fill="#f5b73d" />

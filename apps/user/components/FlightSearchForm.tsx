@@ -23,6 +23,16 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
   const [cabin, setCabin] = React.useState(initialContext?.cabin ?? "E");
   const [fareType, setFareType] = React.useState(initialContext?.fareType ?? "A");
   const [paxOpen, setPaxOpen] = React.useState(false);
+
+  // Default the departure date to tomorrow (set after mount so server and browser never disagree on
+  // "today"); an empty date used to make Search silently do nothing on phones.
+  React.useEffect(() => {
+    if (onDate) return;
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    setOnDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
@@ -72,7 +82,7 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
   }
 
   return (
-    <form onSubmit={handleSubmit} className={`flat-card ${compact ? "p-4" : "p-5 sm:p-6"}`}>
+    <form noValidate onSubmit={handleSubmit} className={`flat-card ${compact ? "p-4" : "p-5 sm:p-6"}`}>
       <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-navy-deep">
         <div className="flex items-center gap-2">
           <label className="flex cursor-pointer items-center rounded-full border-2 border-slate-200 px-4 py-2 text-navy-deep transition-colors focus-within:ring-2 focus-within:ring-brand-blue/40 has-[:checked]:border-navy-deep has-[:checked]:bg-navy-deep has-[:checked]:text-white">
@@ -130,6 +140,7 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
           <button
             type="button"
             onClick={() => setPaxOpen((v) => !v)}
+            aria-expanded={paxOpen}
             className="flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-left hover:border-brand-blue"
           >
             <span>
@@ -142,7 +153,7 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
             </span>
           </button>
           {paxOpen ? (
-            <div className="absolute z-20 mt-2 w-72 rounded-2xl border border-slate-100 bg-white p-4 shadow-xl">
+            <div className="mt-2 w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-soft sm:absolute sm:z-30 sm:w-80 sm:shadow-xl">
               <PaxCounter label="Adults" sub="12+ yrs" value={adt} min={1} max={9} onChange={setAdt} />
               <PaxCounter label="Children" sub="2-11 yrs" value={chd} min={0} max={9} onChange={setChd} />
               <PaxCounter label="Infants" sub="Under 2 yrs" value={inf} min={0} max={4} onChange={setInf} />
