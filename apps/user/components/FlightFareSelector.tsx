@@ -87,7 +87,9 @@ export function FlightFareSelector() {
 
   const firstLeg = legs[0]!;
   const lastLeg = legs[legs.length - 1]!;
-  const totalMinutes = legs.reduce((sum, l) => sum + l.durationMinutes, 0);
+  // Door-to-door time including layovers; summing leg durations would hide the wait between flights.
+  const elapsed = Math.round((new Date(lastLeg.arrDateTime).getTime() - new Date(firstLeg.depDateTime).getTime()) / 60000);
+  const totalMinutes = Number.isFinite(elapsed) && elapsed > 0 ? elapsed : legs.reduce((sum, l) => sum + l.durationMinutes, 0);
 
   return (
     <div className="flex flex-col gap-7">
