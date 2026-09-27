@@ -444,7 +444,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         {step === "passengers" ? (
           <Link
             href={`/flights/fare?flightId=${flightId}&refId=${encodeURIComponent(refId)}&${new URLSearchParams(Array.from(params.entries()).filter(([k]) => k !== "flightId")).toString()}`}
-            className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand"
+            className="mb-3 inline-flex items-center gap-1 text-sm font-bold text-brand-blue hover:text-navy-deep"
           >
             ← Change fare
           </Link>
@@ -479,49 +479,50 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             ))}
 
             <div className="flat-card p-5">
-              <p className="mb-3 text-sm font-bold text-navy-deep">Contact details</p>
+              <p className="mb-1 font-display text-lg font-bold text-navy-deep">Contact details</p>
+              <p className="mb-4 text-sm text-ink-muted">Your e-ticket and updates are sent here.</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <input
                   required
                   type="tel"
-                  placeholder="Mobile number"
+                  placeholder="Mobile number" aria-label="Mobile number"
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
                 />
                 <input
                   required
                   type="email"
-                  placeholder="Email address"
+                  placeholder="Email address" aria-label="Email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
                 />
                 <input
                   required={Boolean(validation?.panMandatory)}
-                  placeholder={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
+                  placeholder={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"} aria-label={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
                   value={panNo}
                   onChange={(e) => setPanNo(e.target.value.toUpperCase())}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-2"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-2"
                 />
               </div>
               {ssr?.webCheckinEnabled ? (
-                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                <label className="mt-3 flex items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-navy-deep has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
                   <input type="checkbox" checked={wantsWebCheckin} onChange={(e) => setWantsWebCheckin(e.target.checked)} />
                   Add web check-in for all passengers (+₹{ssr.webCheckinAmount.toLocaleString("en-IN")})
                 </label>
               ) : null}
-              <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+              <label className="mt-3 flex items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-navy-deep has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
                 <input type="checkbox" checked={wantsGst} onChange={(e) => setWantsGst(e.target.checked)} />
                 Add GST details for a business invoice
               </label>
               {wantsGst ? (
                 <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <input placeholder="GSTIN" value={gst.number} onChange={(e) => setGst((g) => ({ ...g, number: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-                  <input placeholder="Company name" value={gst.company} onChange={(e) => setGst((g) => ({ ...g, company: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-                  <input placeholder="Company email" value={gst.email} onChange={(e) => setGst((g) => ({ ...g, email: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-                  <input placeholder="Company mobile" value={gst.mobile} onChange={(e) => setGst((g) => ({ ...g, mobile: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-                  <input placeholder="Company address" value={gst.address} onChange={(e) => setGst((g) => ({ ...g, address: e.target.value }))} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-2" />
+                  <input placeholder="GSTIN" aria-label="GSTIN" value={gst.number} onChange={(e) => setGst((g) => ({ ...g, number: e.target.value }))} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+                  <input placeholder="Company name" aria-label="Company name" value={gst.company} onChange={(e) => setGst((g) => ({ ...g, company: e.target.value }))} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+                  <input placeholder="Company email" aria-label="Company email" value={gst.email} onChange={(e) => setGst((g) => ({ ...g, email: e.target.value }))} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+                  <input placeholder="Company mobile" aria-label="Company mobile" value={gst.mobile} onChange={(e) => setGst((g) => ({ ...g, mobile: e.target.value }))} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+                  <input placeholder="Company address" aria-label="Company address" value={gst.address} onChange={(e) => setGst((g) => ({ ...g, address: e.target.value }))} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-2" />
                 </div>
               ) : null}
             </div>
@@ -531,7 +532,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             <button
               type="submit"
               disabled={loadingSeats}
-              className="flex items-center gap-2 self-start rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
+              className="flex h-12 items-center gap-2 self-start rounded-full bg-accent px-9 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
             >
               {loadingSeats ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Continue
@@ -540,8 +541,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         ) : step === "seats" ? (
           <div className="flex flex-col gap-4">
             <div className="flat-card p-5">
-              <p className="mb-1 text-sm font-bold text-navy-deep">Choose your seats</p>
-              <p className="mb-4 text-xs text-slate-500">Optional for most passengers — tap a passenger, then tap a seat to assign it.</p>
+              <p className="mb-1 font-display text-lg font-bold text-navy-deep">Choose your seats</p>
+              <p className="mb-4 text-sm text-ink-muted">Optional for most passengers — tap a passenger, then tap a seat to assign it.</p>
               {hasReturn && seatMap ? (
                 <div className="mb-4 flex gap-2">
                   {(["onward", "return"] as const).map((dir) => (
@@ -575,7 +576,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <button
                 type="button"
                 onClick={() => setStep("review")}
-                className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+                className="inline-flex h-12 items-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
               >
                 Continue to review
               </button>
@@ -584,14 +585,14 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flat-card p-5">
-              <p className="mb-3 text-sm font-bold text-navy-deep">Passengers</p>
-              <ul className="flex flex-col gap-1.5 text-sm text-slate-600">
+              <p className="mb-3 font-display text-lg font-bold text-navy-deep">Review passengers</p>
+              <ul className="flex flex-col divide-y divide-slate-100 text-[0.95rem] text-navy-deep">
                 {passengers.map((p, idx) => {
                   const onwardSeat = ssrChoices[idx]?.onward?.seatId;
                   const returnSeat = ssrChoices[idx]?.return?.seatId;
                   return (
-                    <li key={idx}>
-                      {p.title} {p.fName} {p.lName} <span className="text-xs text-slate-400">({p.pType === "A" ? "Adult" : p.pType === "C" ? "Child" : "Infant"})</span>
+                    <li key={idx} className="py-2.5 first:pt-0">
+                      <span className="font-semibold">{p.title} {p.fName} {p.lName}</span> <span className="text-xs text-slate-400">({p.pType === "A" ? "Adult" : p.pType === "C" ? "Child" : "Infant"})</span>
                       {onwardSeat || returnSeat ? (
                         <span className="ml-1 text-xs text-slate-400">
                           · Seat{hasReturn ? "s" : ""}: {[onwardSeat, returnSeat].filter(Boolean).join(" / ")}
@@ -604,6 +605,13 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <p className="mt-3 text-sm text-slate-600">
                 Contact: {mobile} · {email}
               </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4" strokeWidth={2} /> Secure payment via Razorpay
+              </span>
+              <span>E-ticket on email right after confirmation</span>
             </div>
 
             {payError ? <p className="text-sm text-red-600">{payError}</p> : null}
@@ -621,7 +629,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                 type="button"
                 onClick={handleConfirmAndPay}
                 disabled={busy}
-                className="flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
+                className="flex h-12 items-center gap-2 rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Confirm &amp; pay ₹{displayTotal.toLocaleString("en-IN")}
@@ -631,10 +639,14 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         )}
       </div>
 
-      <aside className="flat-card h-fit p-5 lg:sticky lg:top-24">
-        <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400">
-          <Plane className="h-3.5 w-3.5" /> Trip summary
-        </p>
+      <aside className="flat-card h-fit overflow-hidden lg:sticky lg:top-24">
+        <div className="bg-navy-deep px-5 py-4 text-white">
+          <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>
+          <p className="mt-1 flex items-center gap-2 font-display text-2xl font-extrabold">
+            {option.legs[0]?.depCode} <Plane className="h-5 w-5 text-accent" strokeWidth={2.25} /> {option.legs[option.legs.length - 1]?.arrCode}
+          </p>
+        </div>
+        <div className="p-5">
         {option.legs.map((leg, idx) => (
           <div key={idx} className="mb-2 flex items-start gap-2 text-sm">
             <AirlineLogo code={leg.airlineCode} size={24} className="mt-0.5" />
@@ -685,10 +697,11 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
             </div>
           ) : null}
-          <div className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-bold text-navy-deep">
+          <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 font-bold text-navy-deep">
             <span>Total</span>
-            <span>₹{displayTotal.toLocaleString("en-IN")}</span>
+            <span className="font-display text-2xl font-extrabold">₹{displayTotal.toLocaleString("en-IN")}</span>
           </div>
+        </div>
         </div>
       </aside>
 
@@ -727,53 +740,60 @@ function PassengerFieldset({
 }) {
   const typeLabel = passenger.pType === "A" ? "Adult" : passenger.pType === "C" ? "Child" : "Infant";
   return (
-    <div className="flat-card p-5">
-      <p className="mb-3 text-sm font-bold text-navy-deep">
+    <fieldset className="flat-card overflow-hidden">
+      <legend className="sr-only">
         Passenger {index + 1} · {typeLabel}
-      </p>
+      </legend>
+      <div className="flex items-center gap-3 border-b border-slate-100 bg-mist px-5 py-3.5">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-navy-deep font-display text-sm font-extrabold text-white">{index + 1}</span>
+        <p className="font-display text-base font-bold text-navy-deep">Passenger {index + 1}</p>
+        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-brand-blue">{typeLabel}</span>
+      </div>
+      <div className="p-5">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <select value={passenger.title} onChange={(e) => onChange({ title: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand">
+        <select value={passenger.title} onChange={(e) => onChange({ title: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
           {TITLES.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
           ))}
         </select>
-        <input required placeholder="First name" value={passenger.fName} onChange={(e) => onChange({ fName: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-1" />
-        <input required placeholder="Last name" value={passenger.lName} onChange={(e) => onChange({ lName: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-        <select value={passenger.gender} onChange={(e) => onChange({ gender: e.target.value as "M" | "F" })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand">
+        <input required placeholder="First name" aria-label="First name" value={passenger.fName} onChange={(e) => onChange({ fName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-1" />
+        <input required placeholder="Last name" aria-label="Last name" value={passenger.lName} onChange={(e) => onChange({ lName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+        <select value={passenger.gender} onChange={(e) => onChange({ gender: e.target.value as "M" | "F" })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
           <option value="M">Male</option>
           <option value="F">Female</option>
         </select>
         <label className="col-span-2 sm:col-span-2">
-          <span className="mb-1 block text-xs text-slate-400">Date of birth</span>
-          <input required type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+          <span className="mb-1 block text-xs font-bold text-ink-muted">Date of birth</span>
+          <input required type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
         </label>
       </div>
       {international ? (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <input placeholder="Passport no." value={passenger.ppNo} onChange={(e) => onChange({ ppNo: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-          <input placeholder="Issuing country" value={passenger.ppIss} onChange={(e) => onChange({ ppIss: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+          <input placeholder="Passport no." aria-label="Passport no." value={passenger.ppNo} onChange={(e) => onChange({ ppNo: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+          <input placeholder="Issuing country" aria-label="Issuing country" value={passenger.ppIss} onChange={(e) => onChange({ ppIss: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
           <label>
-            <span className="mb-1 block text-xs text-slate-400">Passport expiry</span>
-            <input type="date" value={passenger.ppExp ? passenger.ppExp : ""} onChange={(e) => onChange({ ppExp: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+            <span className="mb-1 block text-xs font-bold text-ink-muted">Passport expiry</span>
+            <input type="date" value={passenger.ppExp ? passenger.ppExp : ""} onChange={(e) => onChange({ ppExp: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
           </label>
-          <input placeholder="Nationality" value={passenger.ppNat} onChange={(e) => onChange({ ppNat: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+          <input placeholder="Nationality" aria-label="Nationality" value={passenger.ppNat} onChange={(e) => onChange({ ppNat: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
         </div>
       ) : null}
       {docMandatory ? (
         <div className="mt-3">
           <input
             required
-            placeholder="ID proof number (required for this fare)"
+            placeholder="ID proof number (required for this fare)" aria-label="ID proof number (required for this fare)"
             value={passenger.documentId}
             onChange={(e) => onChange({ documentId: e.target.value })}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:max-w-xs"
+            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:max-w-xs"
           />
         </div>
       ) : null}
       {ssr && passenger.pType !== "I" ? <SsrPicker ssr={ssr} pType={passenger.pType} choice={ssrChoice} onChange={onSsrChange} /> : null}
-    </div>
+      </div>
+    </fieldset>
   );
 }
 
@@ -821,18 +841,18 @@ export function SsrPicker({
     const legChoice = choice?.[direction];
 
     return (
-      <div className="mt-3 border-t border-slate-100 pt-3">
-        <p className="mb-2 text-xs font-semibold uppercase text-slate-400">{label} extras</p>
+      <div className="mt-5 border-t border-slate-100 pt-4">
+        <p className="mb-3 font-display text-sm font-bold text-navy-deep">{label} extras</p>
         {baggageOptions.length > 0 ? (
           <div className="mb-2">
-            <p className="mb-1 text-xs font-semibold text-slate-500">Extra baggage</p>
-            <div className="flex flex-col gap-1">
-              <label className="flex items-center gap-2 text-sm text-slate-600">
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-violet-700">Extra baggage</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
                 <input type="radio" checked={!legChoice?.baggageId} onChange={() => setBaggage(direction, undefined)} className="accent-brand" />
                 None
               </label>
               {baggageOptions.map((b) => (
-                <label key={b.id} className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                <label key={b.id} className="flex items-center justify-between gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
                   <span className="flex items-center gap-2">
                     <input type="radio" checked={legChoice?.baggageId === b.id} onChange={() => setBaggage(direction, b.id)} className="accent-brand" />
                     {b.description}
@@ -847,14 +867,14 @@ export function SsrPicker({
           const chosenMealId = legChoice?.mealIds?.find((id) => meals.some((m) => m.id === id));
           return (
             <div key={legRef} className="mb-2 last:mb-0">
-              <p className="mb-1 text-xs font-semibold text-slate-500">Meal{mealsByLegRef.size > 1 ? ` (segment ${legRef})` : ""}</p>
-              <div className="flex flex-col gap-1">
-                <label className="flex items-center gap-2 text-sm text-slate-600">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-orange-700">Meal{mealsByLegRef.size > 1 ? ` (segment ${legRef})` : ""}</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
                   <input type="radio" checked={!chosenMealId} onChange={() => setMeal(direction, meals, undefined)} className="accent-brand" />
                   None
                 </label>
                 {meals.map((m) => (
-                  <label key={m.id} className="flex items-center justify-between gap-2 text-sm text-slate-600">
+                  <label key={m.id} className="flex items-center justify-between gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
                     <span className="flex items-center gap-2">
                       <input type="radio" checked={chosenMealId === m.id} onChange={() => setMeal(direction, meals, m.id)} className="accent-brand" />
                       {m.description}

@@ -95,7 +95,8 @@ export function RoundTripResultsList() {
   }
 
   const depCityLabel = onward.result?.options[0]?.legs[0]?.depCityName || findAirport(searchContext.depCity)?.city || searchContext.depCity;
-  const arrCityLabel = onward.result?.options[0]?.legs[0]?.arrCityName || findAirport(searchContext.arrCity)?.city || searchContext.arrCity;
+  // Last leg, not the first: on a connecting flight the first leg lands at the layover city.
+  const arrCityLabel = onward.result?.options[0]?.legs[(onward.result?.options[0]?.legs.length ?? 1) - 1]?.arrCityName || findAirport(searchContext.arrCity)?.city || searchContext.arrCity;
 
   const combinedTotal = (selectedOnward?.fare.total ?? 0) + (selectedReturn?.fare.total ?? 0);
 
@@ -111,16 +112,25 @@ export function RoundTripResultsList() {
 
   return (
     <div className="pb-28">
-      <Link href="/flights" className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
-        ← Modify search
-      </Link>
-      <div className="flat-card mb-4 p-4">
-        <p className="font-bold text-navy-deep">
-          Flights from {depCityLabel} <ArrowRight className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {arrCityLabel}, and back
-        </p>
-        <p className="text-xs text-slate-400">
-          {searchContext.depCity} → {searchContext.arrCity} · {searchContext.adt} adult(s) · Round trip
-        </p>
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-[1.75rem] bg-cream px-5 py-5 sm:px-8">
+        <div>
+          <p className="script-eyebrow text-2xl">Round trip</p>
+          <p className="mt-1 flex flex-wrap items-center gap-3 font-display text-3xl font-extrabold text-navy-deep sm:text-4xl">
+            {searchContext.depCity}
+            <ArrowRight className="h-6 w-6 text-brand-blue" strokeWidth={2.5} />
+            {searchContext.arrCity}
+            <ArrowRight className="h-6 w-6 rotate-180 text-violet-600" strokeWidth={2.5} />
+          </p>
+          <p className="mt-1 text-sm font-semibold text-ink-muted">
+            {depCityLabel} and back from {arrCityLabel} · {searchContext.adt} adult(s)
+          </p>
+        </div>
+        <Link
+          href="/flights"
+          className="inline-flex h-10 items-center rounded-full border-2 border-navy-deep px-4 text-sm font-bold text-navy-deep transition-colors hover:bg-navy-deep hover:text-white"
+        >
+          Modify search
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -141,19 +151,19 @@ export function RoundTripResultsList() {
       </div>
 
       {selectedOnward || selectedReturn ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-navy-deep p-4 text-white shadow-[0_-8px_24px_rgba(18,42,99,0.25)]">
           <div className="shell flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-6 text-sm">
               <SelectionSummary label="Departure" option={selectedOnward} />
               <SelectionSummary label="Return" option={selectedReturn} />
             </div>
             <div className="flex items-center gap-4">
-              {combinedTotal > 0 ? <p className="text-xl font-extrabold text-navy-deep">₹{combinedTotal.toLocaleString("en-IN")}</p> : null}
+              {combinedTotal > 0 ? <p className="font-display text-2xl font-extrabold text-accent">₹{combinedTotal.toLocaleString("en-IN")}</p> : null}
               <button
                 type="button"
                 disabled={!selectedOnward || !selectedReturn}
                 onClick={handleContinue}
-                className="rounded-full bg-accent px-6 py-2.5 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-12 items-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Continue
               </button>
@@ -231,14 +241,15 @@ function LegOptionCard({ option, selected, onSelect, cheapest }: { option: Fligh
     <button
       type="button"
       onClick={onSelect}
-      className={`flat-card relative flex items-center justify-between gap-3 p-4 text-left transition-colors ${selected ? "border-2 border-brand bg-brand/5" : "hover:border-brand/40"}`}
+      aria-pressed={selected}
+      className={`flat-card relative flex items-center justify-between gap-3 p-4 text-left transition-colors ${selected ? "border-2 border-brand-blue bg-brand-blue-soft/40" : "hover:border-brand-blue/40"}`}
     >
       {cheapest ? (
-        <span className="absolute -top-2 left-3 rounded-full bg-accent px-2 py-0.5 text-[9px] font-bold uppercase tracking-wide text-navy-deep shadow-sm">Cheapest</span>
+        <span className="absolute -top-2.5 left-4 rounded-full bg-green-600 px-2.5 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-white shadow-sm">Cheapest</span>
       ) : null}
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-mist text-brand">
-          {selected ? <CheckCircle2 className="h-5 w-5 text-brand" strokeWidth={2} /> : <Plane className="h-4 w-4" strokeWidth={1.75} />}
+        <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${selected ? "bg-brand-blue text-white" : "bg-mist text-brand-blue"}`}>
+          {selected ? <CheckCircle2 className="h-5 w-5" strokeWidth={2.25} /> : <Plane className="h-4 w-4" strokeWidth={1.75} />}
         </div>
         <div>
           <p className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
@@ -246,14 +257,14 @@ function LegOptionCard({ option, selected, onSelect, cheapest }: { option: Fligh
             {firstLeg.airlineName} {firstLeg.airlineCode}-{firstLeg.flightNo}
           </p>
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-bold text-navy-deep">{formatTime(firstLeg.depDateTime)}</span>
-            <span className="text-slate-300">—— {formatMinutes(option.durationTotalMinutes)} ——</span>
-            <span className="font-bold text-navy-deep">{formatTime(lastLeg.arrDateTime)}</span>
+            <span className="font-display text-lg font-extrabold text-navy-deep">{formatTime(firstLeg.depDateTime)}</span>
+            <span className="text-xs font-semibold text-ink-muted">— {formatMinutes(option.durationTotalMinutes)} —</span>
+            <span className="font-display text-lg font-extrabold text-navy-deep">{formatTime(lastLeg.arrDateTime)}</span>
           </div>
-          <p className="text-xs text-slate-400">{option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`}</p>
+          <p className={`text-xs font-bold ${option.stops === 0 ? "text-green-700" : "text-orange-600"}`}>{option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`}</p>
         </div>
       </div>
-      <p className="text-lg font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+      <p className="font-display text-xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
     </button>
   );
 }

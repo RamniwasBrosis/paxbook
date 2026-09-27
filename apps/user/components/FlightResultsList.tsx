@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle, X, ChevronDown, ChevronUp, PlaneTakeoff, PlaneLanding } from "lucide-react";
+import { Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle, X, ChevronDown, ChevronUp, Plane, PlaneTakeoff, PlaneLanding, SlidersHorizontal } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
 import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
 import { findAirport } from "@/lib/airports";
@@ -11,6 +11,7 @@ import { FlightDateStrip } from "@/components/FlightDateStrip";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
 import { FlightSearchSummaryBar } from "@/components/FlightSearchSummaryBar";
+import { FlightStepper, FLIGHT_JOURNEY_STEPS } from "@/components/FlightStepper";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -68,6 +69,8 @@ export function FlightResultsList() {
   const [polling, setPolling] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [sortKey, setSortKey] = React.useState<SortKey>("price");
+  // Mobile only: filters sit behind a toggle so the flights are the first thing under the date strip.
+  const [filtersOpen, setFiltersOpen] = React.useState(false);
   const [stopsFilter, setStopsFilter] = React.useState<Set<number>>(new Set());
   const [airlineFilters, setAirlineFilters] = React.useState<Set<string>>(new Set());
   const [depTimeFilters, setDepTimeFilters] = React.useState<Set<TimeBucket>>(new Set());
@@ -277,14 +280,26 @@ export function FlightResultsList() {
 
   return (
     <div>
+      {searchContext.tripType === 0 ? <FlightStepper steps={FLIGHT_JOURNEY_STEPS} activeIndex={1} /> : null}
+      <FlightSearchSummaryBar context={searchContext} />
       <FlightDateStrip searchContext={searchContext} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[240px_1fr]">
-      <aside className="flex flex-col gap-4 lg:sticky lg:top-24 lg:self-start">
+      <button
+        type="button"
+        onClick={() => setFiltersOpen((v) => !v)}
+        aria-expanded={filtersOpen}
+        aria-controls="flight-filters"
+        className="flex h-12 items-center justify-center gap-2 rounded-full border-2 border-navy-deep text-sm font-bold text-navy-deep lg:hidden"
+      >
+        <SlidersHorizontal className="h-4 w-4" strokeWidth={2.25} />
+        {filtersOpen ? "Hide filters" : `Filters${appliedFilters.length ? ` (${appliedFilters.length})` : ""}`}
+      </button>
+      <aside id="flight-filters" className={`${filtersOpen ? "flex" : "hidden"} flex-col gap-4 lg:sticky lg:top-24 lg:flex lg:self-start`}>
         {appliedFilters.length > 0 ? (
           <div className="flat-card p-3">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase text-slate-400">Applied filters</span>
+              <span className="font-display text-sm font-bold text-navy-deep">Applied filters</span>
               <button type="button" onClick={clearAllFilters} className="text-xs font-semibold text-brand hover:underline">
                 Clear all
               </button>
@@ -306,7 +321,7 @@ export function FlightResultsList() {
         ) : null}
 
         <div className="flat-card p-4">
-          <p className="text-xs font-semibold uppercase text-slate-400">Stops</p>
+          <p className="font-display text-sm font-bold text-navy-deep">Stops</p>
           <div className="mt-2 flex flex-col text-sm">
             {[0, 1, 2].map((s) => (
               <label key={s} className="filter-check justify-between">
@@ -331,7 +346,7 @@ export function FlightResultsList() {
 
         {priceBounds.max > priceBounds.min ? (
           <div className="flat-card p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">Price range</p>
+            <p className="font-display text-sm font-bold text-navy-deep">Price range</p>
             <p className="mt-1 text-sm font-semibold text-navy-deep">
               ₹{(minPrice ?? priceBounds.min).toLocaleString("en-IN")} – ₹{(maxPrice ?? priceBounds.max).toLocaleString("en-IN")}
             </p>
@@ -362,7 +377,7 @@ export function FlightResultsList() {
 
         {durationBounds.max > durationBounds.min ? (
           <div className="flat-card p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">Duration</p>
+            <p className="font-display text-sm font-bold text-navy-deep">Duration</p>
             <div className="mt-2 flex flex-col text-sm">
               {DURATION_BUCKETS.map((b) => (
                 <label key={b.key} className="filter-check">
@@ -375,7 +390,7 @@ export function FlightResultsList() {
         ) : null}
 
         <div className="flat-card p-4">
-          <p className="text-xs font-semibold uppercase text-slate-400">Departure time</p>
+          <p className="font-display text-sm font-bold text-navy-deep">Departure time</p>
           <div className="mt-2 flex flex-col text-sm">
             {TIME_BUCKETS.map((b) => (
               <label key={b.key} className="filter-check" title={b.range}>
@@ -387,7 +402,7 @@ export function FlightResultsList() {
         </div>
 
         <div className="flat-card p-4">
-          <p className="text-xs font-semibold uppercase text-slate-400">Arrival time</p>
+          <p className="font-display text-sm font-bold text-navy-deep">Arrival time</p>
           <div className="mt-2 flex flex-col text-sm">
             {TIME_BUCKETS.map((b) => (
               <label key={b.key} className="filter-check" title={b.range}>
@@ -400,7 +415,7 @@ export function FlightResultsList() {
 
         {airlineCounts.size > 0 ? (
           <div className="flat-card p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">Airline</p>
+            <p className="font-display text-sm font-bold text-navy-deep">Airline</p>
             <div className="mt-2 flex flex-col text-sm">
               {Array.from(airlineCounts.entries())
                 .sort((a, b) => a[0].localeCompare(b[0]))
@@ -420,7 +435,7 @@ export function FlightResultsList() {
 
         {layoverCities.length > 0 ? (
           <div className="flat-card p-4">
-            <p className="text-xs font-semibold uppercase text-slate-400">Layover city</p>
+            <p className="font-display text-sm font-bold text-navy-deep">Layover city</p>
             <div className="mt-2 flex flex-col text-sm">
               {layoverCities.map((city) => (
                 <label key={city} className="filter-check">
@@ -434,13 +449,12 @@ export function FlightResultsList() {
       </aside>
 
       <div>
-        <FlightSearchSummaryBar context={searchContext} />
         <div className="flat-card mb-4 flex flex-wrap items-center justify-between gap-3 p-4">
           <div>
-            <p className="font-bold text-navy-deep">
-              Flights from {depCityLabel} <ArrowRight className="inline h-3.5 w-3.5" strokeWidth={2.5} /> {arrCityLabel}
+            <p className="font-display text-lg font-bold text-navy-deep">
+              Flights from {depCityLabel} <ArrowRight className="inline h-4 w-4" strokeWidth={2.5} /> {arrCityLabel}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-sm text-ink-muted">
               {searchContext.depCity} → {searchContext.arrCity} ·{" "}
               {result ? `${visibleOptions.length} of ${result.options.length} flight(s)` : "Searching…"}
               {polling ? " · still searching more airlines…" : ""}
@@ -530,6 +544,10 @@ function ResultCardSkeleton() {
 }
 
 const BADGE_LABEL: Record<"cheapest" | "fastest", string> = { cheapest: "Cheapest", fastest: "Fastest" };
+const BADGE_STYLE: Record<"cheapest" | "fastest", { bg: string; border: string }> = {
+  cheapest: { bg: "bg-green-600", border: "border-green-500/60" },
+  fastest: { bg: "bg-violet-600", border: "border-violet-500/60" },
+};
 
 function FlightOptionCard({
   option,
@@ -549,71 +567,89 @@ function FlightOptionCard({
   const seats = lowestSeatCount(option.fare.seatsAvailable);
 
   return (
-    <div className="flat-card relative p-4">
+    <div className={`flat-card relative p-4 sm:p-5 ${badge ? "border-2 " + BADGE_STYLE[badge].border : ""}`}>
       {badge ? (
-        <span className="absolute -top-2.5 left-4 rounded-full bg-accent px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-navy-deep shadow-sm">
+        <span className={`absolute -top-3 left-5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-white shadow-sm ${BADGE_STYLE[badge].bg}`}>
           {BADGE_LABEL[badge]}
         </span>
       ) : null}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="grid grid-cols-1 items-center gap-4 md:grid-cols-[minmax(0,11rem)_minmax(0,1fr)_auto] md:gap-6">
         <div className="flex items-center gap-3">
-          <AirlineLogo code={firstLeg.airlineCode} size={40} />
-          <div>
-            <p className="text-sm font-semibold text-navy-deep">
-              {firstLeg.airlineName} · {firstLeg.flightNo}
-              {option.validation.isLowCostCarrier ? <span className="ml-1.5 text-xs font-normal text-slate-400">LCC</span> : null}
+          <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl border border-slate-100 bg-white">
+            <AirlineLogo code={firstLeg.airlineCode} size={40} />
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-navy-deep">{firstLeg.airlineName}</p>
+            <p className="text-xs text-ink-muted">
+              {firstLeg.flightNo}
+              {option.validation.isLowCostCarrier ? " · LCC" : ""}
             </p>
-            <div className="mt-1 flex items-center gap-2 text-sm text-slate-600">
-              <span className="font-bold text-navy-deep">{formatTime(firstLeg.depDateTime)}</span>
-              <span>{firstLeg.depCode}</span>
-              <span className="text-slate-300">—— {formatMinutes(option.durationTotalMinutes)} ——</span>
-              <span className="font-bold text-navy-deep">{formatTime(lastLeg.arrDateTime)}</span>
-              <span>{lastLeg.arrCode}</span>
-            </div>
-            <p className="mt-0.5 text-xs text-slate-400">
-              {option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`} · {option.fare.baggageCheckIn || "Baggage per airline policy"} check-in
-              {option.fare.baggageCabin ? `, ${option.fare.baggageCabin} cabin` : ""}
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-              <span className="rounded-full bg-mist px-2 py-0.5 text-[11px] font-semibold text-slate-600">{option.fare.fareTypeLabel}</span>
-              <span className={`flex items-center gap-1 text-[11px] font-semibold ${option.fare.refundable ? "text-emerald-600" : "text-slate-400"}`}>
-                {option.fare.refundable ? <ShieldCheck className="h-3 w-3" /> : <ShieldOff className="h-3 w-3" />}
-                {option.fare.refundable ? "Refundable" : "Non-refundable"}
-              </span>
-              {option.validation.freeMeal ? (
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-slate-500">
-                  <Utensils className="h-3 w-3" /> Free meal
-                </span>
-              ) : null}
-              {seats !== null && seats <= 5 ? (
-                <span className="flex items-center gap-1 text-[11px] font-semibold text-amber-600">
-                  <AlertTriangle className="h-3 w-3" /> Only {seats} seat{seats === 1 ? "" : "s"} left
-                </span>
-              ) : null}
-            </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4 sm:flex-col sm:items-end sm:gap-1">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="text-left">
+            <p className="font-display text-2xl font-extrabold leading-none text-navy-deep">{formatTime(firstLeg.depDateTime)}</p>
+            <p className="mt-1 text-xs font-bold text-ink-muted">{firstLeg.depCode}</p>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            <span className="text-xs font-semibold text-ink-muted">{formatMinutes(option.durationTotalMinutes)}</span>
+            <span className="relative flex w-full items-center" aria-hidden="true">
+              <span className="h-2 w-2 shrink-0 rounded-full border-2 border-navy-deep/40" />
+              <span className="flex-1 border-t-2 border-dashed border-navy-deep/25" />
+              <Plane className="h-4 w-4 shrink-0 text-navy-deep" strokeWidth={2.25} />
+            </span>
+            <span className={`text-xs font-bold ${option.stops === 0 ? "text-green-700" : "text-orange-600"}`}>
+              {option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`}
+            </span>
+          </div>
           <div className="text-right">
-            <p className="text-xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
-            <p className="text-[11px] text-slate-400">
+            <p className="font-display text-2xl font-extrabold leading-none text-navy-deep">{formatTime(lastLeg.arrDateTime)}</p>
+            <p className="mt-1 text-xs font-bold text-ink-muted">{lastLeg.arrCode}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-4 border-t border-dashed border-slate-200 pt-4 md:flex-col md:items-end md:gap-2 md:border-l md:border-t-0 md:pl-6 md:pt-0">
+          <div className="md:text-right">
+            <p className="font-display text-2xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+            <p className="text-[11px] text-ink-muted">
               Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
             </p>
           </div>
           <Link
             href={`/flights/fare?flightId=${option.id}&refId=${encodeURIComponent(refId)}&${query}`}
-            className="rounded-full bg-accent px-5 py-2 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+            className="inline-flex h-11 items-center rounded-full bg-accent px-7 text-sm font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
           >
             Select
           </Link>
         </div>
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700">{option.fare.fareTypeLabel}</span>
+        <span className={`flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${option.fare.refundable ? "bg-green-50 text-green-700" : "bg-slate-100 text-ink-muted"}`}>
+          {option.fare.refundable ? <ShieldCheck className="h-3 w-3" /> : <ShieldOff className="h-3 w-3" />}
+          {option.fare.refundable ? "Refundable" : "Non-refundable"}
+        </span>
+        <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700">
+          {option.fare.baggageCheckIn || "Baggage per airline"} check-in{option.fare.baggageCabin ? ` · ${option.fare.baggageCabin} cabin` : ""}
+        </span>
+        {option.validation.freeMeal ? (
+          <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-700">
+            <Utensils className="h-3 w-3" /> Free meal
+          </span>
+        ) : null}
+        {seats !== null && seats <= 5 ? (
+          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700">
+            <AlertTriangle className="h-3 w-3" /> Only {seats} seat{seats === 1 ? "" : "s"} left
+          </span>
+        ) : null}
+      </div>
+
       <button
         type="button"
         onClick={() => setDetailsOpen((v) => !v)}
-        className="mt-3 flex items-center gap-1 border-t border-slate-100 pt-3 text-xs font-semibold text-slate-500 hover:text-brand"
+        className="mt-3 flex items-center gap-1 border-t border-slate-100 pt-3 text-xs font-bold text-brand-blue hover:text-navy-deep"
       >
         Flight details {detailsOpen ? <ChevronUp className="h-3.5 w-3.5" strokeWidth={2.5} /> : <ChevronDown className="h-3.5 w-3.5" strokeWidth={2.5} />}
       </button>

@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
-import { Loader2, Plane, AlertTriangle } from "lucide-react";
+import { Loader2, Plane, AlertTriangle, ShieldCheck } from "lucide-react";
 import type { FlightPassengerInputDto, FlightPriceCheckDto, FlightSeatLookupResultDto, SearchFlightRequestDto } from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
@@ -450,20 +450,20 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             ))}
 
             <div className="flat-card p-5">
-              <p className="mb-3 text-sm font-bold text-navy-deep">Contact details</p>
+              <p className="mb-3 font-display text-lg font-bold text-navy-deep">Contact details</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input required type="tel" placeholder="Mobile number" value={mobile} onChange={(e) => setMobile(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-                <input required type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+                <input required type="tel" placeholder="Mobile number" aria-label="Mobile number" value={mobile} onChange={(e) => setMobile(e.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+                <input required type="email" placeholder="Email address" aria-label="Email address" value={email} onChange={(e) => setEmail(e.target.value)} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
                 <input
                   required={panMandatory}
-                  placeholder={panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
+                  placeholder={panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"} aria-label={panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
                   value={panNo}
                   onChange={(e) => setPanNo(e.target.value.toUpperCase())}
-                  className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-2"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-2"
                 />
               </div>
               {bothLegsSupportWebCheckin ? (
-                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
+                <label className="mt-3 flex items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-navy-deep has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
                   <input type="checkbox" checked={wantsWebCheckin} onChange={(e) => setWantsWebCheckin(e.target.checked)} />
                   Add web check-in for both flights (+₹{((onwardPrice.ssr?.webCheckinAmount ?? 0) + (returnPrice.ssr?.webCheckinAmount ?? 0)).toLocaleString("en-IN")})
                 </label>
@@ -475,7 +475,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             <button
               type="submit"
               disabled={loadingSeats}
-              className="flex items-center gap-2 self-start rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
+              className="flex h-12 items-center gap-2 self-start rounded-full bg-accent px-9 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
             >
               {loadingSeats ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               Continue
@@ -519,7 +519,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               <button
                 type="button"
                 onClick={() => setStep("review")}
-                className="rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+                className="inline-flex h-12 items-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
               >
                 Continue to review
               </button>
@@ -528,7 +528,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         ) : (
           <div className="flex flex-col gap-4">
             <div className="flat-card p-5">
-              <p className="mb-3 text-sm font-bold text-navy-deep">Passengers</p>
+              <p className="mb-3 font-display text-lg font-bold text-navy-deep">Passengers</p>
               <ul className="flex flex-col gap-1.5 text-sm text-slate-600">
                 {passengers.map((p, idx) => {
                   const onwardSeat = ssrChoices[idx]?.onward?.seatId;
@@ -550,6 +550,13 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               </p>
             </div>
 
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-2xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="h-4 w-4" strokeWidth={2} /> Secure payment via Razorpay
+              </span>
+              <span>E-ticket on email right after confirmation</span>
+            </div>
+
             {payError ? <p className="text-sm text-red-600">{payError}</p> : null}
 
             <div className="flex items-center gap-3">
@@ -565,7 +572,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
                 type="button"
                 onClick={handleConfirmAndPay}
                 disabled={busy}
-                className="flex items-center gap-2 rounded-full bg-accent px-6 py-3 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
+                className="flex h-12 items-center gap-2 rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Confirm &amp; pay ₹{combinedTotal.toLocaleString("en-IN")}
@@ -575,10 +582,14 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         )}
       </div>
 
-      <aside className="flat-card h-fit p-5 lg:sticky lg:top-24">
-        <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase text-slate-400">
-          <Plane className="h-3.5 w-3.5" /> Trip summary
-        </p>
+      <aside className="flat-card h-fit overflow-hidden lg:sticky lg:top-24">
+        <div className="bg-navy-deep px-5 py-4 text-white">
+          <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>
+          <p className="mt-1 flex items-center gap-2 font-display text-xl font-extrabold">
+            <Plane className="h-5 w-5 text-accent" strokeWidth={2.25} /> Round trip
+          </p>
+        </div>
+        <div className="p-5">
         <TripLegSummary label="Departure" option={onwardPrice.option} />
         <TripLegSummary label="Return" option={returnPrice.option} />
         <div className="mt-3 border-t border-slate-100 pt-3 text-sm">
@@ -608,10 +619,11 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
             </div>
           ) : null}
-          <div className="mt-1 flex justify-between border-t border-slate-100 pt-1 font-bold text-navy-deep">
+          <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 font-bold text-navy-deep">
             <span>Total</span>
-            <span>₹{combinedTotal.toLocaleString("en-IN")}</span>
+            <span className="font-display text-2xl font-extrabold">₹{combinedTotal.toLocaleString("en-IN")}</span>
           </div>
+        </div>
         </div>
       </aside>
 
@@ -669,41 +681,48 @@ function PassengerFieldset({
 }) {
   const typeLabel = passenger.pType === "A" ? "Adult" : passenger.pType === "C" ? "Child" : "Infant";
   return (
-    <div className="flat-card p-5">
-      <p className="mb-3 text-sm font-bold text-navy-deep">
+    <fieldset className="flat-card overflow-hidden">
+      <legend className="sr-only">
         Passenger {index + 1} · {typeLabel}
-      </p>
+      </legend>
+      <div className="flex items-center gap-3 border-b border-slate-100 bg-mist px-5 py-3.5">
+        <span className="grid h-9 w-9 place-items-center rounded-full bg-navy-deep font-display text-sm font-extrabold text-white">{index + 1}</span>
+        <p className="font-display text-base font-bold text-navy-deep">Passenger {index + 1}</p>
+        <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-brand-blue">{typeLabel}</span>
+      </div>
+      <div className="p-5">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <select value={passenger.title} onChange={(e) => onChange({ title: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand">
+        <select value={passenger.title} onChange={(e) => onChange({ title: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
           {TITLES.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
           ))}
         </select>
-        <input required placeholder="First name" value={passenger.fName} onChange={(e) => onChange({ fName: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:col-span-1" />
-        <input required placeholder="Last name" value={passenger.lName} onChange={(e) => onChange({ lName: e.target.value })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
-        <select value={passenger.gender} onChange={(e) => onChange({ gender: e.target.value as "M" | "F" })} className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand">
+        <input required placeholder="First name" aria-label="First name" value={passenger.fName} onChange={(e) => onChange({ fName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-1" />
+        <input required placeholder="Last name" aria-label="Last name" value={passenger.lName} onChange={(e) => onChange({ lName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+        <select value={passenger.gender} onChange={(e) => onChange({ gender: e.target.value as "M" | "F" })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
           <option value="M">Male</option>
           <option value="F">Female</option>
         </select>
         <label className="col-span-2 sm:col-span-2">
           <span className="mb-1 block text-xs text-slate-400">Date of birth</span>
-          <input required type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand" />
+          <input required type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
         </label>
       </div>
       {docMandatory ? (
         <div className="mt-3">
           <input
             required
-            placeholder="ID proof number (required for this fare)"
+            placeholder="ID proof number (required for this fare)" aria-label="ID proof number (required for this fare)"
             value={passenger.documentId}
             onChange={(e) => onChange({ documentId: e.target.value })}
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand sm:max-w-xs"
+            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:max-w-xs"
           />
         </div>
       ) : null}
       {passenger.pType !== "I" ? <SsrPicker ssr={ssr} pType={passenger.pType} choice={ssrChoice} onChange={onSsrChange} /> : null}
-    </div>
+      </div>
+    </fieldset>
   );
 }

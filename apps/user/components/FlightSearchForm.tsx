@@ -73,25 +73,25 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
 
   return (
     <form onSubmit={handleSubmit} className={`flat-card ${compact ? "p-4" : "p-5 sm:p-6"}`}>
-      <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-600">
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={tripType === 0} onChange={() => setTripType(0)} className="accent-brand" />
+      <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-navy-deep">
+        <div className="flex items-center gap-2">
+          <label className="flex cursor-pointer items-center rounded-full border-2 border-slate-200 px-4 py-2 text-navy-deep transition-colors focus-within:ring-2 focus-within:ring-brand-blue/40 has-[:checked]:border-navy-deep has-[:checked]:bg-navy-deep has-[:checked]:text-white">
+            <input type="radio" checked={tripType === 0} onChange={() => setTripType(0)} className="sr-only" />
             One way
           </label>
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={tripType === 1} onChange={() => setTripType(1)} className="accent-brand" />
+          <label className="flex cursor-pointer items-center rounded-full border-2 border-slate-200 px-4 py-2 text-navy-deep transition-colors focus-within:ring-2 focus-within:ring-brand-blue/40 has-[:checked]:border-navy-deep has-[:checked]:bg-navy-deep has-[:checked]:text-white">
+            <input type="radio" checked={tripType === 1} onChange={() => setTripType(1)} className="sr-only" />
             Round trip
           </label>
         </div>
         <span aria-hidden className="hidden h-4 w-px bg-slate-200 sm:block" />
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={serType === 1} onChange={() => setServType(1)} className="accent-brand" />
+        <div className="flex items-center gap-2">
+          <label className="flex cursor-pointer items-center rounded-full border-2 border-slate-200 px-4 py-2 text-navy-deep transition-colors focus-within:ring-2 focus-within:ring-brand-blue/40 has-[:checked]:border-navy-deep has-[:checked]:bg-navy-deep has-[:checked]:text-white">
+            <input type="radio" checked={serType === 1} onChange={() => setServType(1)} className="sr-only" />
             Domestic
           </label>
-          <label className="flex items-center gap-1.5">
-            <input type="radio" checked={serType === 2} onChange={() => setServType(2)} className="accent-brand" />
+          <label className="flex cursor-pointer items-center rounded-full border-2 border-slate-200 px-4 py-2 text-navy-deep transition-colors focus-within:ring-2 focus-within:ring-brand-blue/40 has-[:checked]:border-navy-deep has-[:checked]:bg-navy-deep has-[:checked]:text-white">
+            <input type="radio" checked={serType === 2} onChange={() => setServType(2)} className="sr-only" />
             International
           </label>
         </div>
@@ -111,15 +111,15 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <label className="rounded-xl border border-slate-200 px-4 py-2.5">
-          <span className="flex items-center gap-1 text-[11px] font-semibold uppercase text-slate-400">
+        <label className="rounded-2xl border border-slate-200 px-4 py-3 focus-within:border-brand-blue">
+          <span className="flex items-center gap-1 text-xs font-bold text-ink-muted">
             <Calendar className="h-3 w-3" strokeWidth={2.5} /> Depart
           </span>
           <input type="date" min={TODAY} required value={onDate} onChange={(e) => setOnDate(e.target.value)} className="w-full font-semibold text-navy-deep outline-none" />
         </label>
         {tripType === 1 ? (
-          <label className="rounded-xl border border-slate-200 px-4 py-2.5">
-            <span className="flex items-center gap-1 text-[11px] font-semibold uppercase text-slate-400">
+          <label className="rounded-2xl border border-slate-200 px-4 py-3 focus-within:border-brand-blue">
+            <span className="flex items-center gap-1 text-xs font-bold text-ink-muted">
               <Calendar className="h-3 w-3" strokeWidth={2.5} /> Return
             </span>
             <input type="date" min={onDate || TODAY} required value={reDate} onChange={(e) => setReDate(e.target.value)} className="w-full font-semibold text-navy-deep outline-none" />
@@ -130,10 +130,10 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
           <button
             type="button"
             onClick={() => setPaxOpen((v) => !v)}
-            className="flex w-full items-center justify-between rounded-xl border border-slate-200 px-4 py-2.5 text-left"
+            className="flex w-full items-center justify-between rounded-2xl border border-slate-200 px-4 py-3 text-left hover:border-brand-blue"
           >
             <span>
-              <span className="flex items-center gap-1 text-[11px] font-semibold uppercase text-slate-400">
+              <span className="flex items-center gap-1 text-xs font-bold text-ink-muted">
                 <Users className="h-3 w-3" strokeWidth={2.5} /> Travellers &amp; class
               </span>
               <span className="block font-semibold text-navy-deep">
@@ -147,21 +147,21 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
               <PaxCounter label="Children" sub="2-11 yrs" value={chd} min={0} max={9} onChange={setChd} />
               <PaxCounter label="Infants" sub="Under 2 yrs" value={inf} min={0} max={4} onChange={setInf} />
               <div className="mt-3 border-t border-slate-100 pt-3">
-                <span className="text-[11px] font-semibold uppercase text-slate-400">Cabin class</span>
+                <span className="text-xs font-bold text-ink-muted">Cabin class</span>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {Object.entries(CABIN_LABELS).map(([value, label]) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setCabin(value)}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold ${cabin === value ? "border-brand bg-brand text-white" : "border-slate-200 text-slate-600"}`}
+                      className={`h-9 rounded-full border-2 px-3.5 text-xs font-bold ${cabin === value ? "border-navy-deep bg-navy-deep text-white" : "border-slate-200 text-navy-deep"}`}
                     >
                       {label}
                     </button>
                   ))}
                 </div>
               </div>
-              <button type="button" onClick={() => setPaxOpen(false)} className="mt-3 w-full rounded-full bg-brand py-2 text-sm font-bold text-white">
+              <button type="button" onClick={() => setPaxOpen(false)} className="mt-3 h-11 w-full rounded-full bg-navy-deep text-sm font-bold text-white">
                 Done
               </button>
             </div>
@@ -170,13 +170,13 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="text-[11px] font-semibold uppercase text-slate-400">Fare type</span>
+        <span className="text-xs font-bold text-ink-muted">Fare type</span>
         {Object.entries(FARE_TYPE_LABELS).map(([value, label]) => (
           <button
             key={value}
             type="button"
             onClick={() => setFareType(value)}
-            className={`rounded-full border px-3 py-1 text-xs font-semibold ${fareType === value ? "border-brand bg-brand text-white" : "border-slate-200 text-slate-600"}`}
+            className={`h-9 rounded-full border-2 px-3.5 text-xs font-bold ${fareType === value ? "border-navy-deep bg-navy-deep text-white" : "border-slate-200 text-navy-deep hover:border-brand-blue"}`}
           >
             {label}
           </button>
@@ -188,7 +188,7 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
       <button
         type="submit"
         disabled={busy}
-        className="mt-4 flex w-full items-center justify-center gap-2 rounded-full bg-accent px-6 py-3.5 text-base font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
+        className="mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-full bg-accent px-6 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
       >
         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plane className="h-5 w-5" strokeWidth={2.5} />}
         Search flights
@@ -216,14 +216,14 @@ function PaxCounter({
     <div className="flex items-center justify-between py-1.5">
       <div>
         <p className="text-sm font-semibold text-navy-deep">{label}</p>
-        <p className="text-xs text-slate-400">{sub}</p>
+        <p className="text-xs text-ink-muted">{sub}</p>
       </div>
       <div className="flex items-center gap-3">
         <button
           type="button"
           disabled={value <= min}
           onClick={() => onChange(Math.max(min, value - 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 disabled:opacity-30"
+          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-slate-200 text-navy-deep hover:border-brand-blue disabled:opacity-30"
         >
           −
         </button>
@@ -232,7 +232,7 @@ function PaxCounter({
           type="button"
           disabled={value >= max}
           onClick={() => onChange(Math.min(max, value + 1))}
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 disabled:opacity-30"
+          className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-slate-200 text-navy-deep hover:border-brand-blue disabled:opacity-30"
         >
           +
         </button>

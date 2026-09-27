@@ -70,8 +70,9 @@ export function SeatMapPicker({
               key={p.index}
               type="button"
               onClick={() => setActivePassenger(p.index)}
-              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                activePassenger === p.index ? "border-brand bg-brand text-white" : "border-slate-200 text-slate-600 hover:border-brand"
+              aria-pressed={activePassenger === p.index}
+              className={`h-10 rounded-full border-2 px-4 text-sm font-bold transition-colors ${
+                activePassenger === p.index ? "border-navy-deep bg-navy-deep text-white" : "border-slate-200 text-navy-deep hover:border-brand-blue"
               }`}
             >
               {p.label}
@@ -84,16 +85,16 @@ export function SeatMapPicker({
       <div className="flex flex-col gap-6">
         {segments.map((segment, segIdx) => (
           <div key={segIdx}>
-            {segments.length > 1 ? <p className="mb-2 text-xs font-semibold uppercase text-slate-400">Flight segment {segIdx + 1}</p> : null}
+            {segments.length > 1 ? <p className="mb-2 font-display text-sm font-bold text-navy-deep">Flight segment {segIdx + 1}</p> : null}
             <SeatGrid seats={segment.seatMap} seatToPassenger={seatToPassenger} activePassenger={activePassenger} activePType={passengers.find((p) => p.index === activePassenger)?.pType} onSeatClick={handleSeatClick} />
           </div>
         ))}
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
-        <Legend swatchClass="border-brand bg-brand/10" label="Available" />
-        <Legend swatchClass="border-brand bg-brand text-white" label="Selected" />
-        <Legend swatchClass="border-slate-200 bg-slate-100 text-slate-300" label="Taken / not for this passenger" />
+      <div className="mt-5 flex flex-wrap gap-4 text-sm font-semibold text-ink-muted">
+        <Legend swatchClass="border-green-500 bg-green-50" label="Available" />
+        <Legend swatchClass="border-navy-deep bg-navy-deep" label="Selected" />
+        <Legend swatchClass="border-slate-200 bg-slate-100" label="Taken / not for this passenger" />
       </div>
     </div>
   );
@@ -107,7 +108,7 @@ function seatEligible(seat: FlightSeatOptionDto, pType: "A" | "C"): boolean {
 function Legend({ swatchClass, label }: { swatchClass: string; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <span className={`inline-block h-4 w-4 rounded border ${swatchClass}`} />
+      <span className={`inline-block h-5 w-5 rounded-t-lg rounded-b border-2 ${swatchClass}`} />
       {label}
     </span>
   );
@@ -142,10 +143,13 @@ function SeatGrid({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 overflow-x-auto pb-1">
+    <div className="overflow-x-auto pb-1">
+      <div className="mx-auto w-fit rounded-t-[5rem] rounded-b-3xl border-2 border-slate-200 bg-mist/60 px-4 pb-5 pt-10 sm:px-6">
+        <p className="mb-5 text-center text-xs font-bold uppercase tracking-[0.2em] text-ink-muted">Front of aircraft</p>
+        <div className="flex flex-col gap-2">
       {rows.map(([row, seatsInRow]) => (
-        <div key={row} className="flex items-center gap-1.5">
-          <span className="w-6 shrink-0 text-xs text-slate-400">{row}</span>
+        <div key={row} className="flex items-center gap-2">
+          <span className="w-6 shrink-0 text-right text-xs font-bold text-ink-muted">{row}</span>
           <div className="flex items-center gap-1.5">
             {seatsInRow.map((seat) => {
               const holder = seatToPassenger.get(seat.seatID);
@@ -158,25 +162,29 @@ function SeatGrid({
                   <button
                     type="button"
                     title={`${seat.seatName} · ₹${seat.seatAmt.toLocaleString("en-IN")}`}
+                    aria-label={`Seat ${seat.seatName}${disabled ? ", unavailable" : `, ₹${seat.seatAmt.toLocaleString("en-IN")}`}`}
+                    aria-pressed={isSelected}
                     disabled={disabled}
                     onClick={() => onSeatClick(seat)}
-                    className={`flex h-8 w-8 items-center justify-center rounded border text-[10px] font-semibold transition-colors ${
+                    className={`flex h-10 w-10 items-center justify-center rounded-t-xl rounded-b-md border-2 text-[10px] font-extrabold transition-colors ${
                       isSelected
-                        ? "border-brand bg-brand text-white"
+                        ? "border-navy-deep bg-navy-deep text-accent"
                         : disabled
                           ? "cursor-not-allowed border-slate-200 bg-slate-100 text-slate-300"
-                          : "border-brand bg-brand/10 text-brand hover:bg-brand/20"
+                          : "border-green-500 bg-green-50 text-green-800 hover:bg-green-100"
                     }`}
                   >
-                    <Armchair className="h-4 w-4" strokeWidth={2} />
+                    {isSelected || !disabled ? seat.seatName.replace(/^\d+/, "") || <Armchair className="h-4 w-4" strokeWidth={2} /> : <Armchair className="h-4 w-4" strokeWidth={2} />}
                   </button>
-                  {seat.isAisle ? <span className="w-3" /> : null}
+                  {seat.isAisle ? <span className="w-5" /> : null}
                 </React.Fragment>
               );
             })}
           </div>
         </div>
       ))}
+        </div>
+      </div>
     </div>
   );
 }

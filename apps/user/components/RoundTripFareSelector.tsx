@@ -108,7 +108,7 @@ export function RoundTripFareSelector() {
 
   return (
     <div className="flex flex-col gap-6 pb-24">
-      <button type="button" onClick={() => router.back()} className="inline-flex w-fit items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
+      <button type="button" onClick={() => router.back()} className="inline-flex w-fit items-center gap-1 text-sm font-bold text-brand-blue hover:text-navy-deep">
         ← Back to results
       </button>
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -117,16 +117,16 @@ export function RoundTripFareSelector() {
       </div>
 
       {onwardState.chosen || returnState.chosen ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white p-4 shadow-[0_-4px_16px_rgba(0,0,0,0.06)]">
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-navy-deep p-4 text-white shadow-[0_-8px_24px_rgba(18,42,99,0.25)]">
           <div className="shell flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-slate-500">Roundtrip fare for {selection.onward.context.adt} adult(s)</p>
+            <p className="text-sm text-white/80">Roundtrip fare for {selection.onward.context.adt} adult(s)</p>
             <div className="flex items-center gap-4">
-              <p className="text-xl font-extrabold text-navy-deep">₹{combinedTotal.toLocaleString("en-IN")}</p>
+              <p className="font-display text-2xl font-extrabold text-accent">₹{combinedTotal.toLocaleString("en-IN")}</p>
               <button
                 type="button"
                 disabled={!onwardState.chosen || !returnState.chosen}
                 onClick={handleContinue}
-                className="rounded-full bg-accent px-6 py-2.5 text-sm font-bold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-12 items-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:cursor-not-allowed disabled:opacity-40"
               >
                 Continue
               </button>
@@ -144,7 +144,7 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
   const legs = state.options[0]?.legs ?? [];
   return (
     <div>
-      <p className="mb-2 text-sm font-bold text-navy-deep">{title}</p>
+      <p className="mb-3 font-display text-2xl font-extrabold tracking-tight text-navy-deep">{title}</p>
       {legs.length > 0 ? (
         <div className="flat-card mb-3 p-4">
           <div className="flex flex-col gap-2">
@@ -176,14 +176,14 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
       ) : (
         <div className="grid grid-cols-1 gap-3">
           {state.options.map((option) => (
-            <div key={option.id} className={`flat-card flex flex-col gap-3 p-5 ${state.chosen?.id === option.id ? "border-2 border-brand" : ""}`}>
+            <div key={option.id} className={`flat-card flex flex-col gap-3 p-5 ${state.chosen?.id === option.id ? "border-2 border-brand-blue bg-brand-blue-soft/30" : ""}`}>
               <button type="button" onClick={() => onChoose(option)} className="flex flex-col gap-3 text-left">
                 <div>
                   <p className="flex items-center gap-1.5 font-bold text-navy-deep">
                     {option.fare.fareTypeLabel || "Standard fare"}
                     {option.validation.isLowCostCarrier ? <span className="rounded-full bg-mist px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">LCC</span> : null}
                   </p>
-                  <p className="text-2xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+                  <p className="font-display text-3xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
                   <p className="text-xs text-slate-400">
                     Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
                   </p>
@@ -193,12 +193,12 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
                     <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} /> {option.fare.popupMessage}
                   </p>
                 ) : null}
-                <div className="flex flex-col gap-1.5 text-xs text-slate-600">
+                <div className="flex flex-col gap-2 text-sm text-navy-deep">
                   <span className="flex items-center gap-1.5">
-                    <Luggage className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} /> Check-in: {option.fare.baggageCheckIn || "—"} · Cabin: {option.fare.baggageCabin || "—"}
+                    <Luggage className="h-4 w-4 text-violet-600" strokeWidth={2} /> Check-in: {option.fare.baggageCheckIn || "—"} · Cabin: {option.fare.baggageCabin || "—"}
                   </span>
                   <span className="flex items-center gap-1.5">
-                    {option.fare.refundable ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" strokeWidth={2} /> : <ShieldOff className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />}
+                    {option.fare.refundable ? <ShieldCheck className="h-4 w-4 text-green-600" strokeWidth={2} /> : <ShieldOff className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />}
                     {option.fare.refundable ? "Refundable" : "Non-refundable"}
                   </span>
                   <span>Seats left: {option.fare.seatsAvailable || "—"}</span>

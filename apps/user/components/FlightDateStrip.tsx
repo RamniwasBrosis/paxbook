@@ -58,8 +58,12 @@ export function FlightDateStrip({ searchContext }: { searchContext: SearchFlight
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dates.join(",")]);
 
+  const known = Object.values(fares).filter((f): f is number => typeof f === "number");
+  // Only worth flagging when the nearby dates actually differ in price.
+  const lowest = known.length > 1 && Math.min(...known) < Math.max(...known) ? Math.min(...known) : null;
+
   return (
-    <div className="flat-card mb-4 overflow-x-auto p-2">
+    <div className="flat-card mb-5 overflow-x-auto p-2.5 no-scrollbar">
       <div className="flex gap-2">
         {dates.map((date) => {
           const d = new Date(Date.UTC(Number(date.slice(0, 4)), Number(date.slice(4, 6)) - 1, Number(date.slice(6, 8))));
@@ -70,13 +74,17 @@ export function FlightDateStrip({ searchContext }: { searchContext: SearchFlight
             <Link
               key={date}
               href={`/flights/results?${query}`}
-              className={`flex min-w-[92px] flex-1 flex-col items-center rounded-xl px-3 py-2 text-center transition-colors ${
-                selected ? "bg-brand text-white" : "bg-mist text-slate-600 hover:bg-brand/10"
+              aria-current={selected ? "date" : undefined}
+              className={`relative flex min-w-[96px] flex-1 flex-col items-center rounded-2xl px-3 pb-2.5 pt-3 text-center transition-colors ${
+                selected ? "bg-navy-deep text-white shadow-soft" : "bg-mist text-ink-muted hover:bg-brand-blue-soft"
               }`}
             >
+              {fare != null && fare === lowest ? (
+                <span className="absolute -top-0.5 left-1/2 -translate-x-1/2 rounded-b-lg bg-green-600 px-2 text-[0.6rem] font-extrabold uppercase tracking-wide text-white">Lowest</span>
+              ) : null}
               <span className="text-[11px] font-semibold uppercase">{d.toLocaleDateString("en-IN", { weekday: "short", timeZone: "UTC" })}</span>
               <span className="text-sm font-bold">{d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", timeZone: "UTC" })}</span>
-              <span className={`mt-1 text-xs font-semibold ${selected ? "text-white" : "text-navy-deep"}`}>
+              <span className={`mt-1 text-sm font-extrabold ${selected ? "text-accent" : fare != null && fare === lowest ? "text-green-700" : "text-navy-deep"}`}>
                 {fare === undefined ? "…" : fare === null ? "—" : `₹${fare.toLocaleString("en-IN")}`}
               </span>
             </Link>
