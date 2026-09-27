@@ -10,6 +10,7 @@ import type {
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { StorageService } from "../../common/storage/storage.service";
 import { BookingsService } from "../bookings/bookings.service";
+import { BookingNotifier } from "../bookings/booking-notifier.service";
 import type { CreateBookingRequestDto } from "./dto/create-booking-request.dto";
 import type { CreateCancellationRequestDto } from "./dto/create-cancellation-request.dto";
 
@@ -19,6 +20,7 @@ export class CustomerBookingsService {
     private readonly prisma: PrismaService,
     private readonly storageService: StorageService,
     private readonly bookingsService: BookingsService,
+    private readonly notifier: BookingNotifier,
   ) {}
 
   findAll(tenantId: string, customerId: string): Promise<BookingSummaryDto[]> {
@@ -37,13 +39,15 @@ export class CustomerBookingsService {
     const travelerCount = dto.travelerCount ?? 1;
     const totalAmount = pkg.basePrice.toNumber() * travelerCount;
 
-    return this.bookingsService.create(tenantId, null, {
+    const booking = await this.bookingsService.create(tenantId, null, {
       customerId,
       packageId: dto.packageId,
       totalAmount,
       travelStartDate: dto.travelStartDate,
       travelEndDate: dto.travelEndDate,
     });
+    await this.notifier.notify(tenantId, booking.id, { kind: "request_received" });
+    return booking;
   }
 
   async requestCancellation(tenantId: string, customerId: string, bookingId: string, dto: CreateCancellationRequestDto): Promise<CancellationRequestDto> {
@@ -59,6 +63,7 @@ export class CustomerBookingsService {
       data: { bookingId, customerId, reason: dto.reason },
       include: { customer: { select: { name: true } } },
     });
+    await this.notifier.notify(tenantId, bookingId, { kind: "cancellation_requested", reason: dto.reason });
     return toCancellationRequestDto(created);
   }
 

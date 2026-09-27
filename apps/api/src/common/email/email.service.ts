@@ -4,6 +4,9 @@ import { createTransport } from "nodemailer";
 import { PrismaService } from "../prisma/prisma.service";
 import { decryptSecret } from "../crypto/encryption";
 
+/** A rendered email (see email-layout.ts) or, for older call sites, bare HTML. */
+export type EmailBody = string | { html: string; text: string };
+
 export interface EmailSendResult {
   sent: boolean;
   reason?: string;
@@ -28,7 +31,7 @@ export class EmailService {
     tenantId: string,
     to: string,
     subject: string,
-    html: string,
+    body: EmailBody,
     attachments?: Array<{ filename: string; content: Buffer; contentType?: string }>,
   ): Promise<EmailSendResult> {
     const tenant = await this.prisma.tenant.findUnique({
@@ -49,11 +52,31 @@ export class EmailService {
         secure: tenant.smtpPort === 465,
         auth: tenant.smtpUser ? { user: tenant.smtpUser, pass: password } : undefined,
       });
-      await transport.sendMail({ from: tenant.smtpFromEmail, to, subject, html, attachments });
+      const html = typeof body === "string" ? body : body.html;
+      // Always send a plain-text part too: some clients prefer it and spam filters penalise HTML-only mail.
+      const text = typeof body === "string" ? htmlToText(body) : body.text;
+      await transport.sendMail({ from: tenant.smtpFromEmail, replyTo: tenant.smtpFromEmail, to, subject, html, text, attachments });
       return { sent: true };
     } catch (err) {
       this.logger.warn(`Email send failed for tenant ${tenantId}: ${(err as Error).message}`);
       return { sent: false, reason: "Email provider rejected the message." };
     }
   }
+}
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/(p|div|tr|h[1-6]|li)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }

@@ -1,9 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import type { FlightBookingDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { RazorpayService } from "../customer-portal/razorpay.service";
 import { FlightsService } from "./flights.service";
 import { extractFlightSnapshot } from "./flight-response-mapper";
+import { EmailService, type EmailBody } from "../../common/email/email.service";
+import { buildDateChangeResolvedEmail, buildRefundIssuedEmail } from "./flight-email-templates";
 
 @Injectable()
 export class AdminFlightBookingsService {
@@ -11,7 +14,19 @@ export class AdminFlightBookingsService {
     private readonly prisma: PrismaService,
     private readonly flights: FlightsService,
     private readonly razorpay: RazorpayService,
+    private readonly email: EmailService,
+    private readonly config: ConfigService,
   ) {}
+
+  /** Best-effort customer email for an admin action — a mail hiccup must never fail the admin's action. */
+  private async emailCustomer(tenantId: string, customerId: string, subject: string, body: EmailBody): Promise<void> {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId }, select: { email: true } }).catch(() => null);
+    if (customer?.email) await this.email.send(tenantId, customer.email, subject, body).catch(() => undefined);
+  }
+
+  private bookingUrl(id: string): string {
+    return `${this.config.get<string>("FRONTEND_URL", "http://localhost:3001")}/account/flight-bookings/${id}`;
+  }
 
   /** Delegates to FlightsService so the FTD cancelFlight payload/response handling lives in one place. */
   async cancel(tenantId: string, id: string, reason: string, canMode = 5): Promise<FlightBookingDto> {
@@ -48,6 +63,13 @@ export class AdminFlightBookingsService {
       }),
     ]);
 
+    await this.emailCustomer(
+      tenantId,
+      booking.customerId,
+      `Date change processed: ${booking.depCity} → ${booking.arrCity}`,
+      buildDateChangeResolvedEmail({ depCity: booking.depCity, arrCity: booking.arrCity, note, bookingUrl: this.bookingUrl(booking.id) }),
+    );
+
     const updated = await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } });
     return this.toDto(updated);
   }
@@ -82,6 +104,19 @@ export class AdminFlightBookingsService {
         data: { flightBookingId: booking.id, fromStatus: booking.status, toStatus: booking.status, note: `Refunded ₹${amount}${note ? ` — ${note}` : ""} (ref ${result.refundId})` },
       }),
     ]);
+
+    await this.emailCustomer(
+      tenantId,
+      booking.customerId,
+      `Refund issued: ${booking.depCity} → ${booking.arrCity}`,
+      buildRefundIssuedEmail({
+        depCity: booking.depCity,
+        arrCity: booking.arrCity,
+        amount: `${booking.currency} ${amount.toLocaleString("en-IN")}`,
+        reference: result.refundId,
+        bookingUrl: this.bookingUrl(booking.id),
+      }),
+    );
 
     const updated = await this.prisma.flightBooking.findFirstOrThrow({ where: { id: booking.id }, include: { passengers: true } });
     return this.toDto(updated);

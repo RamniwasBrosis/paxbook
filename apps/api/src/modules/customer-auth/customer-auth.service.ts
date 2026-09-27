@@ -7,6 +7,7 @@ import type { AuthenticatedCustomerDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { SmsService } from "../../common/sms/sms.service";
 import { EmailService } from "../../common/email/email.service";
+import { renderEmail } from "../../common/email/email-layout";
 import { sha256Hex } from "../../common/crypto/hash";
 import { hashPassword, verifyPassword } from "../../common/crypto/password";
 import { decryptSecret } from "../../common/crypto/encryption";
@@ -123,17 +124,20 @@ export class CustomerAuthService {
     await this.emailService.send(
       tenantId,
       customer.email,
-      "Welcome to Paxbook!",
-      `<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto">
-         <h2 style="color:#19377f;margin-bottom:0">Welcome to Paxbook, ${customer.name}!</h2>
-         <p>Your account has been created successfully. You're all set to start planning your next trip.</p>
-         <p>Log in anytime with the email address you registered (<b>${customer.email}</b>) and your password.</p>
-         <p style="margin:28px 0">
-           <a href="${loginUrl}" style="background:#f1ba4b;color:#19377f;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:bold;display:inline-block">Log in to Paxbook</a>
-         </p>
-         <p style="color:#64748b;font-size:13px">Need help? Reach us anytime at <a href="mailto:planners@paxbook.in">planners@paxbook.in</a> or +91 73000 47077.</p>
-         <p style="color:#94a3b8;font-size:12px;margin-top:24px">Paxbook — Travel | Explore | Experience</p>
-       </div>`,
+      "Welcome to Paxbook — your account is ready",
+      renderEmail({
+        preheader: "Your Paxbook account is ready. Save trips, unlock prices and track bookings.",
+        eyebrow: "Welcome aboard",
+        title: "Your Paxbook account is ready",
+        recipientName: customer.name,
+        paragraphs: [
+          "Thanks for signing up. You can now unlock package prices, save itineraries to your wishlist, and track every booking, voucher and e-ticket in one place.",
+          "Log in any time with the email address below and the password you chose.",
+        ],
+        details: [["Login email", customer.email]],
+        cta: { label: "Log in to Paxbook", url: loginUrl },
+        note: "Didn't create this account? Reply to this email and we'll look into it.",
+      }),
     );
   }
 
@@ -169,15 +173,15 @@ export class CustomerAuthService {
       tenantId,
       email,
       "Reset your Paxbook password",
-      `<div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto">
-         <h2 style="color:#19377f;margin-bottom:0">Reset your password</h2>
-         <p>Hi ${customer.name}, we received a request to reset the password on your Paxbook account.</p>
-         <p style="margin:28px 0">
-           <a href="${resetUrl}" style="background:#f1ba4b;color:#19377f;padding:12px 28px;border-radius:999px;text-decoration:none;font-weight:bold;display:inline-block">Reset password</a>
-         </p>
-         <p style="color:#64748b;font-size:13px">This link expires in ${PASSWORD_RESET_TTL_MINUTES} minutes and can only be used once. If you didn't request this, you can safely ignore this email.</p>
-         <p style="color:#94a3b8;font-size:12px;margin-top:24px">Paxbook — Travel | Explore | Experience</p>
-       </div>`,
+      renderEmail({
+        preheader: `Use this link within ${PASSWORD_RESET_TTL_MINUTES} minutes to set a new password.`,
+        eyebrow: "Account security",
+        title: "Reset your password",
+        recipientName: customer.name,
+        paragraphs: ["We received a request to reset the password on your Paxbook account. Tap the button below to choose a new one."],
+        cta: { label: "Reset password", url: resetUrl },
+        note: `This link expires in ${PASSWORD_RESET_TTL_MINUTES} minutes and can be used once. If you didn't ask for this, you can ignore this email — your password won't change.`,
+      }),
     );
   }
 
@@ -189,10 +193,33 @@ export class CustomerAuthService {
     }
 
     const passwordHash = await hashPassword(newPassword);
-    await this.prisma.$transaction([
+    const [customer] = await this.prisma.$transaction([
       this.prisma.customer.update({ where: { id: resetToken.customerId }, data: { passwordHash } }),
       this.prisma.customerPasswordResetToken.update({ where: { id: resetToken.id }, data: { usedAt: new Date() } }),
     ]);
+
+    // Standard security notice: tells the owner if someone else changed their password.
+    if (customer.email) {
+      const frontendUrl = this.configService.get<string>("FRONTEND_URL", "http://localhost:3001");
+      await this.emailService
+        .send(
+          customer.tenantId,
+          customer.email,
+          "Your Paxbook password was changed",
+          renderEmail({
+            preheader: "Your password was just changed. If this wasn't you, contact us right away.",
+            eyebrow: "Account security",
+            title: "Your password was changed",
+            recipientName: customer.name,
+            status: { label: "Password updated", tone: "success" },
+            paragraphs: ["The password on your Paxbook account was changed just now. You can log in with your new password."],
+            details: [["When", new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", dateStyle: "medium", timeStyle: "short" }) + " IST"]],
+            cta: { label: "Log in", url: `${frontendUrl}/login` },
+            note: "Didn't change your password? Reply to this email or call us straight away so we can secure your account.",
+          }),
+        )
+        .catch(() => undefined);
+    }
   }
 
   async refresh(rawRefreshToken: string): Promise<IssuedCustomerTokens> {

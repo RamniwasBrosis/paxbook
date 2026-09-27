@@ -2,11 +2,11 @@ import { BadRequestException, Injectable, NotFoundException, UnauthorizedExcepti
 import type { BookingDetailDto, PaymentOrderDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { BookingsService } from "../bookings/bookings.service";
+import { BookingNotifier } from "../bookings/booking-notifier.service";
 import { PaymentsService } from "../finance/payments.service";
 import { InvoicesService } from "../finance/invoices.service";
 import { RazorpayService } from "./razorpay.service";
 import { CustomerNotificationsService } from "./customer-notifications.service";
-import { EmailService } from "../../common/email/email.service";
 import { SmsService } from "../../common/sms/sms.service";
 import type { VerifyPaymentDto } from "./dto/verify-payment.dto";
 
@@ -19,8 +19,8 @@ export class CustomerPaymentsService {
     private readonly invoicesService: InvoicesService,
     private readonly razorpayService: RazorpayService,
     private readonly notificationsService: CustomerNotificationsService,
-    private readonly emailService: EmailService,
     private readonly smsService: SmsService,
+    private readonly notifier: BookingNotifier,
   ) {}
 
   async createOrder(tenantId: string, customerId: string, bookingId: string): Promise<PaymentOrderDto> {
@@ -73,6 +73,7 @@ export class CustomerPaymentsService {
       "Payment received",
       `We've received your payment of ${payment.amount.toNumber()} ${booking.currency}.`,
     );
+    await this.notifier.notify(tenantId, bookingId, { kind: "payment_received", amount: payment.amount.toNumber() });
 
     const refreshedBooking = await this.prisma.booking.findUniqueOrThrow({ where: { id: bookingId } });
     if (refreshedBooking.paymentStatus === "PAID" && refreshedBooking.status === "DRAFT") {
@@ -87,14 +88,7 @@ export class CustomerPaymentsService {
       );
 
       const customer = await this.prisma.customer.findUnique({ where: { id: customerId }, select: { email: true, phone: true, name: true } });
-      if (customer?.email) {
-        await this.emailService.send(
-          tenantId,
-          customer.email,
-          "Your Paxbook booking is confirmed",
-          `<p>Hi ${customer.name},</p><p>Your booking <b>${refreshedBooking.id}</b> is fully paid and confirmed. You can download your invoice and travel voucher from your Paxbook account.</p>`,
-        );
-      }
+      await this.notifier.notify(tenantId, bookingId, { kind: "confirmed" });
       if (customer?.phone) {
         await this.smsService.sendWhatsapp(
           tenantId,

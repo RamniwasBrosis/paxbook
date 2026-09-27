@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import type { CancellationRequestDto } from "@paxbook/types";
 import { PrismaService } from "../../common/prisma/prisma.service";
 import { BookingsService } from "../bookings/bookings.service";
+import { BookingNotifier } from "../bookings/booking-notifier.service";
 import { CustomerNotificationsService } from "./customer-notifications.service";
 import { toCancellationRequestDto } from "./customer-bookings.service";
 import type { ResolveCancellationRequestDto } from "./dto/resolve-cancellation-request.dto";
@@ -13,6 +14,7 @@ export class AdminCancellationRequestsService {
     private readonly prisma: PrismaService,
     private readonly bookingsService: BookingsService,
     private readonly notificationsService: CustomerNotificationsService,
+    private readonly notifier: BookingNotifier,
   ) {}
 
   async findAll(tenantId: string): Promise<CancellationRequestDto[]> {
@@ -55,6 +57,8 @@ export class AdminCancellationRequestsService {
         ? "Your cancellation request has been approved and the booking has been cancelled."
         : `Your cancellation request was not approved.${dto.resolutionNote ? ` Note: ${dto.resolutionNote}` : ""}`,
     );
+
+    await this.notifier.notify(tenantId, existing.bookingId, { kind: "cancellation_resolved", approved: dto.status === "APPROVED", note: dto.resolutionNote });
 
     return toCancellationRequestDto(updated);
   }

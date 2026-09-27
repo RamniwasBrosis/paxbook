@@ -29,7 +29,8 @@ import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
 import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapRescheduleResponse, mapSearchOrFareDetails, mapSeats, mapStatementResponse } from "./flight-response-mapper";
-import { buildBookingConfirmedEmailHtml } from "./flight-email-templates";
+import { buildBookingConfirmedEmail, buildDateChangeRequestedEmail, buildFlightCancelledEmail, buildFlightFailedEmail } from "./flight-email-templates";
+import type { EmailBody } from "../../common/email/email.service";
 import { buildTicketPdf } from "./flight-ticket-pdf";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto, FlightSsrSelectionDto } from "./dto/create-flight-booking.dto";
@@ -778,8 +779,8 @@ export class FlightsService {
       type: "FLIGHT_BOOKING_FAILED",
       title: "Flight booking could not be completed",
       inAppBody: `We couldn't complete your flight booking (${booking.depCity} → ${booking.arrCity}) on ${booking.onDate}. ${refundNote}`,
-      emailSubject: "Your flight booking could not be completed",
-      emailHtml: `<p>Hi,</p><p>Unfortunately we couldn't complete your flight booking from <b>${booking.depCity}</b> to <b>${booking.arrCity}</b> on ${booking.onDate}.</p><p>${refundNote}</p><p>We're sorry for the inconvenience — please contact support if you have any questions.</p>`,
+      emailSubject: `Flight not booked: ${booking.depCity} → ${booking.arrCity}`,
+      emailHtml: buildFlightFailedEmail({ depCity: booking.depCity, arrCity: booking.arrCity, onDate: booking.onDate, refundNote }),
       whatsappBody: `We couldn't complete your Paxbook flight booking (${booking.depCity} → ${booking.arrCity}). ${refundNote}`,
     });
   }
@@ -826,8 +827,8 @@ export class FlightsService {
       type: "FLIGHT_BOOKING_CONFIRMED",
       title: "Flight booking confirmed",
       inAppBody: `Your flight ${booking.depCity} → ${booking.arrCity} on ${booking.onDate} is confirmed. PNR: ${resolvedPnr ?? "—"}.`,
-      emailSubject: "Your booking has been confirmed",
-      emailHtml: buildBookingConfirmedEmailHtml({
+      emailSubject: `Flight confirmed: ${booking.depCity} → ${booking.arrCity}${resolvedPnr ? ` (PNR ${resolvedPnr})` : ""}`,
+      emailHtml: buildBookingConfirmedEmail({
         customerName: customer?.name ?? "Traveller",
         legs,
         passengers: booking.passengers,
@@ -850,7 +851,7 @@ export class FlightsService {
       title: string;
       inAppBody: string;
       emailSubject: string;
-      emailHtml: string;
+      emailHtml: EmailBody;
       whatsappBody: string;
       emailAttachments?: Array<{ filename: string; content: Buffer; contentType?: string }>;
     },
@@ -978,8 +979,15 @@ export class FlightsService {
       type: "FLIGHT_BOOKING_CANCELLED",
       title: allCancelled ? "Flight booking cancelled" : "Flight cancellation in progress",
       inAppBody: `Your flight ${booking.depCity} → ${booking.arrCity} on ${booking.onDate} has been ${allCancelled ? "cancelled" : "submitted for cancellation"}. ${refundLine}`,
-      emailSubject: allCancelled ? "Your flight booking has been cancelled" : "Your flight cancellation is in progress",
-      emailHtml: `<p>Hi,</p><p>Your flight booking from <b>${booking.depCity}</b> to <b>${booking.arrCity}</b> on ${booking.onDate} has been ${allCancelled ? "cancelled" : "submitted for cancellation"}.</p><p>${refundLine}</p>`,
+      emailSubject: allCancelled ? `Flight cancelled: ${booking.depCity} → ${booking.arrCity}` : `Cancellation in progress: ${booking.depCity} → ${booking.arrCity}`,
+      emailHtml: buildFlightCancelledEmail({
+        depCity: booking.depCity,
+        arrCity: booking.arrCity,
+        onDate: booking.onDate,
+        allCancelled,
+        refundLine,
+        ticketUrl: `${this.config.get<string>("FRONTEND_URL", "http://localhost:3001")}/account/flight-bookings/${booking.id}`,
+      }),
       whatsappBody: `Your Paxbook flight booking (${booking.depCity} → ${booking.arrCity}) has been ${allCancelled ? "cancelled" : "submitted for cancellation"}. ${refundLine}`,
     });
 
@@ -1095,8 +1103,14 @@ export class FlightsService {
       type: "FLIGHT_DATE_CHANGE_REQUESTED",
       title: "Date change request submitted",
       inAppBody: `Your request to change your flight (${booking.depCity} → ${booking.arrCity}) to ${newTravelDate} has been submitted. Our team will confirm the fare difference and process it shortly.`,
-      emailSubject: "Your date change request has been submitted",
-      emailHtml: `<p>Hi,</p><p>We've submitted your request to change your flight from <b>${booking.depCity}</b> to <b>${booking.arrCity}</b> to <b>${newTravelDate}</b>.</p><p>Our team will confirm the fare difference (if any) and get back to you shortly to complete the change.</p><p>Reference: <b>${mapped.reissueId || "—"}</b></p>`,
+      emailSubject: `Date change requested: ${booking.depCity} → ${booking.arrCity}`,
+      emailHtml: buildDateChangeRequestedEmail({
+        depCity: booking.depCity,
+        arrCity: booking.arrCity,
+        newTravelDate,
+        reference: mapped.reissueId || "—",
+        bookingUrl: `${this.config.get<string>("FRONTEND_URL", "http://localhost:3001")}/account/flight-bookings/${booking.id}`,
+      }),
       whatsappBody: `Your Paxbook date change request (${booking.depCity} → ${booking.arrCity}, new date ${newTravelDate}) has been submitted. We'll confirm shortly.`,
     });
 
