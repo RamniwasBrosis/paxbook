@@ -78,3 +78,9 @@ export function searchContextToQuery(ctx: SearchFlightRequestDto): string {
   }
   return params.toString();
 }
+
+/** Mirrors the API's rule (flights.service dobIsOptional): DOB may be left empty only for adults on a
+ * domestic Regular fare — the API then sends a standard adult date to FTD. Everyone else needs it. */
+export function isDobOptional(pType: string, context: { serType: number; fareType?: string | null }): boolean {
+  return pType === "A" && context.serType === 1 && (context.fareType ?? "A") === "A";
+}

@@ -21,8 +21,9 @@ import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
 import { FlightStepper } from "@/components/FlightStepper";
+import { TravellerCountEditor, takeCarriedPassengers } from "@/components/TravellerCountEditor";
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
-import { formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams } from "@/lib/flights";
+import { formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams , isDobOptional } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const TITLES = ["Mr", "Mrs", "Ms", "Miss", "Mstr"];
@@ -192,7 +193,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
       ...Array.from({ length: searchContext.chd }, () => ({ pType: "C" as const })),
       ...Array.from({ length: searchContext.inf }, () => ({ pType: "I" as const })),
     ].map((slot) => ({ title: "Mr", fName: "", lName: "", pType: slot.pType, gender: "M" as const, dobIso: "", ppNo: "", ppIss: "", ppExp: "", ppNat: "", documentId: "" }));
-    setPassengers(slots);
+    setPassengers(takeCarriedPassengers(slots));
     setSsrChoices({});
   }, [searchContext, flightId, refId]);
 
@@ -219,7 +220,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   function validatePassengers(): string | null {
     for (const [idx, p] of passengers.entries()) {
       if (!p.fName.trim() || !p.lName.trim()) return `Enter the full name for passenger ${idx + 1}.`;
-      if (!p.dobIso) return `Enter date of birth for passenger ${idx + 1}.`;
+      if (!p.dobIso && !(searchContext && isDobOptional(p.pType, searchContext))) return `Enter date of birth for passenger ${idx + 1}.`;
       if (validation?.docMandatory && !p.documentId.trim()) return `Enter the ID proof number for passenger ${idx + 1} (required for this fare).`;
     }
     if (!/^\d{10,15}$/.test(mobile.replace(/\D/g, ""))) return "Enter a valid mobile number.";
@@ -321,7 +322,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               lName: p.lName.trim(),
               pType: p.pType,
               gender: p.gender,
-              dob: isoToDdMmYyyy(p.dobIso),
+              dob: p.dobIso ? isoToDdMmYyyy(p.dobIso) : "",
               ...(p.ppNo ? { ppNo: p.ppNo, ppIss: p.ppIss, ppExp: p.ppExp, ppNat: p.ppNat } : {}),
               ...(p.documentId ? { documentId: p.documentId } : {}),
               ...(cleanSsrChoice(ssrChoices[idx]) ? { ssr: cleanSsrChoice(ssrChoices[idx]) } : {}),
@@ -464,12 +465,14 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           </div>
         ) : step === "passengers" ? (
           <form onSubmit={goToSeatsOrReview} className="flex flex-col gap-4">
+            <TravellerCountEditor context={searchContext} passengersToCarry={passengers} />
             {passengers.map((p, idx) => (
               <PassengerFieldset
                 key={idx}
                 index={idx}
                 passenger={p}
                 international={searchContext.serType === 2}
+                dobOptional={isDobOptional(p.pType, searchContext)}
                 docMandatory={Boolean(validation?.docMandatory)}
                 onChange={(patch) => updatePassenger(idx, patch)}
                 ssr={ssr}
@@ -540,7 +543,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           </form>
         ) : step === "seats" ? (
           <div className="flex flex-col gap-4">
-            <div className="flat-card p-5">
+            <div className="flat-card p-3 sm:p-5">
               <p className="mb-1 font-display text-lg font-bold text-navy-deep">Choose your seats</p>
               <p className="mb-4 text-sm text-ink-muted">Optional for most passengers — tap a passenger, then tap a seat to assign it.</p>
               {hasReturn && seatMap ? (
@@ -723,6 +726,7 @@ function PassengerFieldset({
   index,
   passenger,
   international,
+  dobOptional,
   docMandatory,
   onChange,
   ssr,
@@ -732,6 +736,7 @@ function PassengerFieldset({
   index: number;
   passenger: PassengerForm;
   international: boolean;
+  dobOptional: boolean;
   docMandatory: boolean;
   onChange: (patch: Partial<PassengerForm>) => void;
   ssr: FlightSsrDto | null;
@@ -765,8 +770,8 @@ function PassengerFieldset({
           <option value="F">Female</option>
         </select>
         <label className="col-span-2 sm:col-span-2">
-          <span className="mb-1 block text-xs font-bold text-ink-muted">Date of birth</span>
-          <input required type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+          <span className="mb-1 block text-xs font-bold text-ink-muted">Date of birth{dobOptional ? " (optional)" : ""}</span>
+          <input required={!dobOptional} type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
         </label>
       </div>
       {international ? (

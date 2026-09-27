@@ -11,9 +11,10 @@ import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
 import { FlightStepper } from "@/components/FlightStepper";
+import { TravellerCountEditor, takeCarriedPassengers } from "@/components/TravellerCountEditor";
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
 import { SsrPicker, sumSsrChoice, sumSeatChoice, cleanSsrChoice, type PassengerSsrChoice } from "@/components/FlightBookingWizard";
-import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy } from "@/lib/flights";
+import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy , isDobOptional } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const TITLES = ["Mr", "Mrs", "Ms", "Miss", "Mstr"];
@@ -134,7 +135,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
       ...Array.from({ length: chd }, () => ({ pType: "C" as const })),
       ...Array.from({ length: inf }, () => ({ pType: "I" as const })),
     ].map((slot) => ({ title: "Mr", fName: "", lName: "", pType: slot.pType, gender: "M" as const, dobIso: "", documentId: "" }));
-    setPassengers(slots);
+    setPassengers(takeCarriedPassengers(slots));
   }, [selection]);
 
   React.useEffect(() => {
@@ -180,7 +181,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   function validatePassengers(): string | null {
     for (const [idx, p] of passengers.entries()) {
       if (!p.fName.trim() || !p.lName.trim()) return `Enter the full name for passenger ${idx + 1}.`;
-      if (!p.dobIso) return `Enter date of birth for passenger ${idx + 1}.`;
+      if (!p.dobIso && !(selection && isDobOptional(p.pType, selection.onward.context))) return `Enter date of birth for passenger ${idx + 1}.`;
       if (docMandatory && !p.documentId.trim()) return `Enter the ID proof number for passenger ${idx + 1} (required for this fare).`;
     }
     if (!/^\d{10,15}$/.test(mobile.replace(/\D/g, ""))) return "Enter a valid mobile number.";
@@ -271,7 +272,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
           lName: p.lName.trim(),
           pType: p.pType,
           gender: p.gender,
-          dob: isoToDdMmYyyy(p.dobIso),
+          dob: p.dobIso ? isoToDdMmYyyy(p.dobIso) : "",
           ...(p.documentId ? { documentId: p.documentId } : {}),
           ...(cleanSsrChoice(ssrChoices[idx]) ? { ssr: cleanSsrChoice(ssrChoices[idx]) } : {}),
         }));
@@ -436,11 +437,19 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
           </div>
         ) : step === "passengers" ? (
           <form onSubmit={goToSeatsOrReview} className="flex flex-col gap-4">
+            {selection ? (
+              <TravellerCountEditor
+                // Each leg was searched as a one-way; rebuild the original round-trip search so a count change re-runs it.
+                context={{ ...selection.onward.context, tripType: 1, reDate: selection.return.context.onDate }}
+                passengersToCarry={passengers}
+              />
+            ) : null}
             {passengers.map((p, idx) => (
               <PassengerFieldset
                 key={idx}
                 index={idx}
                 passenger={p}
+                dobOptional={isDobOptional(p.pType, selection.onward.context)}
                 docMandatory={docMandatory}
                 onChange={(patch) => updatePassenger(idx, patch)}
                 ssr={mergedSsr}
@@ -483,8 +492,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
           </form>
         ) : step === "seats" ? (
           <div className="flex flex-col gap-4">
-            <div className="flat-card p-5">
-              <p className="mb-1 text-sm font-bold text-navy-deep">Choose your seats</p>
+            <div className="flat-card p-3 sm:p-5">
+              <p className="mb-1 font-display text-lg font-bold text-navy-deep">Choose your seats</p>
               <p className="mb-4 text-xs text-slate-500">Optional for most passengers — tap a passenger, then tap a seat to assign it.</p>
               <div className="mb-4 flex gap-2">
                 {(["onward", "return"] as const).map((dir) =>
@@ -665,6 +674,7 @@ function TripLegSummary({ label, option }: { label: string; option: FlightPriceC
 function PassengerFieldset({
   index,
   passenger,
+  dobOptional,
   docMandatory,
   onChange,
   ssr,
@@ -673,6 +683,7 @@ function PassengerFieldset({
 }: {
   index: number;
   passenger: PassengerForm;
+  dobOptional: boolean;
   docMandatory: boolean;
   onChange: (patch: Partial<PassengerForm>) => void;
   ssr: React.ComponentProps<typeof SsrPicker>["ssr"];
@@ -706,8 +717,8 @@ function PassengerFieldset({
           <option value="F">Female</option>
         </select>
         <label className="col-span-2 sm:col-span-2">
-          <span className="mb-1 block text-xs text-slate-400">Date of birth</span>
-          <input required type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
+          <span className="mb-1 block text-xs font-bold text-ink-muted">Date of birth{dobOptional ? " (optional)" : ""}</span>
+          <input required={!dobOptional} type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
         </label>
       </div>
       {docMandatory ? (

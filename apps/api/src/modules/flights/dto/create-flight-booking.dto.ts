@@ -53,9 +53,10 @@ export class FlightPassengerInputDto {
   @IsIn(["M", "F"])
   gender!: string;
 
+  /** DD-MM-YYYY. May be empty only for adults on a domestic Regular fare — see resolvePassengerDobs(). */
+  @IsOptional()
   @IsString()
-  @MinLength(1)
-  dob!: string; // DD-MM-YYYY
+  dob?: string;
 
   @IsOptional()
   @IsString()

@@ -395,6 +395,7 @@ export class FlightsService {
         message: "Domestic round trips must be booked as two separate one-way flights. Please search and book your return trip separately.",
       });
     }
+    const passengersWithDob = resolvePassengerDobs(dto.passengers, searchContext);
     const { dto: priceCheck, providerTotal } = await this.priceCheckInternal(dto.flightID, dto.refID);
     if (!priceCheck.option.id) {
       throw new BadRequestException({ code: "FLIGHT_UNAVAILABLE", message: "This flight is no longer available. Please search again." });
@@ -454,7 +455,7 @@ export class FlightsService {
         tripId: trip?.tripId ?? null,
         tripRole: trip?.tripRole ?? null,
         passengers: {
-          create: dto.passengers.map((p) => ({
+          create: passengersWithDob.map((p) => ({
             title: p.title,
             fName: p.fName,
             lName: p.lName,
@@ -1194,4 +1195,27 @@ export class FlightsService {
       })),
     };
   }
+}
+
+/** Sent to FTD when an adult on a domestic Regular fare leaves DOB empty — FTD marks dob mandatory for
+ * every passenger, but domestic adult tickets don't carry it and the fare doesn't depend on it. */
+export const DEFAULT_ADULT_DOB = "01-01-1990";
+
+/** Business decision (owner, 2026-09-27): DOB is optional only where age can't change the fare —
+ * adults, domestic, Regular fare type. Children/infants, international trips (passport checks) and
+ * Student/Senior Citizen/Defence fares (age/ID-based) still need a real date of birth. */
+export function dobIsOptional(pType: string, searchContext: { serType: number; fareType?: string | null }): boolean {
+  return pType === "A" && searchContext.serType === 1 && (searchContext.fareType ?? "A") === "A";
+}
+
+export function resolvePassengerDobs<T extends { pType: string; dob?: string }>(
+  passengers: T[],
+  searchContext: { serType: number; fareType?: string | null },
+): Array<T & { dob: string }> {
+  return passengers.map((p, idx) => {
+    const dob = p.dob?.trim();
+    if (dob) return { ...p, dob };
+    if (dobIsOptional(p.pType, searchContext)) return { ...p, dob: DEFAULT_ADULT_DOB };
+    throw new BadRequestException({ code: "DOB_REQUIRED", message: `Enter the date of birth for passenger ${idx + 1}.` });
+  });
 }
