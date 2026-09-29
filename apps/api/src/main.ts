@@ -15,6 +15,12 @@ async function bootstrap() {
 
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.use(cookieParser());
+  // cPanel's nginx in front of the API caches every 200 GET for 60 minutes unless told not to, so
+  // admin changes (branding, packages, prices) stayed invisible on the site for up to an hour.
+  app.use("/api", (_req: unknown, res: { setHeader(name: string, value: string): void }, next: () => void) => {
+    res.setHeader("Cache-Control", "no-store");
+    next();
+  });
 
   const storageRoot = configService.get<string>("STORAGE_ROOT", "./uploads");
   app.useStaticAssets(join(process.cwd(), storageRoot), { prefix: "/uploads" });
