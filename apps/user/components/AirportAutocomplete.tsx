@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Plane } from "lucide-react";
 import type { AirportDto } from "@paxbook/types";
-import { searchAirports as searchStaticAirports, type AirportEntry } from "@/lib/airports";
+import { findAirport, searchAirports as searchStaticAirports, type AirportEntry } from "@/lib/airports";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -55,15 +55,16 @@ export function AirportAutocomplete({
   onChange: (code: string) => void;
   placeholder?: string;
 }) {
-  const [query, setQuery] = React.useState(value);
+  const [query, setQuery] = React.useState("");
+  // Not editing: show "New Delhi (DEL)" for the chosen code. Editing: an empty box to type into.
+  const [editing, setEditing] = React.useState(false);
   const [open, setOpen] = React.useState(false);
   const [highlight, setHighlight] = React.useState(0);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const directory = useAirportDirectory();
 
-  React.useEffect(() => {
-    setQuery(value);
-  }, [value]);
+  const selected = directory.find((a) => a.code === value.toUpperCase()) ?? findAirport(value);
+  const selectedLabel = selected ? `${selected.city} (${selected.code})` : value;
 
   const results = React.useMemo(() => (directory.length > 0 ? searchDirectory(directory, query) : searchStaticAirports(query)), [directory, query]);
 
@@ -77,8 +78,17 @@ export function AirportAutocomplete({
 
   function select(airport: AirportEntry) {
     onChange(airport.code);
-    setQuery(airport.code);
+    setQuery("");
+    setEditing(false);
     setOpen(false);
+  }
+
+  /** Leaving the box without picking from the list: accept an exact 3-letter code, else keep the old choice. */
+  function commitTyped() {
+    const typed = query.trim().toUpperCase();
+    if (/^[A-Z]{3}$/.test(typed) && typed !== value.toUpperCase()) onChange(typed);
+    setQuery("");
+    setEditing(false);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -99,21 +109,27 @@ export function AirportAutocomplete({
   }
 
   return (
-    <div ref={containerRef} className="relative rounded-xl border border-slate-200 px-4 py-2.5">
-      <span className="block text-[11px] font-semibold uppercase text-slate-400">{label}</span>
+    <div ref={containerRef} className="relative rounded-2xl border border-slate-200 px-4 py-3 focus-within:border-brand-blue">
+      <span className="block text-xs font-bold uppercase text-ink-muted">{label}</span>
       <input
-        value={query}
+        aria-label={`${label}: city or airport`}
+        value={editing ? query : selectedLabel}
         onChange={(e) => {
-          setQuery(e.target.value.toUpperCase());
+          setQuery(e.target.value);
           setOpen(true);
           setHighlight(0);
         }}
-        onFocus={() => setOpen(true)}
+        onFocus={() => {
+          setEditing(true);
+          setQuery("");
+          setOpen(true);
+        }}
+        onBlur={commitTyped}
         onKeyDown={handleKeyDown}
         maxLength={40}
-        placeholder={placeholder}
+        placeholder={editing ? `Type a city or airport (${selectedLabel})` : placeholder}
         autoComplete="off"
-        className="w-full text-lg font-bold uppercase text-navy-deep outline-none"
+        className="w-full truncate bg-transparent text-lg font-bold text-navy-deep outline-none placeholder:text-sm placeholder:font-medium placeholder:text-ink-muted"
       />
       {open && results.length > 0 ? (
         <ul className="absolute left-0 right-0 top-full z-30 mt-2 max-h-72 overflow-y-auto rounded-2xl border border-slate-100 bg-white py-1.5 text-left shadow-xl">

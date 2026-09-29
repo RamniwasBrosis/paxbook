@@ -502,6 +502,7 @@ export function FlightResultsList() {
                 query={searchContextToQuery(searchContext)}
                 refId={result!.refId}
                 badge={option.id === cheapestId ? "cheapest" : option.id === fastestId ? "fastest" : null}
+                paxCount={searchContext.adt + searchContext.chd + searchContext.inf}
               />
             ))}
             {polling ? (
@@ -554,11 +555,14 @@ function FlightOptionCard({
   query,
   refId,
   badge,
+  paxCount,
 }: {
   option: FlightOptionDto;
   query: string;
   refId: string;
   badge?: "cheapest" | "fastest" | null;
+  /** FTD's fare total covers every passenger in the search, so say so when there's more than one. */
+  paxCount: number;
 }) {
   const [detailsOpen, setDetailsOpen] = React.useState(false);
   const firstLeg = option.legs[0];
@@ -567,7 +571,7 @@ function FlightOptionCard({
   const seats = lowestSeatCount(option.fare.seatsAvailable);
 
   return (
-    <div className={`flat-card relative p-4 sm:p-5 ${badge ? "border-2 " + BADGE_STYLE[badge].border : ""}`}>
+    <div className={`flat-card relative p-4 hover:z-20 focus-within:z-20 sm:p-5 ${badge ? "border-2 " + BADGE_STYLE[badge].border : ""}`}>
       {badge ? (
         <span className={`absolute -top-3 left-5 rounded-full px-3 py-1 text-[11px] font-extrabold uppercase tracking-wide text-white shadow-sm ${BADGE_STYLE[badge].bg}`}>
           {BADGE_LABEL[badge]}
@@ -599,9 +603,7 @@ function FlightOptionCard({
               <span className="flex-1 border-t-2 border-dashed border-navy-deep/25" />
               <Plane className="h-4 w-4 shrink-0 text-navy-deep" strokeWidth={2.25} />
             </span>
-            <span className={`text-xs font-bold ${option.stops === 0 ? "text-green-700" : "text-orange-600"}`}>
-              {option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`}
-            </span>
+            <StopsInfo option={option} />
           </div>
           <div className="text-right">
             <p className="font-display text-2xl font-extrabold leading-none text-navy-deep">{formatTime(lastLeg.arrDateTime)}</p>
@@ -612,9 +614,7 @@ function FlightOptionCard({
         <div className="flex items-center justify-between gap-4 border-t border-dashed border-slate-200 pt-4 md:flex-col md:items-end md:gap-2 md:border-l md:border-t-0 md:pl-6 md:pt-0">
           <div className="md:text-right">
             <p className="font-display text-2xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
-            <p className="text-[11px] text-ink-muted">
-              Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
-            </p>
+            <p className="text-[11px] text-ink-muted">{paxCount > 1 ? `for ${paxCount} travellers, incl. taxes` : "incl. taxes"}</p>
           </div>
           <Link
             href={`/flights/fare?flightId=${option.id}&refId=${encodeURIComponent(refId)}&${query}`}
@@ -690,5 +690,60 @@ function FlightOptionCard({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * "1 stop • LKO" under the route line; hovering (or tapping, on phones) shows each layover the way OTAs
+ * do: wait time, city, airport, and whether you change planes. Built from the real legs, never guessed.
+ */
+function StopsInfo({ option }: { option: FlightOptionDto }) {
+  const [open, setOpen] = React.useState(false);
+  const layovers = option.legs.slice(1).map((leg, i) => {
+    const prev = option.legs[i]!;
+    const mins = Math.max(0, Math.round((new Date(leg.depDateTime).getTime() - new Date(prev.arrDateTime).getTime()) / 60000));
+    return {
+      code: leg.depCode,
+      city: leg.depCityName || prev.arrCityName || leg.depCode,
+      airport: leg.depAirportName || prev.arrAirportName || "",
+      mins,
+      planeChange: `${prev.airlineCode}${prev.flightNo}` !== `${leg.airlineCode}${leg.flightNo}`,
+      terminalChange: Boolean(prev.arrTerminal && leg.depTerminal && prev.arrTerminal !== leg.depTerminal),
+    };
+  });
+
+  if (option.stops === 0 || layovers.length === 0) {
+    return <span className="text-xs font-bold text-green-700">Non-stop</span>;
+  }
+
+  return (
+    <span className="relative" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        onBlur={() => setOpen(false)}
+        aria-expanded={open}
+        className="border-b-2 border-dotted border-orange-400 text-xs font-bold text-orange-600"
+      >
+        {option.stops} stop{option.stops > 1 ? "s" : ""} • {layovers.map((l) => l.code).join(", ")}
+      </button>
+      {open ? (
+        <span role="tooltip" className="absolute left-1/2 top-full z-30 mt-2 block w-72 -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-3.5 text-left shadow-float">
+          <span aria-hidden="true" className="absolute -top-1.5 left-1/2 h-3 w-3 -translate-x-1/2 rotate-45 border-l border-t border-slate-200 bg-white" />
+          {layovers.map((l, i) => (
+            <span key={i} className={`block ${i ? "mt-3 border-t border-slate-100 pt-3" : ""}`}>
+              <span className="block text-sm font-bold text-navy-deep">
+                {formatMinutes(l.mins)} layover at {l.city}
+                {l.planeChange ? <span className="text-accent-ink"> • Plane change</span> : null}
+              </span>
+              <span className="mt-1.5 block rounded-xl bg-mist px-3 py-2 text-xs font-semibold text-navy-deep">
+                {l.airport ? `${l.airport} (${l.code})` : l.code}
+                {l.terminalChange ? <span className="block font-normal text-orange-700">Terminal change</span> : null}
+              </span>
+            </span>
+          ))}
+        </span>
+      ) : null}
+    </span>
   );
 }

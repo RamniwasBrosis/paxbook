@@ -43,7 +43,7 @@ function BrandingForm({
   initial,
   canWrite,
 }: {
-  initial: { logoUrl: string | null; primaryColor: string | null; templateSlug: TemplateSlug; customDomain: string | null };
+  initial: { logoUrl: string | null; primaryColor: string | null; templateSlug: TemplateSlug; customDomain: string | null; aiPlannerEnabled: boolean };
   canWrite: boolean;
 }) {
   const updateBranding = useUpdateBranding();
@@ -51,6 +51,7 @@ function BrandingForm({
   const [primaryColor, setPrimaryColor] = React.useState(initial.primaryColor ?? "#0f4c81");
   const [templateSlug, setTemplateSlug] = React.useState<TemplateSlug>(initial.templateSlug);
   const [customDomain, setCustomDomain] = React.useState(initial.customDomain ?? "");
+  const [aiPlannerEnabled, setAiPlannerEnabled] = React.useState(Boolean(initial.aiPlannerEnabled));
   const [logoStorageKey, setLogoStorageKey] = React.useState<string | undefined>(undefined);
   const [logoPreview, setLogoPreview] = React.useState(initial.logoUrl);
   const [error, setError] = React.useState<string | null>(null);
@@ -76,6 +77,7 @@ function BrandingForm({
         templateSlug,
         customDomain: customDomain || undefined,
         logoStorageKey,
+        aiPlannerEnabled,
       });
       setSaved(true);
     } catch (err) {
@@ -143,6 +145,22 @@ function BrandingForm({
           <p className="text-xs text-slate-400 sm:col-span-2">
             Pointing a custom domain here still requires DNS + SSL setup outside Paxbook — this field just tells the platform which domain to match to your storefront.
           </p>
+
+          <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 sm:col-span-2">
+            <input
+              type="checkbox"
+              disabled={!canWrite}
+              checked={aiPlannerEnabled}
+              onChange={(e) => setAiPlannerEnabled(e.target.checked)}
+              className="mt-0.5 h-4 w-4"
+            />
+            <span>
+              <span className="block text-sm font-medium text-slate-700">Show AI Trip Planner on the website</span>
+              <span className="block text-xs text-slate-500">
+                Adds the AI Planner link to the menu and footer, the planner section on the homepage, and the /ai-planner page. Off hides all of them.
+              </span>
+            </span>
+          </label>
 
           {canWrite ? (
             <div className="sm:col-span-2">

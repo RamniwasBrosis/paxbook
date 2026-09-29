@@ -7,6 +7,7 @@ const FALLBACK: PublicBrandingDto = {
   primaryColor: null,
   templateSlug: "classic",
   googleLoginEnabled: false,
+  aiPlannerEnabled: false,
   ga4MeasurementId: null,
   facebookPixelId: null,
   googleMapsApiKey: null,

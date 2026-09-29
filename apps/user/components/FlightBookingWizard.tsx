@@ -447,7 +447,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             href={`/flights/fare?flightId=${flightId}&refId=${encodeURIComponent(refId)}&${new URLSearchParams(Array.from(params.entries()).filter(([k]) => k !== "flightId")).toString()}`}
             className="mb-3 inline-flex items-center gap-1 text-sm font-bold text-brand-blue hover:text-navy-deep"
           >
-            ← Change fare
+            ← Back
           </Link>
         ) : null}
         <FlightStepper steps={stepperSteps} activeIndex={activeStepIndex} />

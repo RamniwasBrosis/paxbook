@@ -8,6 +8,8 @@ export interface TenantBrandingDto {
   templateSlug: TemplateSlug;
   slug: string;
   customDomain: string | null;
+  /** Shows the AI Trip Planner on the public site. */
+  aiPlannerEnabled: boolean;
 }
 
 export interface UpdateTenantBrandingDto {
@@ -15,6 +17,7 @@ export interface UpdateTenantBrandingDto {
   primaryColor?: string;
   templateSlug?: TemplateSlug;
   customDomain?: string;
+  aiPlannerEnabled?: boolean;
 }
 
 export interface PublicBrandingDto {
@@ -23,6 +26,7 @@ export interface PublicBrandingDto {
   primaryColor: string | null;
   templateSlug: TemplateSlug;
   googleLoginEnabled: boolean;
+  aiPlannerEnabled: boolean;
   ga4MeasurementId: string | null;
   facebookPixelId: string | null;
   googleMapsApiKey: string | null;

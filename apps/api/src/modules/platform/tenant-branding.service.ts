@@ -26,6 +26,7 @@ export class TenantBrandingService {
           primaryColor: dto.primaryColor,
           templateSlug: dto.templateSlug,
           customDomain: dto.customDomain,
+          aiPlannerEnabled: dto.aiPlannerEnabled,
         },
       });
       return this.toDto(tenant);
@@ -37,7 +38,7 @@ export class TenantBrandingService {
     }
   }
 
-  private toDto(tenant: { name: string; slug: string; logoStorageKey: string | null; primaryColor: string | null; templateSlug: string; customDomain: string | null }): TenantBrandingDto {
+  private toDto(tenant: { name: string; slug: string; logoStorageKey: string | null; primaryColor: string | null; templateSlug: string; customDomain: string | null; aiPlannerEnabled: boolean }): TenantBrandingDto {
     return {
       siteName: tenant.name,
       logoStorageKey: tenant.logoStorageKey,
@@ -46,6 +47,7 @@ export class TenantBrandingService {
       templateSlug: tenant.templateSlug === "modern" ? "modern" : "classic",
       slug: tenant.slug,
       customDomain: tenant.customDomain,
+      aiPlannerEnabled: tenant.aiPlannerEnabled,
     };
   }
 }

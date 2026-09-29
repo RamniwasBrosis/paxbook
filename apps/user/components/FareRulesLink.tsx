@@ -58,9 +58,9 @@ export function FareRulesLink({ flightId }: { flightId: string }) {
       <button
         type="button"
         onClick={handleOpen}
-        className="flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-brand hover:underline"
+        className="flex min-h-[2.25rem] items-center gap-1.5 text-sm font-semibold text-brand-blue hover:text-navy-deep hover:underline"
       >
-        <FileText className="h-3 w-3" strokeWidth={2} /> View cancellation &amp; fare rules
+        <FileText className="h-4 w-4" strokeWidth={2} /> View cancellation &amp; fare rules
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="Cancellation & fare rules" subtitle="The airline's own terms for this fare, as quoted by the provider." maxWidth="max-w-lg">
@@ -71,7 +71,7 @@ export function FareRulesLink({ flightId }: { flightId: string }) {
         ) : error ? (
           <p className="py-6 text-sm text-red-600">{error}</p>
         ) : rules ? (
-          <div className="max-h-[60vh] overflow-y-auto text-sm text-slate-700">
+          <div className="text-sm text-slate-700">
             {rules.kind === "structured" && rules.cancellation.length > 0 ? (
               <div className="mb-4">
                 <p className="mb-2 text-xs font-semibold uppercase text-slate-400">Cancellation charges</p>

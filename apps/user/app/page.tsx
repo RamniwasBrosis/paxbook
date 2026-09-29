@@ -86,7 +86,7 @@ export default async function HomePage() {
 
       <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} types={["how_it_works"]} />
 
-      <AiPlannerMock destinations={home.featuredDestinations} />
+      {branding.aiPlannerEnabled ? <AiPlannerMock destinations={home.featuredDestinations} /> : null}
 
       {home.featuredTestimonials.length > 0 ? (
         <section className="py-16 lg:py-20">

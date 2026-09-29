@@ -16,8 +16,8 @@ export async function Header() {
   const [branding, destinations] = await Promise.all([getBranding(), safeFetch<DestinationDto[]>("/public/destinations", [])]);
 
   return branding.templateSlug === "modern" ? (
-    <ModernHeader siteName={branding.siteName} logoUrl={branding.logoUrl} destinations={destinations} googleEnabled={branding.googleLoginEnabled} />
+    <ModernHeader siteName={branding.siteName} logoUrl={branding.logoUrl} destinations={destinations} googleEnabled={branding.googleLoginEnabled} aiPlannerEnabled={branding.aiPlannerEnabled} />
   ) : (
-    <ClassicHeader siteName={branding.siteName} logoUrl={branding.logoUrl} destinations={destinations} googleEnabled={branding.googleLoginEnabled} />
+    <ClassicHeader siteName={branding.siteName} logoUrl={branding.logoUrl} destinations={destinations} googleEnabled={branding.googleLoginEnabled} aiPlannerEnabled={branding.aiPlannerEnabled} />
   );
 }

@@ -22,11 +22,14 @@ export function ClassicHeader({
   logoUrl,
   destinations,
   googleEnabled,
+  aiPlannerEnabled = false,
 }: {
   siteName: string;
   logoUrl: string | null;
   destinations: DestinationDto[];
   googleEnabled?: boolean;
+  /** AI Trip Planner is switched on/off per tenant in admin Settings -> Branding. */
+  aiPlannerEnabled?: boolean;
 }) {
   const session = readSession();
 
@@ -42,6 +45,9 @@ export function ClassicHeader({
         </Link>
 
         <nav aria-label="Main" className="ml-6 hidden items-center gap-1 lg:flex">
+          <Link href="/" className={NAV_LINK_CLASS}>
+            Home
+          </Link>
           <Link href="/packages" className={NAV_LINK_CLASS}>
             Holidays
           </Link>
@@ -51,13 +57,15 @@ export function ClassicHeader({
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/ai-planner"
-            className="ml-1 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-violet-50 px-3.5 py-2 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100"
-          >
-            <Sparkles className="h-4 w-4" strokeWidth={2} />
-            AI Planner
-          </Link>
+          {aiPlannerEnabled ? (
+            <Link
+              href="/ai-planner"
+              className="ml-1 flex items-center gap-1.5 whitespace-nowrap rounded-full bg-violet-50 px-3.5 py-2 text-sm font-bold text-violet-700 transition-colors hover:bg-violet-100"
+            >
+              <Sparkles className="h-4 w-4" strokeWidth={2} />
+              AI Planner
+            </Link>
+          ) : null}
         </nav>
 
         <div className="ml-auto flex items-center gap-2 sm:gap-3">
@@ -79,7 +87,7 @@ export function ClassicHeader({
           />
           <MobileNavMenu
             destinations={destinations}
-            navLinks={[...NAV_LINKS, { href: "/ai-planner", label: "AI Planner" }]}
+            navLinks={[{ href: "/", label: "Home" }, ...NAV_LINKS, ...(aiPlannerEnabled ? [{ href: "/ai-planner", label: "AI Planner" }] : [])]}
             session={session ? { name: session.customer.name } : null}
           >
             <button

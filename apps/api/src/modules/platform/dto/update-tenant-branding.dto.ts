@@ -1,4 +1,4 @@
-import { IsIn, IsOptional, IsString, Matches } from "class-validator";
+import { IsBoolean, IsIn, IsOptional, IsString, Matches } from "class-validator";
 
 export class UpdateTenantBrandingDto {
   @IsOptional()
@@ -16,4 +16,8 @@ export class UpdateTenantBrandingDto {
   @IsOptional()
   @IsString()
   customDomain?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  aiPlannerEnabled?: boolean;
 }

@@ -419,7 +419,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
       <div>
         {step === "passengers" ? (
           <Link href="/flights/round-trip/fare" className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
-            ← Change fares
+            ← Back
           </Link>
         ) : null}
         <FlightStepper steps={stepperSteps} activeIndex={activeStepIndex} />

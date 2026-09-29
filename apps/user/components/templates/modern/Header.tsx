@@ -17,11 +17,13 @@ export function ModernHeader({
   siteName,
   logoUrl,
   destinations,
+  aiPlannerEnabled = false,
 }: {
   siteName: string;
   logoUrl: string | null;
   destinations: DestinationDto[];
   googleEnabled?: boolean;
+  aiPlannerEnabled?: boolean;
 }) {
   const session = readSession();
 
@@ -51,13 +53,15 @@ export function ModernHeader({
               {link.label}
             </Link>
           ))}
-          <Link
-            href="/#ai-planner"
-            className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-navy-deep transition-transform hover:scale-105"
-          >
-            <Sparkles className="h-4 w-4" strokeWidth={2} />
-            AI Trip Planner
-          </Link>
+          {aiPlannerEnabled ? (
+            <Link
+              href="/#ai-planner"
+              className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-accent px-4 py-1.5 text-sm font-bold text-navy-deep transition-transform hover:scale-105"
+            >
+              <Sparkles className="h-4 w-4" strokeWidth={2} />
+              AI Trip Planner
+            </Link>
+          ) : null}
         </nav>
 
         <div className="flex items-center gap-3">

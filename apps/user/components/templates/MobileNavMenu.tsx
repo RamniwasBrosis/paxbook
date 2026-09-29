@@ -6,7 +6,6 @@ import { X, Phone } from "lucide-react";
 import type { DestinationDto } from "@paxbook/types";
 
 const EXTRA_LINKS = [
-  { href: "/ai-planner", label: "AI Trip Planner" },
   { href: "/pages/about-us", label: "About Us" },
   { href: "/contact", label: "Contact" },
 ];

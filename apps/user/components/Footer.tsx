@@ -37,7 +37,6 @@ const COLUMNS = [
     links: [
       { href: "/flights", label: "Flights" },
       { href: "/visa-guide", label: "Visa Guide" },
-      { href: "/ai-planner", label: "AI Planner" },
       { href: "/blog", label: "Travel Guides" },
     ],
   },
@@ -53,6 +52,9 @@ const COLUMNS = [
 
 export async function Footer() {
   const branding = await getBranding();
+  const columns = COLUMNS.map((col) =>
+    col.title === "Services" && branding.aiPlannerEnabled ? { ...col, links: [...col.links, { href: "/ai-planner", label: "AI Planner" }] } : col,
+  );
   return (
     <footer className="bg-cream">
       <div className="mx-auto grid max-w-[90rem] gap-12 px-4 py-16 sm:px-6 md:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr] lg:px-10">
@@ -97,7 +99,7 @@ export async function Footer() {
           </div>
         </div>
 
-        {COLUMNS.map((col) => (
+        {columns.map((col) => (
           <nav key={col.title} aria-label={col.title}>
             <h3 className="font-display text-base font-bold text-navy-deep">{col.title}</h3>
             <ul className="mt-4 space-y-3 text-[0.95rem]">

@@ -63,6 +63,8 @@ model Tenant {
   /// cross-tenant data leak found 2026-09-15. Defaults false so new/other tenants are excluded by
   /// default; only the tenant that actually holds the FTD relationship should have this set true.
   ftdEnabled      Boolean      @default(false)
+  /// Shows the AI Trip Planner (menu link, homepage section, /ai-planner page) on the public site. Off until the owner switches it on in Settings -> Branding.
+  aiPlannerEnabled Boolean     @default(false)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
