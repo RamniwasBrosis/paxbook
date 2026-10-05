@@ -9,6 +9,7 @@ import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromPara
 import { findAirport } from "@/lib/airports";
 import { FlightLoader } from "@/components/FlightLoader";
 import { AirlineLogo } from "@/components/AirlineLogo";
+import { RoundTripLegSummary } from "@/components/RoundTripLegSummary";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const MAX_POLL_ATTEMPTS = 8;
@@ -111,7 +112,7 @@ export function RoundTripResultsList() {
   }
 
   return (
-    <div className="pb-28">
+    <div className="pb-44 md:pb-28">
       <div className="mb-5 flex flex-wrap items-center justify-between gap-4 rounded-[1.75rem] bg-cream px-5 py-5 sm:px-8">
         <div>
           <p className="script-eyebrow text-2xl">Round trip</p>
@@ -151,14 +152,19 @@ export function RoundTripResultsList() {
       </div>
 
       {selectedOnward || selectedReturn ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 bg-navy-deep p-4 text-white shadow-[0_-8px_24px_rgba(18,42,99,0.25)]">
-          <div className="shell flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-6 text-sm">
-              <SelectionSummary label="Departure" option={selectedOnward} />
-              <SelectionSummary label="Return" option={selectedReturn} />
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-navy-deep py-3 text-white shadow-[0_-8px_24px_rgba(18,42,99,0.25)] sm:py-4">
+          <div className="shell flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="grid min-w-0 grid-cols-2 gap-4 md:flex md:gap-10">
+              <RoundTripLegSummary label="Departure" option={selectedOnward} />
+              <RoundTripLegSummary label="Return" option={selectedReturn} />
             </div>
-            <div className="flex items-center gap-4">
-              {combinedTotal > 0 ? <p className="font-display text-2xl font-extrabold text-accent">₹{combinedTotal.toLocaleString("en-IN")}</p> : null}
+            <div className="flex items-center justify-between gap-4 md:justify-end">
+              {combinedTotal > 0 ? (
+                <div className="leading-tight">
+                  <p className="font-display text-2xl font-extrabold text-accent">₹{combinedTotal.toLocaleString("en-IN")}</p>
+                  <p className="text-[11px] text-white/60">{selectedOnward && selectedReturn ? "Round trip total" : "Pick both flights"}</p>
+                </div>
+              ) : null}
               <button
                 type="button"
                 disabled={!selectedOnward || !selectedReturn}
@@ -171,22 +177,6 @@ export function RoundTripResultsList() {
           </div>
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function SelectionSummary({ label, option }: { label: string; option: FlightOptionDto | null }) {
-  const leg = option?.legs[0];
-  return (
-    <div>
-      <p className="text-[10px] font-semibold uppercase text-slate-400">{label}</p>
-      {leg ? (
-        <p className="font-semibold text-navy-deep">
-          {leg.airlineCode}-{leg.flightNo} · {formatTime(leg.depDateTime)} → {formatTime(option!.legs[option!.legs.length - 1]!.arrDateTime)}
-        </p>
-      ) : (
-        <p className="text-slate-400">Not selected</p>
-      )}
     </div>
   );
 }
@@ -256,15 +246,15 @@ function LegOptionCard({ option, selected, onSelect, cheapest }: { option: Fligh
             <AirlineLogo code={firstLeg.airlineCode} size={16} />
             {firstLeg.airlineName} {firstLeg.airlineCode}-{firstLeg.flightNo}
           </p>
-          <div className="flex items-center gap-2 text-sm">
-            <span className="font-display text-lg font-extrabold text-navy-deep">{formatTime(firstLeg.depDateTime)}</span>
-            <span className="text-xs font-semibold text-ink-muted">— {formatMinutes(option.durationTotalMinutes)} —</span>
-            <span className="font-display text-lg font-extrabold text-navy-deep">{formatTime(lastLeg.arrDateTime)}</span>
+          <div className="flex flex-wrap items-center gap-x-2 text-sm">
+            <span className="whitespace-nowrap font-display text-base font-extrabold text-navy-deep sm:text-lg">{formatTime(firstLeg.depDateTime)}</span>
+            <span className="whitespace-nowrap text-xs font-semibold text-ink-muted">{formatMinutes(option.durationTotalMinutes)}</span>
+            <span className="whitespace-nowrap font-display text-base font-extrabold text-navy-deep sm:text-lg">{formatTime(lastLeg.arrDateTime)}</span>
           </div>
           <p className={`text-xs font-bold ${option.stops === 0 ? "text-green-700" : "text-orange-600"}`}>{option.stops === 0 ? "Non-stop" : `${option.stops} stop${option.stops > 1 ? "s" : ""}`}</p>
         </div>
       </div>
-      <p className="font-display text-xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+      <p className="shrink-0 font-display text-lg font-extrabold text-navy-deep sm:text-xl">₹{option.fare.total.toLocaleString("en-IN")}</p>
     </button>
   );
 }

@@ -23,7 +23,7 @@ import { AirlineLogo } from "@/components/AirlineLogo";
 import { FlightStepper } from "@/components/FlightStepper";
 import { TravellerCountEditor, takeCarriedPassengers } from "@/components/TravellerCountEditor";
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
-import { formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams , isDobOptional } from "@/lib/flights";
+import { formatBaggage, formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams , isDobOptional } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 const TITLES = ["Mr", "Mrs", "Ms", "Miss", "Mstr"];
@@ -670,7 +670,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             {option.fare.refundable ? <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> : <ShieldOff className="h-3.5 w-3.5 text-slate-400" />}
             {option.fare.refundable ? "Refundable fare" : "Non-refundable fare"}
           </p>
-          <p className="mt-1">Baggage: {option.fare.baggageCheckIn || "As per airline"} check-in, {option.fare.baggageCabin || "—"} cabin</p>
+          <p className="mt-1">Baggage: {option.fare.baggageCheckIn ? formatBaggage(option.fare.baggageCheckIn) : "As per airline"} check-in, {formatBaggage(option.fare.baggageCabin)} cabin</p>
         </div>
 
         <div className="mt-3 border-t border-slate-100 pt-3 text-sm">

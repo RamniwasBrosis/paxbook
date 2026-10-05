@@ -3,11 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Luggage, ShieldCheck, ShieldOff, Info } from "lucide-react";
+import { Luggage, ShieldCheck, ShieldOff, Info, Briefcase, Utensils, Armchair, Check } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto, SearchFlightRequestDto } from "@paxbook/types";
-import { formatDateTimeLong, formatMinutes, getClientTenantHeader } from "@/lib/flights";
+import { formatBaggage, formatSeatsLeft, getClientTenantHeader, seatsLeft } from "@/lib/flights";
 import { FlightLoader } from "@/components/FlightLoader";
-import { AirlineLogo } from "@/components/AirlineLogo";
+import { FlightJourneyCard } from "@/components/FlightJourneyCard";
+import { RoundTripLegSummary } from "@/components/RoundTripLegSummary";
 import { FareRulesLink } from "@/components/FareRulesLink";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -93,6 +94,8 @@ export function RoundTripFareSelector() {
   }
 
   const combinedTotal = (onwardState.chosen?.fare.total ?? 0) + (returnState.chosen?.fare.total ?? 0);
+  const { adt, chd, inf } = selection.onward.context;
+  const travellers = adt + (chd ?? 0) + (inf ?? 0);
 
   function handleContinue() {
     if (!onwardState.chosen || !returnState.chosen || !selection) return;
@@ -107,21 +110,29 @@ export function RoundTripFareSelector() {
   }
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
+    <div className="flex flex-col gap-6 pb-44 md:pb-28">
       <button type="button" onClick={() => router.back()} className="inline-flex w-fit items-center gap-1 text-sm font-bold text-brand-blue hover:text-navy-deep">
         ← Back to results
       </button>
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-6">
         <LegFareSection title="Departure" leg={selection.onward} state={onwardState} onChoose={chooseOnward} />
         <LegFareSection title="Return" leg={selection.return} state={returnState} onChoose={chooseReturn} />
       </div>
 
       {onwardState.chosen || returnState.chosen ? (
-        <div className="fixed inset-x-0 bottom-0 z-40 bg-navy-deep p-4 text-white shadow-[0_-8px_24px_rgba(18,42,99,0.25)]">
-          <div className="shell flex flex-wrap items-center justify-between gap-4">
-            <p className="text-sm text-white/80">Roundtrip fare for {selection.onward.context.adt} adult(s)</p>
-            <div className="flex items-center gap-4">
-              <p className="font-display text-2xl font-extrabold text-accent">₹{combinedTotal.toLocaleString("en-IN")}</p>
+        <div className="fixed inset-x-0 bottom-0 z-40 bg-navy-deep py-3 text-white shadow-[0_-8px_24px_rgba(18,42,99,0.25)] sm:py-4">
+          <div className="shell flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="grid min-w-0 grid-cols-2 gap-4 md:flex md:gap-10">
+              <RoundTripLegSummary label="Departure" option={onwardState.chosen} />
+              <RoundTripLegSummary label="Return" option={returnState.chosen} />
+            </div>
+            <div className="flex items-center justify-between gap-4 md:justify-end">
+              <div className="leading-tight">
+                <p className="font-display text-2xl font-extrabold text-accent">₹{combinedTotal.toLocaleString("en-IN")}</p>
+                <p className="text-[11px] text-white/60">
+                  Round trip for {travellers} traveller{travellers > 1 ? "s" : ""}, incl. taxes
+                </p>
+              </div>
               <button
                 type="button"
                 disabled={!onwardState.chosen || !returnState.chosen}
@@ -140,32 +151,19 @@ export function RoundTripFareSelector() {
 
 const GST_LABELS: Record<number, string> = { 0: "GST not applicable", 1: "GST mandatory for this fare", 2: "GST invoice available on request" };
 
-function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: StoredLegSelection; state: LegFareState; onChoose: (o: FlightOptionDto) => void }) {
+const TIERS = [
+  { head: "bg-blue-50", ink: "text-blue-700" },
+  { head: "bg-green-50", ink: "text-green-700" },
+  { head: "bg-violet-50", ink: "text-violet-700" },
+  { head: "bg-orange-50", ink: "text-orange-700" },
+];
+
+function LegFareSection({ title, state, onChoose }: { title: string; leg: StoredLegSelection; state: LegFareState; onChoose: (o: FlightOptionDto) => void }) {
   const legs = state.options[0]?.legs ?? [];
+  const sorted = React.useMemo(() => [...state.options].sort((a, b) => a.fare.total - b.fare.total), [state.options]);
   return (
-    <div>
-      <p className="mb-3 font-display text-2xl font-extrabold tracking-tight text-navy-deep">{title}</p>
-      {legs.length > 0 ? (
-        <div className="flat-card mb-3 p-4">
-          <div className="flex flex-col gap-2">
-            {legs.map((flightLeg, idx) => (
-              <div key={idx} className="flex items-start gap-3">
-                <AirlineLogo code={flightLeg.airlineCode} size={28} className="mt-1" />
-                <div className="text-sm">
-                  <p className="font-semibold text-navy-deep">
-                    {flightLeg.airlineName} {flightLeg.flightNo} · {flightLeg.cabin}
-                  </p>
-                  <p className="text-slate-600">
-                    {flightLeg.depCityName} ({flightLeg.depCode}) {formatDateTimeLong(flightLeg.depDateTime)} → {flightLeg.arrCityName} ({flightLeg.arrCode}){" "}
-                    {formatDateTimeLong(flightLeg.arrDateTime)}
-                  </p>
-                  <p className="text-xs text-slate-400">Duration {formatMinutes(flightLeg.durationMinutes)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : null}
+    <div className="flex min-w-0 flex-col gap-5">
+      {legs.length > 0 ? <FlightJourneyCard legs={legs} label={title} /> : <p className="font-display text-2xl font-extrabold text-navy-deep">{title}</p>}
 
       {state.loading ? (
         <div className="flat-card">
@@ -174,42 +172,97 @@ function LegFareSection({ title, leg, state, onChoose }: { title: string; leg: S
       ) : state.error ? (
         <div className="flat-card p-6 text-center text-red-600">{state.error}</div>
       ) : (
-        <div className="grid grid-cols-1 gap-3">
-          {state.options.map((option) => (
-            <div key={option.id} className={`flat-card flex flex-col gap-3 p-5 ${state.chosen?.id === option.id ? "border-2 border-brand-blue bg-brand-blue-soft/30" : ""}`}>
-              <button type="button" onClick={() => onChoose(option)} className="flex flex-col gap-3 text-left">
-                <div>
-                  <p className="flex items-center gap-1.5 font-bold text-navy-deep">
-                    {option.fare.fareTypeLabel || "Standard fare"}
-                    {option.validation.isLowCostCarrier ? <span className="rounded-full bg-mist px-1.5 py-0.5 text-[10px] font-semibold text-slate-500">LCC</span> : null}
-                  </p>
-                  <p className="font-display text-3xl font-extrabold text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
-                  <p className="text-xs text-slate-400">
-                    Base ₹{option.fare.base.toLocaleString("en-IN")} + Tax ₹{option.fare.tax.toLocaleString("en-IN")}
-                  </p>
-                </div>
-                {option.fare.popupMessage ? (
-                  <p className="flex items-start gap-1.5 rounded-lg bg-amber-50 p-2 text-xs text-amber-700">
-                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} /> {option.fare.popupMessage}
-                  </p>
-                ) : null}
-                <div className="flex flex-col gap-2 text-sm text-navy-deep">
-                  <span className="flex items-center gap-1.5">
-                    <Luggage className="h-4 w-4 text-violet-600" strokeWidth={2} /> Check-in: {option.fare.baggageCheckIn || "—"} · Cabin: {option.fare.baggageCabin || "—"}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    {option.fare.refundable ? <ShieldCheck className="h-4 w-4 text-green-600" strokeWidth={2} /> : <ShieldOff className="h-3.5 w-3.5 text-slate-400" strokeWidth={2} />}
-                    {option.fare.refundable ? "Refundable" : "Non-refundable"}
-                  </span>
-                  <span>Seats left: {option.fare.seatsAvailable || "—"}</span>
-                  {GST_LABELS[option.validation.gstIndicator] ? <span className="text-slate-400">{GST_LABELS[option.validation.gstIndicator]}</span> : null}
-                </div>
-              </button>
-              <FareRulesLink flightId={option.id} />
-            </div>
-          ))}
+        <div>
+          <p className="mb-3 font-display text-lg font-extrabold text-navy-deep">
+            Choose your {title.toLowerCase()} fare <span className="text-sm font-semibold text-ink-muted">· {sorted.length} option{sorted.length > 1 ? "s" : ""}</span>
+          </p>
+          <div role="radiogroup" aria-label={`${title} fare`} className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+            {sorted.map((option, idx) => (
+              <FareOptionCard key={option.id} option={option} tierIndex={idx} chosen={state.chosen?.id === option.id} onChoose={() => onChoose(option)} />
+            ))}
+          </div>
         </div>
       )}
     </div>
+  );
+}
+
+function FareOptionCard({ option, tierIndex, chosen, onChoose }: { option: FlightOptionDto; tierIndex: number; chosen: boolean; onChoose: () => void }) {
+  const tier = TIERS[tierIndex % TIERS.length]!;
+  const seats = seatsLeft(option.fare.seatsAvailable);
+  return (
+    <div
+      className={`relative flex flex-col overflow-hidden rounded-3xl border-2 bg-white transition-all duration-200 ${
+        chosen ? "border-brand-blue shadow-float" : "border-slate-200/80 shadow-soft hover:border-brand-blue/40"
+      }`}
+    >
+      <button type="button" role="radio" aria-checked={chosen} onClick={onChoose} className="flex flex-1 flex-col text-left">
+        <div className={`flex items-start justify-between gap-3 px-5 pb-4 pt-5 ${tier.head}`}>
+          <div>
+            <p className={`flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wide ${tier.ink}`}>
+              {option.fare.fareTypeLabel || "Standard fare"}
+              {option.validation.isLowCostCarrier ? <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] font-bold text-ink-muted">LCC</span> : null}
+            </p>
+            <p className="mt-1.5 font-display text-[1.7rem] font-extrabold leading-none text-navy-deep">₹{option.fare.total.toLocaleString("en-IN")}</p>
+            {tierIndex === 0 ? <p className="mt-1.5 text-[11px] font-bold text-green-700">Lowest fare</p> : null}
+          </div>
+          <span
+            aria-hidden="true"
+            className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 ${chosen ? "border-brand-blue bg-brand-blue" : "border-slate-300 bg-white"}`}
+          >
+            {chosen ? <Check className="h-3.5 w-3.5 text-white" strokeWidth={3.5} /> : null}
+          </span>
+        </div>
+        <ul className="flex flex-col gap-2.5 px-5 py-4 text-sm text-navy-deep">
+          {option.fare.popupMessage ? (
+            <li className="flex items-start gap-1.5 rounded-xl bg-amber-50 p-2.5 text-xs text-amber-800">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={2} /> {option.fare.popupMessage}
+            </li>
+          ) : null}
+          <FareFeature icon={<Briefcase className="h-4 w-4 text-violet-600" strokeWidth={2} />} tint="bg-violet-50">
+            Cabin <strong>{formatBaggage(option.fare.baggageCabin)}</strong>
+          </FareFeature>
+          <FareFeature icon={<Luggage className="h-4 w-4 text-blue-600" strokeWidth={2} />} tint="bg-blue-50">
+            Check-in <strong>{formatBaggage(option.fare.baggageCheckIn)}</strong>
+          </FareFeature>
+          <FareFeature
+            icon={option.fare.refundable ? <ShieldCheck className="h-4 w-4 text-green-600" strokeWidth={2} /> : <ShieldOff className="h-4 w-4 text-ink-muted" strokeWidth={2} />}
+            tint={option.fare.refundable ? "bg-green-50" : "bg-slate-100"}
+          >
+            <span className={option.fare.refundable ? "font-semibold text-green-700" : "text-ink-muted"}>
+              {option.fare.refundable ? "Refundable (cancellation fee applies)" : "Non-refundable"}
+            </span>
+          </FareFeature>
+          {option.validation.freeMeal ? (
+            <FareFeature icon={<Utensils className="h-4 w-4 text-orange-600" strokeWidth={2} />} tint="bg-orange-50">
+              Free meal included
+            </FareFeature>
+          ) : null}
+        </ul>
+      </button>
+      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 px-5 py-3">
+        {seats !== null ? (
+          <span className={`inline-flex items-center gap-1.5 text-xs font-bold ${seats <= 5 ? "text-red-600" : "text-ink-muted"}`}>
+            <Armchair className="h-3.5 w-3.5" strokeWidth={2.25} />
+            {seats <= 5 ? `Only ${formatSeatsLeft(option.fare.seatsAvailable)}` : formatSeatsLeft(option.fare.seatsAvailable)}
+          </span>
+        ) : (
+          <span />
+        )}
+        {GST_LABELS[option.validation.gstIndicator] ? <span className="text-[11px] text-ink-muted">{GST_LABELS[option.validation.gstIndicator]}</span> : null}
+        <div className="w-full [&_button]:text-sm">
+          <FareRulesLink flightId={option.id} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FareFeature({ icon, tint, children }: { icon: React.ReactNode; tint: string; children: React.ReactNode }) {
+  return (
+    <li className="flex items-center gap-2.5">
+      <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${tint}`}>{icon}</span>
+      <span>{children}</span>
+    </li>
   );
 }

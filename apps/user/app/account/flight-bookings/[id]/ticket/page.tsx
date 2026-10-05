@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Plane } from "lucide-react";
 import type { FlightBookingDto, FlightLegDto } from "@paxbook/types";
 import { customerFetch, CustomerApiError } from "@/lib/customer-api";
-import { formatDateTimeLong, formatMinutes } from "@/lib/flights";
+import { formatBaggage, formatDateTimeLong, formatMinutes } from "@/lib/flights";
 import { PrintButton } from "@/components/PrintButton";
 import { AirlineLogo } from "@/components/AirlineLogo";
 
@@ -95,8 +95,8 @@ export default async function FlightTicketPage({ params }: { params: { id: strin
           <div className="mt-8 border-t border-slate-100 pt-6">
             <p className="text-xs font-semibold uppercase text-slate-400">Baggage &amp; fare</p>
             <div className="mt-3 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-              <Field label="Check-in baggage" value={booking.fare.baggageCheckIn || "—"} />
-              <Field label="Cabin baggage" value={booking.fare.baggageCabin || "—"} />
+              <Field label="Check-in baggage" value={formatBaggage(booking.fare.baggageCheckIn)} />
+              <Field label="Cabin baggage" value={formatBaggage(booking.fare.baggageCabin)} />
               <Field label="Fare type" value={booking.fare.fareTypeLabel} />
               <Field label="Refundable" value={booking.fare.refundable ? "Yes" : "No"} />
             </div>

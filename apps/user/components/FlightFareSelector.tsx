@@ -3,11 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Luggage, ShieldCheck, ShieldOff, Utensils, Info, Plane, Armchair, ArrowLeft } from "lucide-react";
+import { Luggage, ShieldCheck, ShieldOff, Utensils, Info, Armchair, ArrowLeft } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
-import { formatDateTimeLong, formatMinutes, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
+import { formatBaggage, formatSeatsLeft, getClientTenantHeader, searchContextFromParams } from "@/lib/flights";
 import { FlightLoader } from "@/components/FlightLoader";
-import { AirlineLogo } from "@/components/AirlineLogo";
+import { FlightJourneyCard } from "@/components/FlightJourneyCard";
 import { FareRulesLink } from "@/components/FareRulesLink";
 import { FlightStepper, FLIGHT_JOURNEY_STEPS } from "@/components/FlightStepper";
 
@@ -85,12 +85,6 @@ export function FlightFareSelector() {
   const recommendedId =
     sortedOptions.find((o) => o.fare.refundable && !o.validation.isLowCostCarrier)?.id ?? sortedOptions[Math.floor(sortedOptions.length / 2)]?.id;
 
-  const firstLeg = legs[0]!;
-  const lastLeg = legs[legs.length - 1]!;
-  // Door-to-door time including layovers; summing leg durations would hide the wait between flights.
-  const elapsed = Math.round((new Date(lastLeg.arrDateTime).getTime() - new Date(firstLeg.depDateTime).getTime()) / 60000);
-  const totalMinutes = Number.isFinite(elapsed) && elapsed > 0 ? elapsed : legs.reduce((sum, l) => sum + l.durationMinutes, 0);
-
   return (
     <div className="flex flex-col gap-7">
       <FlightStepper steps={FLIGHT_JOURNEY_STEPS} activeIndex={2} />
@@ -98,56 +92,7 @@ export function FlightFareSelector() {
         <ArrowLeft className="h-4 w-4" strokeWidth={2.5} /> Back to results
       </Link>
 
-      <section aria-label="Flight details" className="overflow-hidden rounded-[1.75rem] bg-navy-deep text-white shadow-float">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4 sm:px-7">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center overflow-hidden rounded-xl bg-white">
-              <AirlineLogo code={firstLeg.airlineCode} size={34} />
-            </span>
-            <div>
-              <p className="font-bold">
-                {legs.map((l) => `${l.airlineName} ${l.flightNo}`).join(" + ")}
-              </p>
-              <p className="text-xs text-white/70">{firstLeg.cabin}</p>
-            </div>
-          </div>
-          <span className="script-eyebrow text-2xl !text-accent">Your flight</span>
-        </div>
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-5 py-6 sm:gap-6 sm:px-7">
-          <div>
-            <p className="font-display text-3xl font-extrabold leading-none sm:text-4xl">{firstLeg.depCode}</p>
-            <p className="mt-1.5 text-sm font-semibold text-white/80">{firstLeg.depCityName}</p>
-            <p className="mt-0.5 text-xs text-white/60">{formatDateTimeLong(firstLeg.depDateTime)}</p>
-          </div>
-          <div className="flex w-24 flex-col items-center gap-1 sm:w-48">
-            <span className="text-xs font-semibold text-white/70">{formatMinutes(totalMinutes)}</span>
-            <span className="flex w-full items-center" aria-hidden="true">
-              <span className="h-2 w-2 rounded-full bg-accent" />
-              <span className="flex-1 border-t-2 border-dashed border-white/30" />
-              <Plane className="h-5 w-5 text-accent" strokeWidth={2.25} />
-            </span>
-            <span className="text-xs font-bold text-accent">
-              {legs.length === 1 ? "Non-stop" : `${legs.length - 1} stop${legs.length > 2 ? "s" : ""}`}
-            </span>
-          </div>
-          <div className="text-right">
-            <p className="font-display text-3xl font-extrabold leading-none sm:text-4xl">{lastLeg.arrCode}</p>
-            <p className="mt-1.5 text-sm font-semibold text-white/80">{lastLeg.arrCityName}</p>
-            <p className="mt-0.5 text-xs text-white/60">{formatDateTimeLong(lastLeg.arrDateTime)}</p>
-          </div>
-        </div>
-        {legs.length > 1 ? (
-          <div className="border-t border-white/10 px-5 py-3 text-xs text-white/70 sm:px-7">
-            {legs.map((l, i) => (
-              <span key={i}>
-                {i > 0 ? " · " : ""}
-                {l.depCode}→{l.arrCode} {formatMinutes(l.durationMinutes)}
-                {l.layoverAirport ? ` (layover ${l.layoverAirport})` : ""}
-              </span>
-            ))}
-          </div>
-        ) : null}
-      </section>
+      <FlightJourneyCard legs={legs} label="Your flight" />
 
       <div>
         <p className="script-eyebrow text-[1.7rem]">Pick what suits you</p>
@@ -176,11 +121,11 @@ export function FlightFareSelector() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                <ComparisonRow label="Baggage check-in" values={sortedOptions.map((o) => o.fare.baggageCheckIn || "—")} />
-                <ComparisonRow label="Baggage cabin" values={sortedOptions.map((o) => o.fare.baggageCabin || "—")} />
+                <ComparisonRow label="Baggage check-in" values={sortedOptions.map((o) => formatBaggage(o.fare.baggageCheckIn))} />
+                <ComparisonRow label="Baggage cabin" values={sortedOptions.map((o) => formatBaggage(o.fare.baggageCabin))} />
                 <ComparisonRow label="Refundable" values={sortedOptions.map((o) => (o.fare.refundable ? "Yes" : "No"))} />
                 <ComparisonRow label="Free meal" values={sortedOptions.map((o) => (o.validation.freeMeal ? "Yes" : "No"))} />
-                <ComparisonRow label="Seats left" values={sortedOptions.map((o) => o.fare.seatsAvailable || "—")} />
+                <ComparisonRow label="Seats left" values={sortedOptions.map((o) => formatSeatsLeft(o.fare.seatsAvailable))} />
                 <ComparisonRow label="GST" values={sortedOptions.map((o) => GST_LABELS[o.validation.gstIndicator] ?? "—")} />
               </tbody>
             </table>
@@ -250,7 +195,7 @@ function FareCard({
         <ul className="flex flex-col gap-2.5 text-sm text-navy-deep">
           <li className="flex items-center gap-2.5">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-violet-50"><Luggage className="h-4 w-4 text-violet-600" strokeWidth={2} /></span>
-            <span>Check-in {option.fare.baggageCheckIn || "—"} · Cabin {option.fare.baggageCabin || "—"}</span>
+            <span>Check-in <strong>{formatBaggage(option.fare.baggageCheckIn)}</strong> · Cabin <strong>{formatBaggage(option.fare.baggageCabin)}</strong></span>
           </li>
           <li className="flex items-center gap-2.5">
             <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${option.fare.refundable ? "bg-green-50" : "bg-slate-100"}`}>
@@ -266,7 +211,7 @@ function FareCard({
           ) : null}
           <li className="flex items-center gap-2.5">
             <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-blue-50"><Armchair className="h-4 w-4 text-blue-600" strokeWidth={2} /></span>
-            Seats left: {option.fare.seatsAvailable || "—"}
+            {formatSeatsLeft(option.fare.seatsAvailable)}
           </li>
         </ul>
         {GST_LABELS[option.validation.gstIndicator] ? <p className="text-xs text-ink-muted">{GST_LABELS[option.validation.gstIndicator]}</p> : null}

@@ -49,6 +49,37 @@ export function formatDateShort(iso: string): string {
   return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
 
+/**
+ * FTD sends baggage per segment joined with "|" ("1 Pc||", "15 Kg|15 Kg"); empty parts mean "same as
+ * before". Shows the distinct values, with "Pc" spelled out.
+ */
+export function formatBaggage(raw: string | null | undefined): string {
+  const parts = [...new Set((raw ?? "").split("|").map((p) => p.trim()).filter(Boolean))];
+  if (parts.length === 0) return "—";
+  return parts.map((p) => p.replace(/(\d+)\s*Pcs?\b/i, (_, n) => `${n} Piece${n === "1" ? "" : "s"}`)).join(" / ");
+}
+
+/** FTD sends seats per segment ("5,18,6"); the bookable count is the smallest of them. */
+export function seatsLeft(raw: string | null | undefined): number | null {
+  const counts = (raw ?? "").split(/[,|]/).map((p) => parseInt(p, 10)).filter((n) => Number.isFinite(n) && n >= 0);
+  return counts.length ? Math.min(...counts) : null;
+}
+
+export function formatSeatsLeft(raw: string | null | undefined): string {
+  const n = seatsLeft(raw);
+  if (n === null) return "—";
+  return `${n} seat${n === 1 ? "" : "s"} left`;
+}
+
+/** Door-to-door minutes from first departure to last arrival, so layovers count; falls back to flying time. */
+export function journeyMinutes(legs: { depDateTime: string; arrDateTime: string; durationMinutes: number }[]): number {
+  const first = legs[0];
+  const last = legs[legs.length - 1];
+  if (!first || !last) return 0;
+  const elapsed = Math.round((new Date(last.arrDateTime).getTime() - new Date(first.depDateTime).getTime()) / 60000);
+  return Number.isFinite(elapsed) && elapsed > 0 ? elapsed : legs.reduce((sum, l) => sum + l.durationMinutes, 0);
+}
+
 export const CABIN_LABELS: Record<string, string> = { E: "Economy", P: "Premium Economy", B: "Business", F: "First" };
 export const FARE_TYPE_LABELS: Record<string, string> = { A: "Regular", S: "Student", C: "Senior Citizen", D: "Defence" };
 

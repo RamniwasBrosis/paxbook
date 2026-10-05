@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Loader2, ArrowRight, RefreshCw, Utensils, ShieldCheck, ShieldOff, AlertTriangle, X, ChevronDown, ChevronUp, Plane, PlaneTakeoff, PlaneLanding, SlidersHorizontal } from "lucide-react";
 import type { FlightOptionDto, FlightSearchResultDto } from "@paxbook/types";
-import { formatMinutes, formatTime, getClientTenantHeader, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
+import { formatBaggage, formatMinutes, formatTime, getClientTenantHeader, seatsLeft, searchContextFromParams, searchContextToQuery } from "@/lib/flights";
 import { findAirport } from "@/lib/airports";
 import { FlightDateStrip } from "@/components/FlightDateStrip";
 import { FlightLoader } from "@/components/FlightLoader";
@@ -519,14 +519,6 @@ export function FlightResultsList() {
   );
 }
 
-function lowestSeatCount(seatsAvailable: string): number | null {
-  const nums = seatsAvailable
-    .split(",")
-    .map((s) => Number(s.trim()))
-    .filter((n) => !Number.isNaN(n));
-  return nums.length > 0 ? Math.min(...nums) : null;
-}
-
 /** Skeleton placeholder shown below already-loaded results while the provider streams in more
  * airlines, so the page doesn't jump back to a full-screen spinner once real results exist. */
 function ResultCardSkeleton() {
@@ -568,7 +560,7 @@ function FlightOptionCard({
   const firstLeg = option.legs[0];
   const lastLeg = option.legs[option.legs.length - 1];
   if (!firstLeg || !lastLeg) return null;
-  const seats = lowestSeatCount(option.fare.seatsAvailable);
+  const seats = seatsLeft(option.fare.seatsAvailable);
 
   return (
     <div className={`flat-card relative p-4 hover:z-20 focus-within:z-20 sm:p-5 ${badge ? "border-2 " + BADGE_STYLE[badge].border : ""}`}>
@@ -632,7 +624,7 @@ function FlightOptionCard({
           {option.fare.refundable ? "Refundable" : "Non-refundable"}
         </span>
         <span className="rounded-full bg-violet-50 px-2.5 py-1 text-[11px] font-bold text-violet-700">
-          {option.fare.baggageCheckIn || "Baggage per airline"} check-in{option.fare.baggageCabin ? ` · ${option.fare.baggageCabin} cabin` : ""}
+          {option.fare.baggageCheckIn ? formatBaggage(option.fare.baggageCheckIn) : "Baggage per airline"} check-in{option.fare.baggageCabin ? ` · ${formatBaggage(option.fare.baggageCabin)} cabin` : ""}
         </span>
         {option.validation.freeMeal ? (
           <span className="flex items-center gap-1 rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-bold text-orange-700">
