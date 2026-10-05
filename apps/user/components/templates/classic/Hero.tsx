@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { ShieldCheck, Headset, Star, Search, Plane, Palmtree, FileCheck2 } from "lucide-react";
+import { ShieldCheck, Headset, Star, Plane } from "lucide-react";
 import type { DestinationDto, PublicStatsDto } from "@paxbook/types";
 import { PlanTripButton } from "@/components/PlanTripButton";
-
-const TRAVEL_STYLES = ["Honeymoon", "Family", "Adventure", "Luxury", "Budget", "Seasonal"];
+import { HomeSearchTabs } from "@/components/HomeSearchTabs";
 
 /**
  * Design 2 (paxbook.in pattern) homepage hero: cream band, handwritten eyebrow, headline with a
@@ -104,59 +103,7 @@ export function ClassicHero({
       </section>
 
       <div className="relative z-10 mx-auto -mt-14 max-w-[90rem] px-4 sm:px-6 lg:px-10">
-        <div className="rounded-3xl border border-slate-200/70 bg-white p-5 shadow-float sm:p-6">
-          <div className="flex flex-wrap gap-2">
-            <span className="inline-flex h-11 items-center gap-2 rounded-full bg-navy-deep px-5 text-sm font-bold text-white">
-              <Palmtree className="h-4 w-4" strokeWidth={2} />
-              Holidays
-            </span>
-            <Link
-              href="/flights"
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-5 text-sm font-semibold text-navy-deep transition-colors hover:border-brand-blue hover:text-brand-blue"
-            >
-              <Plane className="h-4 w-4" strokeWidth={2} />
-              Flights
-            </Link>
-            <Link
-              href="/visa-guide"
-              className="inline-flex h-11 items-center gap-2 rounded-full border border-slate-200 px-5 text-sm font-semibold text-navy-deep transition-colors hover:border-brand-blue hover:text-brand-blue"
-            >
-              <FileCheck2 className="h-4 w-4" strokeWidth={2} />
-              Visa
-            </Link>
-          </div>
-          <form action="/packages" className="mt-4 grid gap-3 md:grid-cols-[1.4fr_1fr_auto]">
-            <label className="flex flex-col gap-1 rounded-2xl border border-slate-200 px-4 py-3 focus-within:border-brand-blue">
-              <span className="text-xs font-bold text-ink-muted">Destination</span>
-              <select name="destination" defaultValue="" className="w-full bg-transparent text-base text-navy-deep focus:outline-none">
-                <option value="">Where do you want to go?</option>
-                {destinations.map((d) => (
-                  <option key={d.id} value={d.slug}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 rounded-2xl border border-slate-200 px-4 py-3 focus-within:border-brand-blue">
-              <span className="text-xs font-bold text-ink-muted">Travel style</span>
-              <select name="category" defaultValue="" className="w-full bg-transparent text-base text-navy-deep focus:outline-none">
-                <option value="">Any style</option>
-                {TRAVEL_STYLES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="submit"
-              className="inline-flex min-h-[3.75rem] items-center justify-center gap-2 rounded-2xl bg-accent px-9 text-base font-extrabold text-navy-deep transition-colors hover:bg-accent-dark"
-            >
-              <Search className="h-5 w-5" strokeWidth={2.5} />
-              Search
-            </button>
-          </form>
-        </div>
+        <HomeSearchTabs destinations={destinations} />
       </div>
     </>
   );

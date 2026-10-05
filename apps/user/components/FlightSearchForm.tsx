@@ -9,7 +9,16 @@ import { AirportAutocomplete } from "@/components/AirportAutocomplete";
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
-export function FlightSearchForm({ compact, initialContext }: { compact?: boolean; initialContext?: SearchFlightRequestDto }) {
+export function FlightSearchForm({
+  compact,
+  embedded,
+  initialContext,
+}: {
+  compact?: boolean;
+  /** Rendered inside another card (the homepage search tabs), so no card chrome of its own. */
+  embedded?: boolean;
+  initialContext?: SearchFlightRequestDto;
+}) {
   const router = useRouter();
   const [tripType, setTripType] = React.useState<0 | 1>(initialContext?.tripType === 1 ? 1 : 0);
   const [serType, setServType] = React.useState<1 | 2>(initialContext?.serType === 2 ? 2 : 1);
@@ -82,7 +91,7 @@ export function FlightSearchForm({ compact, initialContext }: { compact?: boolea
   }
 
   return (
-    <form noValidate onSubmit={handleSubmit} className={`flat-card ${compact ? "p-4" : "p-5 sm:p-6"}`}>
+    <form noValidate onSubmit={handleSubmit} className={embedded ? "" : `flat-card ${compact ? "p-4" : "p-5 sm:p-6"}`}>
       <div className="flex flex-wrap items-center gap-3 text-sm font-bold text-navy-deep">
         <div className="flex items-center gap-2">
           <label className="flex cursor-pointer items-center rounded-full border-2 border-slate-200 px-4 py-2 text-navy-deep transition-colors focus-within:ring-2 focus-within:ring-brand-blue/40 has-[:checked]:border-navy-deep has-[:checked]:bg-navy-deep has-[:checked]:text-white">

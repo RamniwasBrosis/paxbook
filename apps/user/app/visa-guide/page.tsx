@@ -42,7 +42,7 @@ export default async function VisaGuidePage() {
             {countries.map((c) => {
               const image = imageByCountryId.get(c.countryId);
               return (
-                <div key={c.countryId} className="flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                <div key={c.countryId} id={`visa-${c.countryId}`} className="scroll-mt-28 flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
                   <div className="relative h-36 overflow-hidden">
                     {image ? (
                       <img src={image} alt={c.countryName} className="h-full w-full object-cover" />
