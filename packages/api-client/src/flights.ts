@@ -4,6 +4,7 @@ import type {
   AdminFlightSearchResultDto,
   AirportDto,
   CreateFlightBookingRequestDto,
+  FlightImportantInfoSectionDto,
   FlightApiLogDto,
   FlightApiStatusDto,
   FlightBookingDto,
@@ -328,5 +329,26 @@ export function useDeleteFlightRoutePricingRule() {
   return useMutation({
     mutationFn: (id: string) => apiFetch<{ id: string }>(`/admin/flights/pricing/routes/${id}`, { method: "DELETE" }),
     onSuccess: () => invalidateRoutePricingRules(queryClient),
+  });
+}
+
+export function useFlightImportantInfo() {
+  return useQuery({ queryKey: ["admin-flight-important-info"], queryFn: () => apiFetch<FlightImportantInfoSectionDto[]>("/admin/flights/checkout/important-info") });
+}
+
+export function useSaveFlightImportantInfo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (sections: FlightImportantInfoSectionDto[]) =>
+      apiFetch<FlightImportantInfoSectionDto[]>("/admin/flights/checkout/important-info", { method: "PUT", body: { sections } }),
+    onSuccess: (data) => queryClient.setQueryData(["admin-flight-important-info"], data),
+  });
+}
+
+export function useResetFlightImportantInfo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => apiFetch<FlightImportantInfoSectionDto[]>("/admin/flights/checkout/important-info", { method: "DELETE" }),
+    onSuccess: (data) => queryClient.setQueryData(["admin-flight-important-info"], data),
   });
 }

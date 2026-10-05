@@ -54,6 +54,9 @@ export default function FlightsPage() {
           <Link href="/flights/airports" className="text-sm font-medium text-brand hover:underline">
             Airports →
           </Link>
+          <Link href="/flights/booking-info" className="text-sm font-medium text-brand hover:underline">
+            Booking page info →
+          </Link>
           <Link href="/flights/api-tool" className="text-sm font-medium text-brand hover:underline">
             Flight API test tool →
           </Link>

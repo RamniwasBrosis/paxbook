@@ -1,6 +1,6 @@
 import { Plane, Clock } from "lucide-react";
 import type { FlightLegDto } from "@paxbook/types";
-import { formatMinutes, formatTime, journeyMinutes } from "@/lib/flights";
+import { CABIN_LABELS, formatMinutes, formatTime, journeyMinutes } from "@/lib/flights";
 import { AirlineLogo } from "@/components/AirlineLogo";
 
 function formatDay(iso: string): string {
@@ -39,7 +39,7 @@ export function FlightJourneyCard({ legs, label }: { legs: FlightLegDto[]; label
             <div className="min-w-0">
               <p className="truncate font-bold">{carriers.map(([, name]) => name).join(" + ")}</p>
               <p className="text-xs text-white/70">
-                {formatDay(first.depDateTime)} · {first.cabin}
+                {formatDay(first.depDateTime)} · {CABIN_LABELS[first.cabin] ?? first.cabin}
               </p>
             </div>
           </div>
@@ -86,7 +86,7 @@ export function FlightJourneyCard({ legs, label }: { legs: FlightLegDto[]; label
                 <span className="font-bold text-navy-deep">
                   {leg.airlineName} {leg.airlineCode}-{leg.flightNo}
                 </span>
-                <span>· {leg.cabin}</span>
+                <span>· {CABIN_LABELS[leg.cabin] ?? leg.cabin}</span>
                 {leg.aircraftType ? <span className="hidden sm:inline">· {leg.aircraftType}</span> : null}
               </div>
               <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-start gap-3 sm:gap-5">

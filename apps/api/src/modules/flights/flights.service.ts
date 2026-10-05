@@ -27,6 +27,7 @@ import { EmailService } from "../../common/email/email.service";
 import { SmsService } from "../../common/sms/sms.service";
 import { FtdClientService } from "./ftd-client.service";
 import { FlightPricingService } from "./flight-pricing.service";
+import { FlightCheckoutService } from "./flight-checkout.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
 import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapRescheduleResponse, mapSearchOrFareDetails, mapSeats, mapStatementResponse } from "./flight-response-mapper";
 import { buildBookingConfirmedEmail, buildDateChangeRequestedEmail, buildFlightCancelledEmail, buildFlightFailedEmail } from "./flight-email-templates";
@@ -62,6 +63,7 @@ export class FlightsService {
     private readonly email: EmailService,
     private readonly sms: SmsService,
     private readonly config: ConfigService,
+    private readonly checkout: FlightCheckoutService,
   ) {}
 
   /** Applies our margin/discount in place, keyed off the leg data actually returned (not the search
@@ -425,7 +427,10 @@ export class FlightsService {
       throw new BadRequestException({ code: "WEB_CHECKIN_UNAVAILABLE", message: "Web check-in is not available for this fare." });
     }
     const webCheckinTotal = dto.webCheckin ? (priceCheck.ssr?.webCheckinAmount ?? 0) : 0;
-    const totalAmount = priceCheck.option.fare.total + ssrTotal + seatTotal + webCheckinTotal;
+    const grossAmount = priceCheck.option.fare.total + ssrTotal + seatTotal + webCheckinTotal;
+    // A round trip redeems its coupon once across both legs (createRoundTripDraftBooking), never per leg.
+    const coupon = !trip && dto.couponCode ? await this.checkout.quote(tenantId, dto.couponCode, grossAmount) : null;
+    const totalAmount = coupon ? coupon.payable : grossAmount;
 
     const booking = await this.prisma.flightBooking.create({
       data: {
@@ -449,6 +454,8 @@ export class FlightsService {
         searchSnapshot: searchContext as unknown as object,
         fareSnapshot: priceCheck as unknown as object,
         totalAmount,
+        couponCode: coupon?.code ?? null,
+        discountAmount: coupon?.discount ?? null,
         currency: "INR",
         status: "DRAFT",
         paymentStatus: "PENDING",
@@ -513,8 +520,23 @@ export class FlightsService {
       searchContext: leg.searchContext,
     });
 
-    const onward = await this.createDraftBooking(tenantId, customerId, legInput(dto.onward, "onward"), dto.onward.searchContext, { tripId, tripRole: "ONWARD" });
-    const returnLeg = await this.createDraftBooking(tenantId, customerId, legInput(dto.return, "return"), dto.return.searchContext, { tripId, tripRole: "RETURN" });
+    let onward = await this.createDraftBooking(tenantId, customerId, legInput(dto.onward, "onward"), dto.onward.searchContext, { tripId, tripRole: "ONWARD" });
+    let returnLeg = await this.createDraftBooking(tenantId, customerId, legInput(dto.return, "return"), dto.return.searchContext, { tripId, tripRole: "RETURN" });
+
+    if (dto.couponCode) {
+      // One coupon for the whole trip, priced on both legs together; the discount comes off the
+      // onward leg first and any remainder off the return, so each leg's own refund stays bounded.
+      const quote = await this.checkout.quote(tenantId, dto.couponCode, onward.totalAmount + returnLeg.totalAmount);
+      const onwardShare = Math.min(quote.discount, onward.totalAmount);
+      const returnShare = Math.round((quote.discount - onwardShare) * 100) / 100;
+      const applyShare = async (leg: FlightBookingDto, share: number): Promise<FlightBookingDto> => {
+        const totalAmount = Math.round((leg.totalAmount - share) * 100) / 100;
+        await this.prisma.flightBooking.update({ where: { id: leg.id }, data: { totalAmount, couponCode: quote.code, discountAmount: share } });
+        return { ...leg, totalAmount, couponCode: quote.code, discountAmount: share };
+      };
+      onward = await applyShare(onward, onwardShare);
+      returnLeg = await applyShare(returnLeg, returnShare);
+    }
 
     return { tripId, onward, return: returnLeg, totalAmount: onward.totalAmount + returnLeg.totalAmount, currency: onward.currency };
   }
@@ -580,6 +602,7 @@ export class FlightsService {
       this.prisma.flightPayment.update({ where: { id: returnPayment.id }, data: { status: "CAPTURED", capturedAt: new Date(), method, providerPaymentId: dto.razorpayPaymentId ?? null } }),
       this.prisma.flightBooking.updateMany({ where: { id: { in: [onward.id, returnLeg.id] } }, data: { paymentStatus: "PAID" } }),
     ]);
+    await this.checkout.incrementUsage(tenantId, onward.couponCode);
 
     const [bookedOnward, bookedReturn] = await Promise.all([
       this.bookWithProvider(tenantId, customerId, onward.id),
@@ -626,6 +649,7 @@ export class FlightsService {
       data: { status: "CAPTURED", capturedAt: new Date(), method: dto.razorpayPaymentId ? "razorpay" : "dev", providerPaymentId: dto.razorpayPaymentId ?? null },
     });
     await this.prisma.flightBooking.update({ where: { id: booking.id }, data: { paymentStatus: "PAID" } });
+    if (!booking.tripId) await this.checkout.incrementUsage(tenantId, booking.couponCode);
 
     return this.bookWithProvider(tenantId, customerId, booking.id);
   }
@@ -1010,6 +1034,7 @@ export class FlightsService {
   private async computeEstimate(booking: {
     flightId: string | null;
     providerFareAmount: { toNumber(): number } | null;
+    totalAmount: { toNumber(): number };
     currency: string;
     fareSnapshot: unknown;
     passengers: unknown[];
@@ -1029,6 +1054,7 @@ export class FlightsService {
       journeyArrCode: lastLeg?.arrCode ?? "",
       journeyDepDateTime: firstLeg?.depDateTime ?? "",
       currency: booking.currency,
+      paidAmount: booking.totalAmount.toNumber(),
     });
   }
 
@@ -1127,7 +1153,8 @@ export class FlightsService {
   private toDto(b: {
     id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string;
     fareSnapshot: unknown;
-    providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; currency: string; status: string; paymentStatus: string; pnr: string | null;
+    providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; couponCode: string | null; discountAmount: { toNumber(): number } | null;
+    currency: string; status: string; paymentStatus: string; pnr: string | null;
     providerStatus: string | null; errorMessage: string | null; cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
     refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
     estimatedRefundAmount: { toNumber(): number } | null; estimatedCancellationFee: { toNumber(): number } | null; refundEstimateComputedAt: Date | null; refundEstimateNote: string | null;
@@ -1153,6 +1180,8 @@ export class FlightsService {
       fare: snapshot.fare,
       providerFareAmount: b.providerFareAmount ? b.providerFareAmount.toNumber() : null,
       totalAmount: b.totalAmount.toNumber(),
+      couponCode: b.couponCode,
+      discountAmount: b.discountAmount ? b.discountAmount.toNumber() : null,
       currency: b.currency,
       status: b.status as FlightBookingDto["status"],
       paymentStatus: b.paymentStatus as FlightBookingDto["paymentStatus"],

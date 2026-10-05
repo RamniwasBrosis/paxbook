@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { CustomerPortalModule } from "../customer-portal/customer-portal.module";
 import { FtdClientService } from "./ftd-client.service";
+import { FlightCheckoutService } from "./flight-checkout.service";
+import { AdminFlightCheckoutController } from "./admin-flight-checkout.controller";
 import { FlightsService } from "./flights.service";
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightCancellationEstimateService } from "./flight-cancellation-estimate.service";
@@ -20,7 +22,7 @@ import { AirportsService } from "./airports.service";
 
 @Module({
   imports: [CustomerPortalModule],
-  controllers: [
+  controllers: [AdminFlightCheckoutController, 
     PublicFlightsController,
     CustomerFlightsController,
     CustomerFlightTripsController,
@@ -31,6 +33,6 @@ import { AirportsService } from "./airports.service";
     AdminFlightDashboardController,
     AdminAirportsController,
   ],
-  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService, FlightCancellationEstimateService, FlightStatusPollingService, AdminFlightDashboardService, AirportsService],
+  providers: [FtdClientService, FlightsService, AdminFlightBookingsService, FlightPricingService, FlightCancellationEstimateService, FlightStatusPollingService, AdminFlightDashboardService, AirportsService, FlightCheckoutService],
 })
 export class FlightsModule {}

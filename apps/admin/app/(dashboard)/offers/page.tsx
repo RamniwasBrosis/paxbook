@@ -4,7 +4,7 @@ import * as React from "react";
 import { PERMISSIONS } from "@paxbook/config";
 import { useSession, useDestinations, useCoupons, useCreateCoupon, useUpdateCoupon, useDeleteCoupon } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
-import type { CouponDto } from "@paxbook/types";
+import type { CouponDto, CouponScope } from "@paxbook/types";
 import { Badge, Button, Card, CardContent, CardHeader, CardTitle, DataTable, Input, Select } from "@paxbook/ui";
 
 const EMPTY_FORM = {
@@ -17,8 +17,23 @@ const EMPTY_FORM = {
   validFrom: new Date().toISOString().slice(0, 10),
   validTo: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
   usageLimit: "" as string | number,
+  minBookingAmount: "" as string | number,
+  maxDiscountAmount: "" as string | number,
+  appliesTo: "ALL" as CouponScope,
+  showOnCheckout: true,
   isActive: true,
 };
+
+const SCOPE_LABELS: Record<CouponScope, string> = { ALL: "Flights & holidays", FLIGHTS: "Flights only", PACKAGES: "Holidays only" };
+
+/** Coupon dates are whole days in India time; the stored ISO value is UTC. */
+function istDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: "Asia/Kolkata" });
+}
+
+function optionalNumber(value: string | number): number | null {
+  return value === "" ? null : Number(value);
+}
 
 export default function OffersPage() {
   const { hasPermission } = useSession();
@@ -38,7 +53,7 @@ export default function OffersPage() {
     <div className="flex flex-col gap-6">
       <div>
         <h1 className="text-xl font-semibold text-slate-900">Offers &amp; Coupons</h1>
-        <p className="text-sm text-slate-500">Promotional codes, optionally scoped to a destination.</p>
+        <p className="text-sm text-slate-500">Promotional codes for flights and holidays. Flight coupons appear in the &ldquo;Coupons and offers&rdquo; box on the flight booking page.</p>
       </div>
       <OffersContent canWrite={canWrite} />
     </div>
@@ -64,9 +79,13 @@ function OffersContent({ canWrite }: { canWrite: boolean }) {
       discountType: coupon.discountType,
       value: coupon.value,
       destinationId: coupon.destinationId ?? "",
-      validFrom: coupon.validFrom.slice(0, 10),
-      validTo: coupon.validTo.slice(0, 10),
+      validFrom: istDate(coupon.validFrom),
+      validTo: istDate(coupon.validTo),
       usageLimit: coupon.usageLimit ?? "",
+      minBookingAmount: coupon.minBookingAmount ?? "",
+      maxDiscountAmount: coupon.maxDiscountAmount ?? "",
+      appliesTo: coupon.appliesTo,
+      showOnCheckout: coupon.showOnCheckout,
       isActive: coupon.isActive,
     });
   }
@@ -82,7 +101,11 @@ function OffersContent({ canWrite }: { canWrite: boolean }) {
       destinationId: form.destinationId || undefined,
       validFrom: form.validFrom,
       validTo: form.validTo,
-      usageLimit: form.usageLimit === "" ? undefined : Number(form.usageLimit),
+      usageLimit: optionalNumber(form.usageLimit),
+      minBookingAmount: optionalNumber(form.minBookingAmount),
+      maxDiscountAmount: optionalNumber(form.maxDiscountAmount),
+      appliesTo: form.appliesTo,
+      showOnCheckout: form.showOnCheckout,
       isActive: form.isActive,
     };
     try {
@@ -113,8 +136,9 @@ function OffersContent({ canWrite }: { canWrite: boolean }) {
         columns={[
           { header: "Code", cell: (c: CouponDto) => <span className="font-mono">{c.code}</span> },
           { header: "Discount", cell: (c: CouponDto) => (c.discountType === "PERCENT" ? `${c.value}%` : `₹${c.value}`) },
-          { header: "Destination", cell: (c: CouponDto) => c.destinationName ?? "All" },
-          { header: "Valid", cell: (c: CouponDto) => `${c.validFrom.slice(0, 10)} → ${c.validTo.slice(0, 10)}` },
+          { header: "Applies to", cell: (c: CouponDto) => (c.destinationName ? `Holidays · ${c.destinationName}` : SCOPE_LABELS[c.appliesTo]) },
+          { header: "Checkout list", cell: (c: CouponDto) => (c.showOnCheckout ? "Shown" : "Code only") },
+          { header: "Valid", cell: (c: CouponDto) => `${istDate(c.validFrom)} → ${istDate(c.validTo)}` },
           { header: "Used", cell: (c: CouponDto) => `${c.usageCount}${c.usageLimit ? ` / ${c.usageLimit}` : ""}` },
           { header: "Status", cell: (c: CouponDto) => <Badge tone={c.isActive ? "success" : "neutral"}>{c.isActive ? "Active" : "Inactive"}</Badge> },
           ...(canWrite
@@ -179,7 +203,28 @@ function OffersContent({ canWrite }: { canWrite: boolean }) {
                 value={form.value}
                 onChange={(e) => setForm((f) => ({ ...f, value: Number(e.target.value) }))}
               />
-              <Select label="Destination (optional)" value={form.destinationId} onChange={(e) => setForm((f) => ({ ...f, destinationId: e.target.value }))}>
+              <Select id="coupon-applies-to" label="Applies to" value={form.appliesTo} onChange={(e) => setForm((f) => ({ ...f, appliesTo: e.target.value as CouponScope }))}>
+                <option value="ALL">Flights &amp; holidays</option>
+                <option value="FLIGHTS">Flights only</option>
+                <option value="PACKAGES">Holidays only</option>
+              </Select>
+              <Input
+                id="coupon-min-amount"
+                label="Minimum booking amount ₹ (optional)"
+                type="number"
+                min={0}
+                value={form.minBookingAmount}
+                onChange={(e) => setForm((f) => ({ ...f, minBookingAmount: e.target.value }))}
+              />
+              <Input
+                id="coupon-max-discount"
+                label="Maximum discount ₹ (optional, for percent)"
+                type="number"
+                min={0}
+                value={form.maxDiscountAmount}
+                onChange={(e) => setForm((f) => ({ ...f, maxDiscountAmount: e.target.value }))}
+              />
+              <Select label="Destination (optional, holidays only)" value={form.destinationId} onChange={(e) => setForm((f) => ({ ...f, destinationId: e.target.value }))}>
                 <option value="">All destinations</option>
                 {destinationsQuery.data?.map((d) => (
                   <option key={d.id} value={d.id}>
@@ -199,6 +244,10 @@ function OffersContent({ canWrite }: { canWrite: boolean }) {
               <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
                 <input type="checkbox" checked={form.isActive} onChange={(e) => setForm((f) => ({ ...f, isActive: e.target.checked }))} />
                 Active
+              </label>
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                <input type="checkbox" checked={form.showOnCheckout} onChange={(e) => setForm((f) => ({ ...f, showOnCheckout: e.target.checked }))} />
+                Show in the coupon list at flight checkout (otherwise it works only when typed in)
               </label>
               <div className="sm:col-span-2">
                 {error ? <p className="mb-3 text-sm text-red-600">{error}</p> : null}

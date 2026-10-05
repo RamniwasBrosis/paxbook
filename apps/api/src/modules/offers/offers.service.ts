@@ -32,10 +32,12 @@ export class OffersService {
           minBookingAmount: dto.minBookingAmount,
           maxDiscountAmount: dto.maxDiscountAmount,
           destinationId: dto.destinationId,
-          validFrom: new Date(dto.validFrom),
-          validTo: new Date(dto.validTo),
+          validFrom: startOfDay(dto.validFrom),
+          validTo: endOfDay(dto.validTo),
           usageLimit: dto.usageLimit,
           isActive: dto.isActive ?? true,
+          appliesTo: dto.appliesTo ?? "ALL",
+          showOnCheckout: dto.showOnCheckout ?? true,
         },
         include: COUPON_INCLUDE,
       });
@@ -58,10 +60,12 @@ export class OffersService {
           minBookingAmount: dto.minBookingAmount,
           maxDiscountAmount: dto.maxDiscountAmount,
           destinationId: dto.destinationId ?? null,
-          validFrom: new Date(dto.validFrom),
-          validTo: new Date(dto.validTo),
+          validFrom: startOfDay(dto.validFrom),
+          validTo: endOfDay(dto.validTo),
           usageLimit: dto.usageLimit,
           isActive: dto.isActive,
+          appliesTo: dto.appliesTo,
+          showOnCheckout: dto.showOnCheckout,
         },
         include: COUPON_INCLUDE,
       });
@@ -107,6 +111,18 @@ function toCouponDto(coupon: CouponRow): CouponDto {
     usageLimit: coupon.usageLimit,
     usageCount: coupon.usageCount,
     isActive: coupon.isActive,
+    appliesTo: (["ALL", "PACKAGES", "FLIGHTS"].includes(coupon.appliesTo) ? coupon.appliesTo : "ALL") as CouponDto["appliesTo"],
+    showOnCheckout: coupon.showOnCheckout,
     createdAt: coupon.createdAt.toISOString(),
   };
+}
+
+/** The admin picks plain dates; a coupon is valid from the start of its first day to the end of its
+ * last day, India time — `new Date("2026-11-04")` alone would expire it at 05:30 on the 4th. */
+function startOfDay(value: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T00:00:00+05:30`) : new Date(value);
+}
+
+function endOfDay(value: string): Date {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T23:59:59.999+05:30`) : new Date(value);
 }

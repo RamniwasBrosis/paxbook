@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsBoolean, IsEmail, IsInt, IsObject, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
+import { IsBoolean, IsEmail, IsInt, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { SearchFlightDto } from "./search-flight.dto";
 import { FlightGstInputDto, FlightPassengerInputDto } from "./create-flight-booking.dto";
 
@@ -55,4 +55,10 @@ export class CreateRoundTripFlightBookingDto {
   @ValidateNested()
   @Type(() => FlightGstInputDto)
   gst?: FlightGstInputDto;
+
+  /** One coupon for the whole trip; its discount is split across the two legs. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  couponCode?: string;
 }

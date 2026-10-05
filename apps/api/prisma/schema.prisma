@@ -65,6 +65,8 @@ model Tenant {
   ftdEnabled      Boolean      @default(false)
   /// Shows the AI Trip Planner (menu link, homepage section, /ai-planner page) on the public site. Off until the owner switches it on in Settings -> Branding.
   aiPlannerEnabled Boolean     @default(false)
+  /// "Important information" shown on the flight booking page: [{ title, points: string[] }]. Null = built-in defaults.
+  flightImportantInfo Json?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -605,6 +607,10 @@ model Coupon {
   usageLimit        Int?
   usageCount        Int          @default(0)
   isActive          Boolean      @default(true)
+  /// "ALL", "PACKAGES" or "FLIGHTS" — where the code can be redeemed.
+  appliesTo         String       @default("ALL")
+  /// Listed in the coupons box at flight checkout; otherwise it only works when typed in.
+  showOnCheckout    Boolean      @default(true)
   createdAt         DateTime     @default(now())
 
   @@unique([tenantId, code])
@@ -1147,6 +1153,10 @@ model FlightBooking {
   /// kept separately from totalAmount (what the customer actually paid) so admin can see the margin.
   providerFareAmount Decimal?        @db.Decimal(12, 2)
   totalAmount    Decimal             @db.Decimal(12, 2)
+  /// Coupon redeemed on this booking, and this booking's share of its discount (already taken off
+  /// totalAmount). On a round trip the discount is split across the two legs.
+  couponCode     String?
+  discountAmount Decimal?            @db.Decimal(12, 2)
   currency       String              @default("INR")
   status         FlightBookingStatus @default(DRAFT)
   paymentStatus  PaymentStatus       @default(PENDING)

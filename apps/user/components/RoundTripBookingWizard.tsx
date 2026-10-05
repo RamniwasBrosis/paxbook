@@ -13,11 +13,15 @@ import { AirlineLogo } from "@/components/AirlineLogo";
 import { FlightStepper } from "@/components/FlightStepper";
 import { TravellerCountEditor, takeCarriedPassengers } from "@/components/TravellerCountEditor";
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
-import { SsrPicker, sumSsrChoice, sumSeatChoice, cleanSsrChoice, type PassengerSsrChoice } from "@/components/FlightBookingWizard";
+import { sumSsrChoice, sumSeatChoice, cleanSsrChoice, type PassengerSsrChoice } from "@/components/FlightSsr";
+import { FlightTripDetails } from "@/components/FlightTripDetails";
+import { FlightImportantInfo } from "@/components/FlightImportantInfo";
+import { FlightAddOns } from "@/components/FlightAddOns";
+import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
+import { TravellerBasicFields, FIELD_INPUT } from "@/components/TravellerBasicFields";
 import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy , isDobOptional } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
-const TITLES = ["Mr", "Mrs", "Ms", "Miss", "Mstr"];
 const STORAGE_KEY = "pb_round_trip_pax";
 
 declare global {
@@ -290,6 +294,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             // available (see bothLegsSupportWebCheckin) — the checkbox itself is hidden otherwise,
             // so this can't request something the backend would reject.
             webCheckin: Boolean(wantsWebCheckin && onwardPrice?.ssr?.webCheckinEnabled && returnPrice?.ssr?.webCheckinEnabled),
+            ...(couponCode ? { couponCode } : {}),
           }),
         });
         const json = await res.json();
@@ -349,6 +354,31 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     }
   }
 
+  // Mirrors the add-on totals computed below the early returns; needed up here because hooks can't
+  // run conditionally.
+  const preMergedSsr =
+    onwardPrice && returnPrice
+      ? { onward: onwardPrice.ssr?.onward ?? { baggage: [], meals: [] }, return: returnPrice.ssr?.onward, webCheckinEnabled: false, webCheckinAmount: 0 }
+      : null;
+  const preSeatMap: FlightSeatLookupResultDto | null =
+    onwardSeatMap || returnSeatMap ? { onward: onwardSeatMap?.onward ?? [], return: returnSeatMap?.onward } : null;
+  const grossTotal =
+    onwardPrice && returnPrice
+      ? onwardPrice.option.fare.total +
+        returnPrice.option.fare.total +
+        Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, preMergedSsr), 0) +
+        sumSeatChoice(ssrChoices, preSeatMap) +
+        (wantsWebCheckin && onwardPrice.ssr?.webCheckinEnabled && returnPrice.ssr?.webCheckinEnabled
+          ? (onwardPrice.ssr?.webCheckinAmount ?? 0) + (returnPrice.ssr?.webCheckinAmount ?? 0)
+          : 0)
+      : 0;
+  const coupon = useFlightCoupon(grossTotal);
+  const couponCode = coupon.applied?.code;
+  // The draft trip freezes travellers, add-ons and the coupon; any change after it was created needs a new one.
+  React.useEffect(() => {
+    setTripId(null);
+  }, [passengers, ssrChoices, wantsWebCheckin, couponCode, mobile, email, panNo]);
+
   if (!loadedSelection) {
     return (
       <div className="flat-card">
@@ -406,7 +436,11 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   // would reject a request where one leg doesn't support it, so this is never even attempted).
   const bothLegsSupportWebCheckin = Boolean(onwardPrice.ssr?.webCheckinEnabled && returnPrice.ssr?.webCheckinEnabled);
   const webCheckinTotal = wantsWebCheckin && bothLegsSupportWebCheckin ? (onwardPrice.ssr?.webCheckinAmount ?? 0) + (returnPrice.ssr?.webCheckinAmount ?? 0) : 0;
-  const combinedTotal = onwardPrice.option.fare.total + returnPrice.option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal;
+  const discount = coupon.applied?.discount ?? 0;
+  const combinedTotal = Math.max(
+    0,
+    Math.round((onwardPrice.option.fare.total + returnPrice.option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal - discount) * 100) / 100,
+  );
   const stepperSteps = ["Passenger details", "Select seats", "Review & pay"];
   const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
   const seatPassengers: SeatMapPassenger[] = passengers
@@ -436,27 +470,40 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
             </div>
           </div>
         ) : step === "passengers" ? (
-          <form onSubmit={goToSeatsOrReview} className="flex flex-col gap-4">
-            {selection ? (
+          <form onSubmit={goToSeatsOrReview} noValidate className="flex flex-col gap-5">
+            <section aria-labelledby="trip-summary-title" className="flex flex-col gap-4">
+              <h2 id="trip-summary-title" className="font-display text-2xl font-extrabold text-navy-deep">
+                Trip summary
+              </h2>
+              <FlightTripDetails legs={onwardPrice.option.legs} fare={onwardPrice.option.fare} fareRulesFlightId={onwardPrice.option.id} />
+              <FlightTripDetails legs={returnPrice.option.legs} fare={returnPrice.option.fare} fareRulesFlightId={returnPrice.option.id} />
+            </section>
+
+            <FlightImportantInfo />
+
+            <section aria-labelledby="traveller-details-title" className="flex flex-col gap-4">
+              <h2 id="traveller-details-title" className="font-display text-2xl font-extrabold text-navy-deep">
+                Traveller details
+              </h2>
+              <p className="-mt-2 text-sm text-ink-muted">Enter names exactly as on the government ID the traveller will carry.</p>
               <TravellerCountEditor
                 // Each leg was searched as a one-way; rebuild the original round-trip search so a count change re-runs it.
                 context={{ ...selection.onward.context, tripType: 1, reDate: selection.return.context.onDate }}
                 passengersToCarry={passengers}
               />
-            ) : null}
-            {passengers.map((p, idx) => (
-              <PassengerFieldset
-                key={idx}
-                index={idx}
-                passenger={p}
-                dobOptional={isDobOptional(p.pType, selection.onward.context)}
-                docMandatory={docMandatory}
-                onChange={(patch) => updatePassenger(idx, patch)}
-                ssr={mergedSsr}
-                ssrChoice={ssrChoices[idx]}
-                onSsrChange={(next) => updatePassengerSsr(idx, next)}
-              />
-            ))}
+              {passengers.map((p, idx) => (
+                <PassengerFieldset
+                  key={idx}
+                  index={idx}
+                  passenger={p}
+                  dobOptional={isDobOptional(p.pType, selection.onward.context)}
+                  docMandatory={docMandatory}
+                  onChange={(patch) => updatePassenger(idx, patch)}
+                />
+              ))}
+            </section>
+
+            <FlightAddOns passengers={passengers} ssr={mergedSsr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <div className="flat-card p-5">
               <p className="mb-3 font-display text-lg font-bold text-navy-deep">Contact details</p>
@@ -478,6 +525,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
                 </label>
               ) : null}
             </div>
+
+            <FlightCouponBox coupon={coupon} className="lg:hidden" />
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
 
@@ -591,7 +640,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         )}
       </div>
 
-      <aside className="flat-card h-fit overflow-hidden lg:sticky lg:top-24">
+      <div className="flex h-fit flex-col gap-5">
+      <aside className="flat-card overflow-hidden">
         <div className="bg-navy-deep px-5 py-4 text-white">
           <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>
           <p className="mt-1 flex items-center gap-2 font-display text-xl font-extrabold">
@@ -628,6 +678,12 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
             </div>
           ) : null}
+          {discount > 0 ? (
+            <div className="flex justify-between font-semibold text-emerald-700">
+              <span>Coupon {coupon.applied?.code}</span>
+              <span>−₹{discount.toLocaleString("en-IN")}</span>
+            </div>
+          ) : null}
           <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 font-bold text-navy-deep">
             <span>Total</span>
             <span className="font-display text-2xl font-extrabold">₹{combinedTotal.toLocaleString("en-IN")}</span>
@@ -635,6 +691,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         </div>
         </div>
       </aside>
+      <FlightCouponBox coupon={coupon} className="hidden lg:block" />
+      </div>
 
       <Modal open={loginOpen} onClose={() => setLoginOpen(false)} title="Log in to complete your booking" subtitle="Your passenger details are saved — you won't need to re-enter them.">
         <LoginForm
@@ -677,18 +735,12 @@ function PassengerFieldset({
   dobOptional,
   docMandatory,
   onChange,
-  ssr,
-  ssrChoice,
-  onSsrChange,
 }: {
   index: number;
   passenger: PassengerForm;
   dobOptional: boolean;
   docMandatory: boolean;
   onChange: (patch: Partial<PassengerForm>) => void;
-  ssr: React.ComponentProps<typeof SsrPicker>["ssr"];
-  ssrChoice: PassengerSsrChoice | undefined;
-  onSsrChange: (next: PassengerSsrChoice) => void;
 }) {
   const typeLabel = passenger.pType === "A" ? "Adult" : passenger.pType === "C" ? "Child" : "Infant";
   return (
@@ -702,37 +754,13 @@ function PassengerFieldset({
         <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-brand-blue">{typeLabel}</span>
       </div>
       <div className="p-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <select value={passenger.title} onChange={(e) => onChange({ title: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
-          {TITLES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <input required placeholder="First name" aria-label="First name" value={passenger.fName} onChange={(e) => onChange({ fName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-1" />
-        <input required placeholder="Last name" aria-label="Last name" value={passenger.lName} onChange={(e) => onChange({ lName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-        <select value={passenger.gender} onChange={(e) => onChange({ gender: e.target.value as "M" | "F" })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
-          <option value="M">Male</option>
-          <option value="F">Female</option>
-        </select>
-        <label className="col-span-2 sm:col-span-2">
-          <span className="mb-1 block text-xs font-bold text-ink-muted">Date of birth{dobOptional ? " (optional)" : ""}</span>
-          <input required={!dobOptional} type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-        </label>
-      </div>
-      {docMandatory ? (
-        <div className="mt-3">
-          <input
-            required
-            placeholder="ID proof number (required for this fare)" aria-label="ID proof number (required for this fare)"
-            value={passenger.documentId}
-            onChange={(e) => onChange({ documentId: e.target.value })}
-            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:max-w-xs"
-          />
-        </div>
-      ) : null}
-      {passenger.pType !== "I" ? <SsrPicker ssr={ssr} pType={passenger.pType} choice={ssrChoice} onChange={onSsrChange} /> : null}
+        <TravellerBasicFields index={index} passenger={passenger} dobOptional={dobOptional} onChange={onChange} />
+        {docMandatory ? (
+          <label className="mt-4 flex flex-col gap-1.5 sm:max-w-xs">
+            <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">ID proof number (required for this fare)</span>
+            <input required placeholder="ID proof number" value={passenger.documentId} onChange={(e) => onChange({ documentId: e.target.value })} className={FIELD_INPUT} />
+          </label>
+        ) : null}
       </div>
     </fieldset>
   );

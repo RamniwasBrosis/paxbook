@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, MinLength, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsEmail, IsIn, IsInt, IsObject, IsOptional, IsString, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { SearchFlightDto } from "./search-flight.dto";
 
 /** Only ids, never a price — see FlightsService.createDraftBooking, which re-validates every id
@@ -144,4 +144,9 @@ export class CreateFlightBookingDto {
   @ValidateNested()
   @Type(() => SearchFlightDto)
   searchContext!: SearchFlightDto;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  couponCode?: string;
 }

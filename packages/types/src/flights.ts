@@ -292,6 +292,8 @@ export interface CreateFlightBookingRequestDto {
   webCheckin?: boolean;
   gst?: FlightGstInputDto;
   searchContext: SearchFlightRequestDto;
+  /** Validated and priced on the server; an invalid code fails the booking with a clear message. */
+  couponCode?: string;
 }
 
 export type FlightBookingStatus = "DRAFT" | "PENDING_PAYMENT" | "PENDING_CONFIRMATION" | "CONFIRMED" | "FAILED" | "CANCELLATION_PENDING" | "CANCELLED";
@@ -333,6 +335,9 @@ export interface FlightBookingDto {
   /** The provider's own fare total before our margin/discount was applied — null for bookings made before this was tracked. */
   providerFareAmount: number | null;
   totalAmount: number;
+  /** Coupon redeemed and this booking's share of the discount (already taken off totalAmount). */
+  couponCode: string | null;
+  discountAmount: number | null;
   currency: string;
   status: FlightBookingStatus;
   paymentStatus: "PENDING" | "PARTIAL" | "PAID" | "REFUNDED";
@@ -401,6 +406,8 @@ export interface CreateRoundTripBookingRequestDto {
   email: string;
   firstPaxPanNo?: string;
   gst?: FlightGstInputDto;
+  webCheckin?: boolean;
+  couponCode?: string;
 }
 
 export interface FlightTripDto {
@@ -616,4 +623,10 @@ export interface SaveAirportDto {
   city: string;
   country: string;
   isActive?: boolean;
+}
+
+/** One block of the "Important information" section on the flight booking page (admin-managed). */
+export interface FlightImportantInfoSectionDto {
+  title: string;
+  points: string[];
 }

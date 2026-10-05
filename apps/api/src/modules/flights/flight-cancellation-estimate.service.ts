@@ -13,6 +13,9 @@ export interface CancellationEstimateInput {
   journeyArrCode: string;
   journeyDepDateTime: string;
   currency: string;
+  /** What the customer actually paid; a coupon can make it lower than the provider fare, and the
+   * refund estimate must never exceed it. */
+  paidAmount?: number;
 }
 
 function round2(n: number): number {
@@ -99,7 +102,8 @@ export class FlightCancellationEstimateService {
     // identical to per-passenger-then-summed for a uniform percentage, so no separate handling needed.
     const fee = window.amountType === 1 ? (providerFare * window.amount) / 100 : window.amount * passengerCount;
     const cancellationFee = round2(Math.min(fee, providerFare));
-    const estimatedRefundAmount = round2(Math.max(0, providerFare - fee));
+    const uncapped = Math.max(0, providerFare - fee);
+    const estimatedRefundAmount = round2(booking.paidAmount !== undefined ? Math.min(uncapped, booking.paidAmount) : uncapped);
 
     const feeDescription = window.amountType === 1 ? `${window.amount}%` : `₹${window.amount} per passenger`;
     const note = `Based on the airline's cancellation policy for ${journeySegment} (${window.remarks || `${feeDescription} cancellation fee`}). This excludes Paxbook's service fee, which is never refunded — our team will confirm the final amount after cancellation.`;

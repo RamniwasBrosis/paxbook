@@ -23,10 +23,15 @@ import { AirlineLogo } from "@/components/AirlineLogo";
 import { FlightStepper } from "@/components/FlightStepper";
 import { TravellerCountEditor, takeCarriedPassengers } from "@/components/TravellerCountEditor";
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
+import { cleanSsrChoice, sumSeatChoice, sumSsrChoice, type PassengerSsrChoice } from "@/components/FlightSsr";
+import { FlightTripDetails } from "@/components/FlightTripDetails";
+import { FlightImportantInfo } from "@/components/FlightImportantInfo";
+import { FlightAddOns } from "@/components/FlightAddOns";
+import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
+import { TravellerBasicFields, FIELD_INPUT } from "@/components/TravellerBasicFields";
 import { formatBaggage, formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams , isDobOptional } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
-const TITLES = ["Mr", "Mrs", "Ms", "Miss", "Mstr"];
 
 declare global {
   interface Window {
@@ -59,60 +64,6 @@ interface PaymentOrder {
 
 function storageKey(flightId: string, refId: string) {
   return `pb_flight_pax_${flightId}_${refId}`;
-}
-
-export interface SsrLegChoice {
-  baggageId?: string;
-  mealIds?: string[];
-  seatId?: string;
-}
-export interface PassengerSsrChoice {
-  onward?: SsrLegChoice;
-  return?: SsrLegChoice;
-}
-
-/** Sums the real amounts of a passenger's chosen options against the SSR list actually quoted —
- * display-only; the server independently re-validates and recomputes this from scratch on submit. */
-export function sumSsrChoice(choice: PassengerSsrChoice | undefined, ssr: FlightSsrDto | null): number {
-  if (!choice || !ssr) return 0;
-  const addLeg = (leg: SsrLegChoice | undefined, legSsr: { baggage: FlightBaggageOptionDto[]; meals: FlightMealOptionDto[] } | undefined) => {
-    if (!leg || !legSsr) return 0;
-    let sum = 0;
-    if (leg.baggageId) sum += legSsr.baggage.find((b) => b.id === leg.baggageId)?.amount ?? 0;
-    for (const mealId of leg.mealIds ?? []) sum += legSsr.meals.find((m) => m.id === mealId)?.amount ?? 0;
-    return sum;
-  };
-  return addLeg(choice.onward, ssr.onward) + addLeg(choice.return, ssr.return);
-}
-
-/** Seat prices live in the separately-fetched seat map, not FlightSsrDto — sums against whichever
- * seat maps were actually loaded (undefined for a fare with no seat map, e.g. skipped seat step). */
-export function sumSeatChoice(choices: Record<number, PassengerSsrChoice>, seatMap: FlightSeatLookupResultDto | null): number {
-  if (!seatMap) return 0;
-  const flatten = (maps: typeof seatMap.onward | undefined) => (maps ?? []).flatMap((m) => m.seatMap);
-  const onwardSeats = flatten(seatMap.onward);
-  const returnSeats = flatten(seatMap.return);
-  let sum = 0;
-  for (const choice of Object.values(choices)) {
-    if (choice.onward?.seatId) sum += onwardSeats.find((s) => s.seatID === choice.onward!.seatId)?.seatAmt ?? 0;
-    if (choice.return?.seatId) sum += returnSeats.find((s) => s.seatID === choice.return!.seatId)?.seatAmt ?? 0;
-  }
-  return sum;
-}
-
-/** Drops empty legs so the create-booking payload only ever carries a passenger's real selections. */
-export function cleanSsrChoice(choice: PassengerSsrChoice | undefined): FlightPassengerSsrInputDto | undefined {
-  if (!choice) return undefined;
-  const cleanLeg = (leg: SsrLegChoice | undefined) => {
-    if (!leg) return undefined;
-    const mealIds = (leg.mealIds ?? []).filter(Boolean);
-    if (!leg.baggageId && !leg.seatId && mealIds.length === 0) return undefined;
-    return { ...(leg.baggageId ? { baggageId: leg.baggageId } : {}), ...(mealIds.length ? { mealIds } : {}), ...(leg.seatId ? { seatId: leg.seatId } : {}) };
-  };
-  const onward = cleanLeg(choice.onward);
-  const returnLeg = cleanLeg(choice.return);
-  if (!onward && !returnLeg) return undefined;
-  return { ...(onward ? { onward } : {}), ...(returnLeg ? { return: returnLeg } : {}) };
 }
 
 export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLoggedIn: boolean }) {
@@ -334,6 +285,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           webCheckin: wantsWebCheckin,
           ...(wantsGst ? { gst } : {}),
           searchContext,
+          ...(couponCode ? { couponCode } : {}),
         };
         const bookingRes = await fetch("/api/customer/flight-bookings", {
           method: "POST",
@@ -397,6 +349,20 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     }
   }
 
+  const grossTotal = priceCheck
+    ? priceCheck.option.fare.total +
+      Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, priceCheck.ssr), 0) +
+      sumSeatChoice(ssrChoices, seatMap) +
+      (wantsWebCheckin && priceCheck.ssr?.webCheckinEnabled ? priceCheck.ssr.webCheckinAmount : 0)
+    : 0;
+  const coupon = useFlightCoupon(grossTotal);
+  const couponCode = coupon.applied?.code;
+  // The draft booking freezes travellers, add-ons and the coupon; changing any of them after it was
+  // created must create a fresh one, or payment would be for the old details.
+  React.useEffect(() => {
+    setBookingId(null);
+  }, [passengers, ssrChoices, wantsWebCheckin, couponCode, mobile, email, panNo, wantsGst, gst]);
+
   if (!flightId || !refId || !searchContext) {
     return (
       <div className="flat-card p-8 text-center">
@@ -431,7 +397,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const ssrAddOnTotal = Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, ssr), 0);
   const seatAddOnTotal = sumSeatChoice(ssrChoices, seatMap);
   const webCheckinTotal = wantsWebCheckin && ssr?.webCheckinEnabled ? ssr.webCheckinAmount : 0;
-  const displayTotal = option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal;
+  const discount = coupon.applied?.discount ?? 0;
+  const displayTotal = Math.max(0, Math.round((option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal - discount) * 100) / 100);
   const stepperSteps = ["Passenger details", "Select seats", "Review & pay"];
   const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
   const seatPassengers: SeatMapPassenger[] = passengers
@@ -464,22 +431,37 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             </div>
           </div>
         ) : step === "passengers" ? (
-          <form onSubmit={goToSeatsOrReview} className="flex flex-col gap-4">
-            <TravellerCountEditor context={searchContext} passengersToCarry={passengers} />
-            {passengers.map((p, idx) => (
-              <PassengerFieldset
-                key={idx}
-                index={idx}
-                passenger={p}
-                international={searchContext.serType === 2}
-                dobOptional={isDobOptional(p.pType, searchContext)}
-                docMandatory={Boolean(validation?.docMandatory)}
-                onChange={(patch) => updatePassenger(idx, patch)}
-                ssr={ssr}
-                ssrChoice={ssrChoices[idx]}
-                onSsrChange={(next) => updatePassengerSsr(idx, next)}
-              />
-            ))}
+          <form onSubmit={goToSeatsOrReview} noValidate className="flex flex-col gap-5">
+            <section aria-labelledby="trip-summary-title" className="flex flex-col gap-4">
+              <h2 id="trip-summary-title" className="font-display text-2xl font-extrabold text-navy-deep">
+                Trip summary
+              </h2>
+              <FlightTripDetails legs={option.legs} fare={option.fare} fareRulesFlightId={option.id} />
+              {option.returnLegs?.length ? <FlightTripDetails legs={option.returnLegs} fare={option.returnFare ?? option.fare} fareRulesFlightId={option.id} /> : null}
+            </section>
+
+            <FlightImportantInfo />
+
+            <section aria-labelledby="traveller-details-title" className="flex flex-col gap-4">
+              <h2 id="traveller-details-title" className="font-display text-2xl font-extrabold text-navy-deep">
+                Traveller details
+              </h2>
+              <p className="-mt-2 text-sm text-ink-muted">Enter names exactly as on the government ID the traveller will carry.</p>
+              <TravellerCountEditor context={searchContext} passengersToCarry={passengers} />
+              {passengers.map((p, idx) => (
+                <PassengerFieldset
+                  key={idx}
+                  index={idx}
+                  passenger={p}
+                  international={searchContext.serType === 2}
+                  dobOptional={isDobOptional(p.pType, searchContext)}
+                  docMandatory={Boolean(validation?.docMandatory)}
+                  onChange={(patch) => updatePassenger(idx, patch)}
+                />
+              ))}
+            </section>
+
+            <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <div className="flat-card p-5">
               <p className="mb-1 font-display text-lg font-bold text-navy-deep">Contact details</p>
@@ -529,6 +511,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                 </div>
               ) : null}
             </div>
+
+            <FlightCouponBox coupon={coupon} className="lg:hidden" />
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
 
@@ -642,7 +626,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         )}
       </div>
 
-      <aside className="flat-card h-fit overflow-hidden lg:sticky lg:top-24">
+      <div className="flex h-fit flex-col gap-5">
+      <aside className="flat-card overflow-hidden">
         <div className="bg-navy-deep px-5 py-4 text-white">
           <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>
           <p className="mt-1 flex items-center gap-2 font-display text-2xl font-extrabold">
@@ -700,6 +685,12 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
             </div>
           ) : null}
+          {discount > 0 ? (
+            <div className="flex justify-between font-semibold text-emerald-700">
+              <span>Coupon {coupon.applied?.code}</span>
+              <span>−₹{discount.toLocaleString("en-IN")}</span>
+            </div>
+          ) : null}
           <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 font-bold text-navy-deep">
             <span>Total</span>
             <span className="font-display text-2xl font-extrabold">₹{displayTotal.toLocaleString("en-IN")}</span>
@@ -707,6 +698,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         </div>
         </div>
       </aside>
+      <FlightCouponBox coupon={coupon} className="hidden lg:block" />
+      </div>
 
       <Modal open={loginOpen} onClose={() => setLoginOpen(false)} title="Log in to complete your booking" subtitle="Your passenger details are saved — you won't need to re-enter them.">
         <LoginForm
@@ -729,9 +722,6 @@ function PassengerFieldset({
   dobOptional,
   docMandatory,
   onChange,
-  ssr,
-  ssrChoice,
-  onSsrChange,
 }: {
   index: number;
   passenger: PassengerForm;
@@ -739,9 +729,6 @@ function PassengerFieldset({
   dobOptional: boolean;
   docMandatory: boolean;
   onChange: (patch: Partial<PassengerForm>) => void;
-  ssr: FlightSsrDto | null;
-  ssrChoice: PassengerSsrChoice | undefined;
-  onSsrChange: (next: PassengerSsrChoice) => void;
 }) {
   const typeLabel = passenger.pType === "A" ? "Adult" : passenger.pType === "C" ? "Child" : "Infant";
   return (
@@ -755,150 +742,34 @@ function PassengerFieldset({
         <span className="rounded-full bg-white px-2.5 py-1 text-xs font-bold text-brand-blue">{typeLabel}</span>
       </div>
       <div className="p-5">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <select value={passenger.title} onChange={(e) => onChange({ title: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
-          {TITLES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
-          ))}
-        </select>
-        <input required placeholder="First name" aria-label="First name" value={passenger.fName} onChange={(e) => onChange({ fName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-1" />
-        <input required placeholder="Last name" aria-label="Last name" value={passenger.lName} onChange={(e) => onChange({ lName: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-        <select value={passenger.gender} onChange={(e) => onChange({ gender: e.target.value as "M" | "F" })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20">
-          <option value="M">Male</option>
-          <option value="F">Female</option>
-        </select>
-        <label className="col-span-2 sm:col-span-2">
-          <span className="mb-1 block text-xs font-bold text-ink-muted">Date of birth{dobOptional ? " (optional)" : ""}</span>
-          <input required={!dobOptional} type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-        </label>
-      </div>
-      {international ? (
-        <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <input placeholder="Passport no." aria-label="Passport no." value={passenger.ppNo} onChange={(e) => onChange({ ppNo: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-          <input placeholder="Issuing country" aria-label="Issuing country" value={passenger.ppIss} onChange={(e) => onChange({ ppIss: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-          <label>
-            <span className="mb-1 block text-xs font-bold text-ink-muted">Passport expiry</span>
-            <input type="date" value={passenger.ppExp ? passenger.ppExp : ""} onChange={(e) => onChange({ ppExp: e.target.value })} className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-          </label>
-          <input placeholder="Nationality" aria-label="Nationality" value={passenger.ppNat} onChange={(e) => onChange({ ppNat: e.target.value })} className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20" />
-        </div>
-      ) : null}
-      {docMandatory ? (
-        <div className="mt-3">
-          <input
-            required
-            placeholder="ID proof number (required for this fare)" aria-label="ID proof number (required for this fare)"
-            value={passenger.documentId}
-            onChange={(e) => onChange({ documentId: e.target.value })}
-            className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:max-w-xs"
-          />
-        </div>
-      ) : null}
-      {ssr && passenger.pType !== "I" ? <SsrPicker ssr={ssr} pType={passenger.pType} choice={ssrChoice} onChange={onSsrChange} /> : null}
-      </div>
-    </fieldset>
-  );
-}
-
-const SSR_PAX_TYPE_LABEL: Record<"A" | "C", "Adult" | "Child"> = { A: "Adult", C: "Child" };
-
-function ssrOptionMatchesPax(optionPaxType: "Adult" | "Child" | "All", pType: "A" | "C"): boolean {
-  return optionPaxType === "All" || optionPaxType === SSR_PAX_TYPE_LABEL[pType];
-}
-
-/** Real, selectable baggage/meal add-ons for one passenger — "None" plus one radio per option,
- * grouped by leg direction and (for meals) by legRef, since a connecting flight's segments can each
- * offer different meals. Rendered inside each passenger's own card since FTD prices these per
- * passenger, per direction, not once for the whole booking. */
-export function SsrPicker({
-  ssr,
-  pType,
-  choice,
-  onChange,
-}: {
-  ssr: FlightSsrDto;
-  pType: "A" | "C";
-  choice: PassengerSsrChoice | undefined;
-  onChange: (next: PassengerSsrChoice) => void;
-}) {
-  function setBaggage(direction: "onward" | "return", baggageId: string | undefined) {
-    const legChoice = choice?.[direction] ?? {};
-    onChange({ ...choice, [direction]: { ...legChoice, baggageId } });
-  }
-
-  function setMeal(direction: "onward" | "return", legMeals: FlightMealOptionDto[], mealId: string | undefined) {
-    const legChoice = choice?.[direction] ?? {};
-    const otherIds = (legChoice.mealIds ?? []).filter((id) => !legMeals.some((m) => m.id === id));
-    onChange({ ...choice, [direction]: { ...legChoice, mealIds: mealId ? [...otherIds, mealId] : otherIds } });
-  }
-
-  function renderLeg(direction: "onward" | "return", legSsr: { baggage: FlightBaggageOptionDto[]; meals: FlightMealOptionDto[] } | undefined, label: string) {
-    if (!legSsr) return null;
-    const baggageOptions = legSsr.baggage.filter((b) => ssrOptionMatchesPax(b.paxType, pType));
-    const mealsByLegRef = new Map<number, FlightMealOptionDto[]>();
-    legSsr.meals
-      .filter((m) => ssrOptionMatchesPax(m.paxType, pType))
-      .forEach((m) => mealsByLegRef.set(m.legRef, [...(mealsByLegRef.get(m.legRef) ?? []), m]));
-    if (baggageOptions.length === 0 && mealsByLegRef.size === 0) return null;
-
-    const legChoice = choice?.[direction];
-
-    return (
-      <div className="mt-5 border-t border-slate-100 pt-4">
-        <p className="mb-3 font-display text-sm font-bold text-navy-deep">{label} extras</p>
-        {baggageOptions.length > 0 ? (
-          <div className="mb-2">
-            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-violet-700">Extra baggage</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
-                <input type="radio" checked={!legChoice?.baggageId} onChange={() => setBaggage(direction, undefined)} className="accent-brand" />
-                None
-              </label>
-              {baggageOptions.map((b) => (
-                <label key={b.id} className="flex items-center justify-between gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
-                  <span className="flex items-center gap-2">
-                    <input type="radio" checked={legChoice?.baggageId === b.id} onChange={() => setBaggage(direction, b.id)} className="accent-brand" />
-                    {b.description}
-                  </span>
-                  <span className="font-semibold text-navy-deep">+₹{b.amount.toLocaleString("en-IN")}</span>
-                </label>
-              ))}
-            </div>
+        <TravellerBasicFields index={index} passenger={passenger} dobOptional={dobOptional} onChange={onChange} />
+        {international ? (
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-4">
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">Passport no.</span>
+              <input placeholder="Passport no." value={passenger.ppNo} onChange={(e) => onChange({ ppNo: e.target.value })} className={FIELD_INPUT} />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">Issuing country</span>
+              <input placeholder="Issuing country" value={passenger.ppIss} onChange={(e) => onChange({ ppIss: e.target.value })} className={FIELD_INPUT} />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">Passport expiry</span>
+              <input type="date" value={passenger.ppExp ? passenger.ppExp : ""} onChange={(e) => onChange({ ppExp: e.target.value })} className={FIELD_INPUT} />
+            </label>
+            <label className="flex flex-col gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">Nationality</span>
+              <input placeholder="Nationality" value={passenger.ppNat} onChange={(e) => onChange({ ppNat: e.target.value })} className={FIELD_INPUT} />
+            </label>
           </div>
         ) : null}
-        {Array.from(mealsByLegRef.entries()).map(([legRef, meals]) => {
-          const chosenMealId = legChoice?.mealIds?.find((id) => meals.some((m) => m.id === id));
-          return (
-            <div key={legRef} className="mb-2 last:mb-0">
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-orange-700">Meal{mealsByLegRef.size > 1 ? ` (segment ${legRef})` : ""}</p>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                <label className="flex items-center gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
-                  <input type="radio" checked={!chosenMealId} onChange={() => setMeal(direction, meals, undefined)} className="accent-brand" />
-                  None
-                </label>
-                {meals.map((m) => (
-                  <label key={m.id} className="flex items-center justify-between gap-2 cursor-pointer rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-navy-deep transition-colors hover:border-brand-blue/50 has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
-                    <span className="flex items-center gap-2">
-                      <input type="radio" checked={chosenMealId === m.id} onChange={() => setMeal(direction, meals, m.id)} className="accent-brand" />
-                      {m.description}
-                    </span>
-                    <span className="font-semibold text-navy-deep">+₹{m.amount.toLocaleString("en-IN")}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {docMandatory ? (
+          <label className="mt-4 flex flex-col gap-1.5 sm:max-w-xs">
+            <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">ID proof number (required for this fare)</span>
+            <input required placeholder="ID proof number" value={passenger.documentId} onChange={(e) => onChange({ documentId: e.target.value })} className={FIELD_INPUT} />
+          </label>
+        ) : null}
       </div>
-    );
-  }
-
-  return (
-    <>
-      {renderLeg("onward", ssr.onward, ssr.return ? "Departure" : "Flight")}
-      {ssr.return ? renderLeg("return", ssr.return, "Return") : null}
-    </>
+    </fieldset>
   );
 }

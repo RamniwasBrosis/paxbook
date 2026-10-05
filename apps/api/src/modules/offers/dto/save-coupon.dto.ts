@@ -44,4 +44,12 @@ export class SaveCouponDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsIn(["ALL", "PACKAGES", "FLIGHTS"])
+  appliesTo?: "ALL" | "PACKAGES" | "FLIGHTS";
+
+  @IsOptional()
+  @IsBoolean()
+  showOnCheckout?: boolean;
 }
