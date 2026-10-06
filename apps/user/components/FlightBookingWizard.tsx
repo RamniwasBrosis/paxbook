@@ -27,7 +27,9 @@ import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker
 import { cleanSsrChoice, sumSeatChoice, sumSsrChoice, type PassengerSsrChoice } from "@/components/FlightSsr";
 import { FlightTripDetails } from "@/components/FlightTripDetails";
 import { FareSummary } from "@/components/FareSummary";
+import { CancellationPolicySection } from "@/components/CancellationTimeline";
 import { StickySidebar } from "@/components/StickySidebar";
+import { MobileCheckoutBar } from "@/components/MobileCheckoutBar";
 import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/components/FareUpgradeSection";
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
 import { FlightAddOns } from "@/components/FlightAddOns";
@@ -447,7 +449,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         ) : null}
         <FlightStepper steps={stepperSteps} activeIndex={activeStepIndex} />
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 pb-24 lg:pb-0">
 
         {unsupportedMandatory ? (
           <div className="flat-card flex items-start gap-3 border border-amber-200 bg-amber-50 p-5">
@@ -461,7 +463,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             </div>
           </div>
         ) : step === "passengers" ? (
-          <form onSubmit={goToSeatsOrReview} noValidate className="flex flex-col gap-5">
+          <form id="pax-form" onSubmit={goToSeatsOrReview} noValidate className="flex flex-col gap-5">
             <section aria-labelledby="trip-summary-title" className="flex flex-col gap-4">
               <h2 id="trip-summary-title" className="font-display text-2xl font-extrabold text-navy-deep">
                 Trip summary
@@ -469,6 +471,17 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <FlightTripDetails legs={option.legs} fare={option.fare} fareRulesFlightId={option.id} />
               {option.returnLegs?.length ? <FlightTripDetails legs={option.returnLegs} fare={option.returnFare ?? option.fare} fareRulesFlightId={option.id} /> : null}
             </section>
+
+            <CancellationPolicySection
+              journeys={[
+                {
+                  flightId: option.id,
+                  route: `${option.legs[0]?.depCode ?? ""}-${option.legs[option.legs.length - 1]?.arrCode ?? ""}`,
+                  depDateTime: option.legs[0]?.depDateTime ?? "",
+                  airlineCode: option.legs[0]?.airlineCode ?? "",
+                },
+              ]}
+            />
 
             <FareUpgradeSection show={fareOptions.length > 1}>
               <FareUpgradeCards options={fareOptions} currentId={option.id} currentTotal={option.fare.total} onChoose={switchFare} />
@@ -556,10 +569,6 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <FlightCouponBox coupon={coupon} className="lg:hidden" />
-            <div className="flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 text-navy-deep lg:hidden">
-              <span className="font-bold">Total{discount > 0 ? <span className="ml-1.5 text-xs font-semibold text-emerald-700">after ₹{discount.toLocaleString("en-IN")} off</span> : null}</span>
-              <span className="font-display text-xl font-extrabold">₹{displayTotal.toLocaleString("en-IN")}</span>
-            </div>
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
 
@@ -673,6 +682,16 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         )}
       </div>
 
+      {!unsupportedMandatory ? (
+        <MobileCheckoutBar
+          total={chargedTotal ?? displayTotal}
+          note={discount > 0 ? `Incl. taxes · ₹${discount.toLocaleString("en-IN")} coupon off` : undefined}
+          label={step === "review" ? "Confirm & pay" : "Continue"}
+          formId={step === "passengers" ? "pax-form" : undefined}
+          onClick={step === "seats" ? () => setStep("review") : step === "review" ? () => void handleConfirmAndPay() : undefined}
+          busy={step === "passengers" ? loadingSeats : step === "review" ? busy : false}
+        />
+      ) : null}
       <StickySidebar>
       <aside className="flat-card overflow-hidden">
         <div className="bg-navy-deep px-5 py-4 text-white">
