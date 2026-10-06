@@ -6,10 +6,22 @@ const TITLES = ["Mr", "Mrs", "Ms", "Miss", "Mstr"];
 export const FIELD_INPUT =
   "h-12 w-full rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20";
 
-export function FieldLabel({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+/** A red star after the label of a field that must be filled; screen readers get `required` instead. */
+export function RequiredMark() {
+  return (
+    <span className="ml-0.5 text-red-600" aria-hidden="true">
+      *
+    </span>
+  );
+}
+
+export function FieldLabel({ label, required, children, className = "" }: { label: string; required?: boolean; children: React.ReactNode; className?: string }) {
   return (
     <label className={`flex flex-col gap-1.5 ${className}`}>
-      <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">{label}</span>
+      <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">
+        {label}
+        {required ? <RequiredMark /> : null}
+      </span>
       {children}
     </label>
   );
@@ -41,7 +53,7 @@ export function TravellerBasicFields({
   return (
     <div className="flex flex-col gap-4">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-[7.5rem_1fr_1fr]">
-        <FieldLabel label="Title">
+        <FieldLabel label="Title" required>
           <select value={passenger.title} onChange={(e) => onChange({ title: e.target.value })} className={FIELD_INPUT}>
             {TITLES.map((t) => (
               <option key={t} value={t}>
@@ -50,10 +62,10 @@ export function TravellerBasicFields({
             ))}
           </select>
         </FieldLabel>
-        <FieldLabel label="First & Middle Name">
+        <FieldLabel label="First & Middle Name" required>
           <input required placeholder="First & Middle Name" autoComplete="given-name" value={passenger.fName} onChange={(e) => onChange({ fName: e.target.value })} className={FIELD_INPUT} />
         </FieldLabel>
-        <FieldLabel label="Last Name">
+        <FieldLabel label="Last Name" required>
           <input required placeholder="Last Name" autoComplete="family-name" value={passenger.lName} onChange={(e) => onChange({ lName: e.target.value })} className={FIELD_INPUT} />
         </FieldLabel>
       </div>
@@ -61,6 +73,7 @@ export function TravellerBasicFields({
         <div className="flex flex-col gap-1.5">
           <span id={`gender-${index}`} className="text-xs font-bold uppercase tracking-wide text-ink-muted">
             Gender
+            <RequiredMark />
           </span>
           <div role="radiogroup" aria-labelledby={`gender-${index}`} className="inline-flex h-12 w-fit overflow-hidden rounded-xl border border-slate-200">
             {(["M", "F"] as const).map((g) => (
@@ -74,7 +87,7 @@ export function TravellerBasicFields({
             ))}
           </div>
         </div>
-        <FieldLabel label={`Date of Birth${dobOptional ? " (optional)" : ""}`} className="sm:w-72">
+        <FieldLabel label={`Date of Birth${dobOptional ? " (optional)" : ""}`} required={!dobOptional} className="sm:w-72">
           <input required={!dobOptional} type="date" value={passenger.dobIso} onChange={(e) => onChange({ dobIso: e.target.value })} className={FIELD_INPUT} />
         </FieldLabel>
       </div>

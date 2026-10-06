@@ -32,7 +32,9 @@ import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/componen
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
 import { FlightAddOns } from "@/components/FlightAddOns";
 import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
-import { TravellerBasicFields, FIELD_INPUT } from "@/components/TravellerBasicFields";
+import { TravellerBasicFields, FIELD_INPUT, FieldLabel, RequiredMark } from "@/components/TravellerBasicFields";
+import { GuestCheckoutOption } from "@/components/GuestCheckoutOption";
+import { confirmationUrl, createDraft, createPaymentOrder, fareChanged, verifyPayment } from "@/lib/flight-checkout";
 import { formatBaggage, formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams , isDobOptional } from "@/lib/flights";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
@@ -103,6 +105,10 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const [loginOpen, setLoginOpen] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [bookingId, setBookingId] = React.useState<string | null>(null);
+  const [guestCheckout, setGuestCheckout] = React.useState(false);
+  const [guestToken, setGuestToken] = React.useState<string | null>(null);
+  /** What the server will actually charge for the current draft (it re-prices with the airline). */
+  const [chargedTotal, setChargedTotal] = React.useState<number | null>(null);
   const [payError, setPayError] = React.useState<string | null>(null);
 
   // Load fare + baggage/meal breakdown (this also freezes the price we display; the server re-verifies again at booking time).
@@ -258,8 +264,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     });
   }
 
-  async function handleConfirmAndPay() {
-    if (!isLoggedIn) {
+  async function handleConfirmAndPay(asGuest = guestCheckout) {
+    if (!isLoggedIn && !asGuest) {
       setLoginOpen(true);
       return;
     }
@@ -268,6 +274,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     setBusy(true);
     try {
       let currentBookingId = bookingId;
+      let currentGuestToken = guestToken;
       if (!currentBookingId) {
         const payload: CreateFlightBookingRequestDto = {
           flightID: Number(flightId),
@@ -293,25 +300,25 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           searchContext,
           ...(couponCode ? { couponCode } : {}),
         };
-        const bookingRes = await fetch("/api/customer/flight-bookings", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const bookingJson = await bookingRes.json();
-        if (!bookingRes.ok || bookingJson.success === false) throw new Error(bookingJson?.error?.message ?? "Could not create your booking.");
-        currentBookingId = bookingJson.data.id as string;
+        const draft = await createDraft("booking", payload, Boolean(asGuest && !isLoggedIn));
+        currentBookingId = draft.id;
+        currentGuestToken = draft.guestToken;
         setBookingId(currentBookingId);
+        setGuestToken(currentGuestToken);
+        setChargedTotal(draft.total);
+        if (fareChanged(displayTotal, draft.total)) {
+          // The airline re-priced the fare; show the new total and let the customer confirm it.
+          setPayError(`The airline updated this fare. New total: ₹${draft.total.toLocaleString("en-IN")}. Tap Confirm & pay again to continue.`);
+          setBusy(false);
+          return;
+        }
         if (flightId && refId) window.sessionStorage.removeItem(storageKey(flightId, refId));
       }
 
-      const orderRes = await fetch(`/api/customer/flight-bookings/${currentBookingId}/payment/order`, { method: "POST" });
-      const orderJson = await orderRes.json();
-      if (!orderRes.ok || orderJson.success === false) throw new Error(orderJson?.error?.message ?? "Could not start payment.");
-      const order = orderJson.data as PaymentOrder;
+      const order = await createPaymentOrder<PaymentOrder>("booking", currentBookingId, currentGuestToken);
 
       if (order.mock || !order.keyId || !window.Razorpay) {
-        await verifyPayment(currentBookingId, order.paymentId, { devConfirm: true });
+        await finishPayment(currentBookingId, order.paymentId, { devConfirm: true }, currentGuestToken);
         return;
       }
 
@@ -324,11 +331,12 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         description: `${searchContext.depCity} → ${searchContext.arrCity}`,
         prefill: { email, contact: mobile },
         handler: (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
-          void verifyPayment(currentBookingId!, order.paymentId, {
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-          });
+          void finishPayment(
+            currentBookingId!,
+            order.paymentId,
+            { razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id, razorpaySignature: response.razorpay_signature },
+            currentGuestToken,
+          );
         },
       });
       rzp.open();
@@ -339,16 +347,10 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     }
   }
 
-  async function verifyPayment(id: string, paymentId: string, payload: Record<string, unknown>) {
+  async function finishPayment(id: string, paymentId: string, payload: Record<string, unknown>, token: string | null) {
     try {
-      const res = await fetch(`/api/customer/flight-bookings/${id}/payment/${paymentId}/verify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      const json = await res.json();
-      if (!res.ok || json.success === false) throw new Error(json?.error?.message ?? "Payment could not be verified.");
-      router.push(`/account/flight-bookings/${id}?justBooked=1`);
+      await verifyPayment("booking", id, paymentId, payload, token);
+      router.push(confirmationUrl("booking", id, token));
     } catch (err) {
       setPayError(err instanceof Error ? err.message : "Payment could not be verified.");
       setBusy(false);
@@ -384,6 +386,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   // created must create a fresh one, or payment would be for the old details.
   React.useEffect(() => {
     setBookingId(null);
+    setGuestToken(null);
+    setChargedTotal(null);
   }, [passengers, ssrChoices, wantsWebCheckin, couponCode, mobile, email, panNo, wantsGst, gst]);
 
   if (!flightId || !refId || !searchContext) {
@@ -476,7 +480,9 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <h2 id="traveller-details-title" className="font-display text-2xl font-extrabold text-navy-deep">
                 Traveller details
               </h2>
-              <p className="-mt-2 text-sm text-ink-muted">Enter names exactly as on the government ID the traveller will carry.</p>
+              <p className="-mt-2 text-sm text-ink-muted">
+                Enter names exactly as on the government ID the traveller will carry. Fields marked <span className="font-bold text-red-600">*</span> are required.
+              </p>
               <TravellerCountEditor context={searchContext} passengersToCarry={passengers} />
               {passengers.map((p, idx) => (
                 <PassengerFieldset
@@ -496,7 +502,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <p className="mb-1 font-display text-lg font-bold text-navy-deep">Contact details</p>
               <p className="mb-4 text-sm text-ink-muted">Your e-ticket and updates are sent here.</p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <input
+                <FieldLabel label="Mobile number" required>
+                  <input
                   required
                   type="tel"
                   placeholder="Mobile number" aria-label="Mobile number"
@@ -504,7 +511,9 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                   onChange={(e) => setMobile(e.target.value)}
                   className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
                 />
-                <input
+                </FieldLabel>
+                <FieldLabel label="Email address" required>
+                  <input
                   required
                   type="email"
                   placeholder="Email address" aria-label="Email address"
@@ -512,13 +521,16 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                   onChange={(e) => setEmail(e.target.value)}
                   className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
                 />
-                <input
+                </FieldLabel>
+                <FieldLabel label="PAN number" required={Boolean(validation?.panMandatory)} className="sm:col-span-2">
+                  <input
                   required={Boolean(validation?.panMandatory)}
                   placeholder={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"} aria-label={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
                   value={panNo}
                   onChange={(e) => setPanNo(e.target.value.toUpperCase())}
-                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20 sm:col-span-2"
+                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
                 />
+                </FieldLabel>
               </div>
               {ssr?.webCheckinEnabled ? (
                 <label className="mt-3 flex items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-navy-deep has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">
@@ -649,12 +661,12 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               ) : null}
               <button
                 type="button"
-                onClick={handleConfirmAndPay}
+                onClick={() => void handleConfirmAndPay()}
                 disabled={busy}
                 className="flex h-12 items-center gap-2 rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                Confirm &amp; pay ₹{displayTotal.toLocaleString("en-IN")}
+                Confirm &amp; pay ₹{(chargedTotal ?? displayTotal).toLocaleString("en-IN")}
               </button>
             </div>
           </div>
@@ -721,6 +733,14 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             setLoginOpen(false);
           }}
         />
+        <GuestCheckoutOption
+          email={email}
+          onContinue={() => {
+            setGuestCheckout(true);
+            setLoginOpen(false);
+            void handleConfirmAndPay(true);
+          }}
+        />
       </Modal>
     </div>
   );
@@ -776,7 +796,10 @@ function PassengerFieldset({
         ) : null}
         {docMandatory ? (
           <label className="mt-4 flex flex-col gap-1.5 sm:max-w-xs">
-            <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">ID proof number (required for this fare)</span>
+            <span className="text-xs font-bold uppercase tracking-wide text-ink-muted">
+              ID proof number
+              <RequiredMark />
+            </span>
             <input required placeholder="ID proof number" value={passenger.documentId} onChange={(e) => onChange({ documentId: e.target.value })} className={FIELD_INPUT} />
           </label>
         ) : null}

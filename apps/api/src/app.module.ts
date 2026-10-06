@@ -8,6 +8,7 @@ import { apiEnvSchema } from "@paxbook/config";
 import { PrismaModule } from "./common/prisma/prisma.module";
 import { TenantModule } from "./common/tenant/tenant.module";
 import { PublicFlightsController } from "./modules/flights/public-flights.controller";
+import { GuestFlightCheckoutController } from "./modules/flights/guest-flight-checkout.controller";
 import { TenantResolverMiddleware } from "./common/tenant/tenant-resolver.middleware";
 import { StorageModule } from "./common/storage/storage.module";
 import { SmsModule } from "./common/sms/sms.module";
@@ -104,6 +105,6 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     consumer
       .apply(TenantResolverMiddleware)
-      .forRoutes(PublicContentController, PublicLeadsController, CustomerAuthController, VendorAuthController, PublicFlightsController);
+      .forRoutes(PublicContentController, PublicLeadsController, CustomerAuthController, VendorAuthController, PublicFlightsController, GuestFlightCheckoutController);
   }
 }
