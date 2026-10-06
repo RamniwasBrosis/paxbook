@@ -30,6 +30,17 @@ describe("FTD expired token", () => {
     expect(call).toHaveBeenLastCalledWith("postSearchFlightV3", expect.objectContaining({ headers: { "x-api-key": "new" } }));
   });
 
+  it("also retries when FTD says the token is no longer authorised", async () => {
+    const cache = { getOrSet: jest.fn().mockResolvedValueOnce("old").mockResolvedValueOnce("new"), invalidate: jest.fn() };
+    const svc = new FtdClientService({ get: (k: string) => (k === "FTD_MODE" ? "0" : "x") } as never, {} as never, cache as never);
+    jest
+      .spyOn(svc as unknown as { call: (...a: unknown[]) => Promise<unknown> }, "call")
+      .mockRejectedValueOnce(new BadRequestException({ code: "FTD_API_ERROR", message: "Invalid or no Authorization" }))
+      .mockResolvedValueOnce({ ok: true });
+    await expect(svc.fareDetails(1, "r")).resolves.toEqual({ ok: true });
+    expect(cache.invalidate).toHaveBeenCalledTimes(1);
+  });
+
   it("does not retry other errors", async () => {
     const cache = { getOrSet: jest.fn().mockResolvedValue("tok"), invalidate: jest.fn() };
     const svc = new FtdClientService({ get: (k: string) => (k === "FTD_MODE" ? "0" : "x") } as never, {} as never, cache as never);

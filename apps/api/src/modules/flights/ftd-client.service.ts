@@ -24,7 +24,9 @@ export function tokenTtlSeconds(now: Date = new Date()): number {
 function isTokenExpiredError(err: unknown): boolean {
   const response = (err as { getResponse?: () => unknown }).getResponse?.();
   const message = typeof response === "object" && response ? (response as { message?: unknown }).message : (err as Error)?.message;
-  return typeof message === "string" && /token\s*(has\s*)?expired|invalid\s*token/i.test(message);
+  // "Invalid or no Authorization" is what FTD returns once a newer token was made for the same
+  // account elsewhere (e.g. a second server on the same FTD login); a fresh token fixes it too.
+  return typeof message === "string" && /token\s*(has\s*)?expired|invalid\s*token|invalid or no authori[sz]ation/i.test(message);
 }
 
 export class FtdApiError extends Error {
