@@ -99,7 +99,7 @@ export function FlightFareSelector() {
         <h2 className="mb-5 font-display text-3xl font-extrabold tracking-tight text-navy-deep">Choose your fare</h2>
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {sortedOptions.map((option, idx) => (
-            <FareCard key={option.id} option={option} refId={result.refId} query={passThroughQuery} tierIndex={idx} recommended={option.id === recommendedId} />
+            <FareCard key={option.id} option={option} searchFlightId={flightId} query={passThroughQuery} tierIndex={idx} recommended={option.id === recommendedId} />
           ))}
         </div>
       </div>
@@ -159,13 +159,13 @@ function ComparisonRow({ label, values }: { label: string; values: string[] }) {
 
 function FareCard({
   option,
-  refId,
+  searchFlightId,
   query,
   tierIndex,
   recommended,
 }: {
   option: FlightOptionDto;
-  refId: string;
+  searchFlightId: string;
   query: string;
   tierIndex: number;
   recommended: boolean;
@@ -218,7 +218,7 @@ function FareCard({
         {option.validation.remarks ? <p className="text-xs text-ink-muted">{option.validation.remarks}</p> : null}
         <FareRulesLink flightId={option.id} />
         <Link
-          href={`/flights/passengers?flightId=${option.id}&refId=${encodeURIComponent(refId)}&${query}`}
+          href={`/flights/passengers?flightId=${option.id}&fareOf=${encodeURIComponent(searchFlightId)}&${query}`}
           className="mt-auto inline-flex h-12 items-center justify-center rounded-full bg-accent px-4 text-center text-sm font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
         >
           Continue with this fare

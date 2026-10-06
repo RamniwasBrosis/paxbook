@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { BadgePercent, Check, Loader2, X } from "lucide-react";
+import { BadgePercent, Check, Loader2, Percent, X } from "lucide-react";
 import type { CouponQuoteDto, PublicCouponDto } from "@paxbook/types";
 import { getClientTenantHeader } from "@/lib/flights";
 
@@ -173,38 +173,52 @@ export function FlightCouponBox({ coupon, className = "" }: { coupon: FlightCoup
         ) : null}
 
         {coupons.length > 0 ? (
-          <ul className="mt-4 flex flex-col gap-2.5">
+          <>
+            <p className="mt-5 text-xs font-extrabold uppercase tracking-wide text-ink-muted">Available coupons</p>
+            <ul className="mt-2 flex flex-col gap-2.5">
             {coupons.map((c) => {
               const isApplied = applied?.code === c.code;
               return (
-                <li key={c.code} className={`rounded-2xl border px-4 py-3 ${isApplied ? "border-emerald-500 bg-emerald-50/60" : "border-slate-200"}`}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="flex items-center gap-2">
-                        <span className="rounded-md border border-dashed border-accent-ink/60 bg-cream px-2 py-0.5 font-mono text-xs font-extrabold tracking-wider text-navy-deep">{c.code}</span>
-                        <span className="text-sm font-extrabold text-emerald-700">{offerLabel(c)}</span>
-                      </p>
-                      {c.description ? <p className="mt-1.5 text-xs leading-relaxed text-ink-muted">{c.description}</p> : null}
-                      {c.minBookingAmount ? <p className="mt-1 text-[11px] text-ink-muted">On bookings above ₹{c.minBookingAmount.toLocaleString("en-IN")}</p> : null}
+                <li
+                  key={c.code}
+                  className={`rounded-2xl border p-4 transition-colors ${isApplied ? "border-emerald-500 bg-emerald-50/70" : "border-slate-200 hover:border-brand-blue/40"}`}
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-700 text-white" aria-hidden="true">
+                      <Percent className="h-4 w-4" strokeWidth={3} />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+                        <p className="font-display text-[0.95rem] font-extrabold uppercase tracking-wide text-navy-deep">{c.code}</p>
+                        <p className="text-sm font-extrabold text-emerald-700">{offerLabel(c)}</p>
+                      </div>
+                      {c.description ? <p className="mt-1 text-[13px] leading-relaxed text-ink-muted">{c.description}</p> : null}
+                      {c.minBookingAmount ? <p className="mt-1 text-[11px] font-semibold text-ink-muted">Min. booking ₹{c.minBookingAmount.toLocaleString("en-IN")}</p> : null}
+                      <div className="mt-2 flex justify-end">
+                        {isApplied ? (
+                          <span className="inline-flex items-center gap-1 text-sm font-extrabold text-emerald-700">
+                            <Check className="h-4 w-4" strokeWidth={3} /> Applied
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void apply(c.code)}
+                            disabled={busyCode !== null}
+                            aria-label={`Apply coupon ${c.code}`}
+                            className="inline-flex items-center gap-1 text-sm font-extrabold text-brand-blue hover:text-navy-deep disabled:opacity-40"
+                          >
+                            {busyCode === c.code ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                            Apply
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    {isApplied ? (
-                      <span className="shrink-0 text-xs font-extrabold text-emerald-700">Applied</span>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => void apply(c.code)}
-                        disabled={busyCode !== null}
-                        className="inline-flex shrink-0 items-center gap-1 text-sm font-extrabold text-brand-blue hover:text-navy-deep disabled:opacity-40"
-                      >
-                        {busyCode === c.code ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-                        Apply
-                      </button>
-                    )}
                   </div>
                 </li>
               );
             })}
           </ul>
+          </>
         ) : null}
       </div>
     </section>

@@ -5,7 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import { useRouter } from "next/navigation";
 import { Loader2, Plane, AlertTriangle, ShieldCheck } from "lucide-react";
-import type { FlightPassengerInputDto, FlightPriceCheckDto, FlightSeatLookupResultDto, SearchFlightRequestDto } from "@paxbook/types";
+import type { FlightOptionDto, FlightPassengerInputDto, FlightPriceCheckDto, FlightSeatLookupResultDto, SearchFlightRequestDto } from "@paxbook/types";
 import { Modal } from "@/components/Modal";
 import { LoginForm } from "@/components/LoginForm";
 import { FlightLoader } from "@/components/FlightLoader";
@@ -15,6 +15,7 @@ import { TravellerCountEditor, takeCarriedPassengers } from "@/components/Travel
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
 import { sumSsrChoice, sumSeatChoice, cleanSsrChoice, type PassengerSsrChoice } from "@/components/FlightSsr";
 import { FlightTripDetails } from "@/components/FlightTripDetails";
+import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/components/FareUpgradeSection";
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
 import { FlightAddOns } from "@/components/FlightAddOns";
 import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
@@ -54,6 +55,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   const router = useRouter();
   const [selection, setSelection] = React.useState<RoundTripSelection | null>(null);
   const [loadedSelection, setLoadedSelection] = React.useState(false);
+  const [searchSelection, setSearchSelection] = React.useState<RoundTripSelection | null>(null);
 
   React.useEffect(() => {
     const raw = sessionStorage.getItem("pb_round_trip_fare");
@@ -63,6 +65,13 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
       } catch {
         setSelection(null);
       }
+    }
+    // The flights as picked on the results page (before a fare was chosen) — their sibling fares
+    // feed "upgrade your fare".
+    try {
+      setSearchSelection(JSON.parse(sessionStorage.getItem("pb_round_trip_selection") ?? "null"));
+    } catch {
+      setSearchSelection(null);
     }
     setLoadedSelection(true);
   }, []);
@@ -354,6 +363,27 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     }
   }
 
+  const onwardFares = useFareOptions(searchSelection?.onward.flightId ?? null, searchSelection?.onward.refId ?? null);
+  const returnFares = useFareOptions(searchSelection?.return.flightId ?? null, searchSelection?.return.refId ?? null);
+
+  /** Swaps one direction to another fare of the same flight. Travellers and contact details stay;
+   * that direction's add-ons and seats are priced per fare, so they start over. */
+  function switchFare(direction: "onward" | "return", next: FlightOptionDto) {
+    if (!selection) return;
+    const cleared = Object.fromEntries(Object.entries(ssrChoices).map(([i, c]) => [i, { ...c, [direction]: undefined }]));
+    const updated = { ...selection, [direction]: { ...selection[direction], flightId: next.id } };
+    try {
+      sessionStorage.setItem("pb_round_trip_fare", JSON.stringify(updated));
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ passengers, mobile, email, panNo, ssrChoices: cleared, wantsWebCheckin }));
+    } catch {
+      // storage blocked: the switch still happens for this page view
+    }
+    setSsrChoices(cleared);
+    setOnwardSeatMap(null);
+    setReturnSeatMap(null);
+    setSelection(updated);
+  }
+
   // Mirrors the add-on totals computed below the early returns; needed up here because hooks can't
   // run conditionally.
   const preMergedSsr =
@@ -448,15 +478,18 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     .filter((p): p is SeatMapPassenger => p.pType !== "I");
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-      <div>
+      {/* Header spans both columns so the sidebar starts level with the first card on the left. */}
+      <div className="lg:col-span-2">
         {step === "passengers" ? (
           <Link href="/flights/round-trip/fare" className="mb-2 inline-flex items-center gap-1 text-sm font-semibold text-slate-500 hover:text-brand">
             ← Back
           </Link>
         ) : null}
         <FlightStepper steps={stepperSteps} activeIndex={activeStepIndex} />
+      </div>
+      <div className="min-w-0">
 
         {unsupportedMandatory ? (
           <div className="flat-card flex items-start gap-3 border border-amber-200 bg-amber-50 p-5">
@@ -478,6 +511,23 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               <FlightTripDetails legs={onwardPrice.option.legs} fare={onwardPrice.option.fare} fareRulesFlightId={onwardPrice.option.id} />
               <FlightTripDetails legs={returnPrice.option.legs} fare={returnPrice.option.fare} fareRulesFlightId={returnPrice.option.id} />
             </section>
+
+            <FareUpgradeSection show={onwardFares.length > 1 || returnFares.length > 1}>
+              <FareUpgradeCards
+                label={`Departure · ${selection.onward.context.depCity} → ${selection.onward.context.arrCity}`}
+                options={onwardFares}
+                currentId={onwardPrice.option.id}
+                currentTotal={onwardPrice.option.fare.total}
+                onChoose={(o) => switchFare("onward", o)}
+              />
+              <FareUpgradeCards
+                label={`Return · ${selection.return.context.depCity} → ${selection.return.context.arrCity}`}
+                options={returnFares}
+                currentId={returnPrice.option.id}
+                currentTotal={returnPrice.option.fare.total}
+                onChoose={(o) => switchFare("return", o)}
+              />
+            </FareUpgradeSection>
 
             <FlightImportantInfo />
 
@@ -503,7 +553,6 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               ))}
             </section>
 
-            <FlightAddOns passengers={passengers} ssr={mergedSsr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <div className="flat-card p-5">
               <p className="mb-3 font-display text-lg font-bold text-navy-deep">Contact details</p>
@@ -526,7 +575,13 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               ) : null}
             </div>
 
+            <FlightAddOns passengers={passengers} ssr={mergedSsr} choices={ssrChoices} onChange={updatePassengerSsr} />
+
             <FlightCouponBox coupon={coupon} className="lg:hidden" />
+            <div className="flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 text-navy-deep lg:hidden">
+              <span className="font-bold">Total{discount > 0 ? <span className="ml-1.5 text-xs font-semibold text-emerald-700">after ₹{discount.toLocaleString("en-IN")} off</span> : null}</span>
+              <span className="font-display text-xl font-extrabold">₹{combinedTotal.toLocaleString("en-IN")}</span>
+            </div>
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
 
@@ -640,7 +695,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         )}
       </div>
 
-      <div className="flex h-fit flex-col gap-5">
+      {/* Stays in view while the long form scrolls; scrolls on its own if taller than the screen. */}
+      <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:pr-1 [scrollbar-width:thin]">
       <aside className="flat-card overflow-hidden">
         <div className="bg-navy-deep px-5 py-4 text-white">
           <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>

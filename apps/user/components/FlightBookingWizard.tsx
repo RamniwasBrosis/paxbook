@@ -9,6 +9,7 @@ import type {
   CreateFlightBookingRequestDto,
   FlightBaggageOptionDto,
   FlightMealOptionDto,
+  FlightOptionDto,
   FlightPassengerInputDto,
   FlightPassengerSsrInputDto,
   FlightPriceCheckDto,
@@ -25,6 +26,7 @@ import { TravellerCountEditor, takeCarriedPassengers } from "@/components/Travel
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
 import { cleanSsrChoice, sumSeatChoice, sumSsrChoice, type PassengerSsrChoice } from "@/components/FlightSsr";
 import { FlightTripDetails } from "@/components/FlightTripDetails";
+import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/components/FareUpgradeSection";
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
 import { FlightAddOns } from "@/components/FlightAddOns";
 import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
@@ -71,6 +73,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const params = useSearchParams();
   const flightId = params.get("flightId");
   const refId = params.get("refId");
+  // The search-level flight id the fares were listed for; its sibling fares feed "upgrade your fare".
+  const fareOf = params.get("fareOf");
   const searchContext = React.useMemo(() => searchContextFromParams(params), [params]);
 
   const [priceCheck, setPriceCheck] = React.useState<FlightPriceCheckDto | null>(null);
@@ -349,6 +353,23 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     }
   }
 
+  const fareOptions = useFareOptions(fareOf, refId);
+
+  /** Swaps to another fare of the same flight, keeping typed travellers and contact details; add-ons
+   * are priced per fare, so they start over. */
+  function switchFare(next: FlightOptionDto) {
+    if (!refId) return;
+    try {
+      window.sessionStorage.setItem(storageKey(next.id, refId), JSON.stringify({ passengers, mobile, email, panNo, ssrChoices: {}, wantsWebCheckin: false }));
+    } catch {
+      // storage blocked: the new fare still loads, details just need retyping
+    }
+    const q = new URLSearchParams(params);
+    q.set("flightId", next.id);
+    setSeatMap(null);
+    router.replace(`/flights/passengers?${q.toString()}`, { scroll: false });
+  }
+
   const grossTotal = priceCheck
     ? priceCheck.option.fare.total +
       Object.values(ssrChoices).reduce((sum, choice) => sum + sumSsrChoice(choice, priceCheck.ssr), 0) +
@@ -406,18 +427,21 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     .filter((p): p is SeatMapPassenger => p.pType !== "I");
 
   return (
-    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
-      <div>
+      {/* Header spans both columns so the sidebar starts level with the first card on the left. */}
+      <div className="lg:col-span-2">
         {step === "passengers" ? (
           <Link
-            href={`/flights/fare?flightId=${flightId}&refId=${encodeURIComponent(refId)}&${new URLSearchParams(Array.from(params.entries()).filter(([k]) => k !== "flightId")).toString()}`}
+            href={`/flights/fare?flightId=${fareOf ?? flightId}&${new URLSearchParams(Array.from(params.entries()).filter(([k]) => k !== "flightId" && k !== "fareOf")).toString()}`}
             className="mb-3 inline-flex items-center gap-1 text-sm font-bold text-brand-blue hover:text-navy-deep"
           >
             ← Back
           </Link>
         ) : null}
         <FlightStepper steps={stepperSteps} activeIndex={activeStepIndex} />
+      </div>
+      <div className="min-w-0">
 
         {unsupportedMandatory ? (
           <div className="flat-card flex items-start gap-3 border border-amber-200 bg-amber-50 p-5">
@@ -440,6 +464,10 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               {option.returnLegs?.length ? <FlightTripDetails legs={option.returnLegs} fare={option.returnFare ?? option.fare} fareRulesFlightId={option.id} /> : null}
             </section>
 
+            <FareUpgradeSection show={fareOptions.length > 1}>
+              <FareUpgradeCards options={fareOptions} currentId={option.id} currentTotal={option.fare.total} onChoose={switchFare} />
+            </FareUpgradeSection>
+
             <FlightImportantInfo />
 
             <section aria-labelledby="traveller-details-title" className="flex flex-col gap-4">
@@ -461,7 +489,6 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               ))}
             </section>
 
-            <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <div className="flat-card p-5">
               <p className="mb-1 font-display text-lg font-bold text-navy-deep">Contact details</p>
@@ -512,7 +539,13 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               ) : null}
             </div>
 
+            <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} />
+
             <FlightCouponBox coupon={coupon} className="lg:hidden" />
+            <div className="flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 text-navy-deep lg:hidden">
+              <span className="font-bold">Total{discount > 0 ? <span className="ml-1.5 text-xs font-semibold text-emerald-700">after ₹{discount.toLocaleString("en-IN")} off</span> : null}</span>
+              <span className="font-display text-xl font-extrabold">₹{displayTotal.toLocaleString("en-IN")}</span>
+            </div>
 
             {formError ? <p className="text-sm text-red-600">{formError}</p> : null}
 
@@ -626,7 +659,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         )}
       </div>
 
-      <div className="flex h-fit flex-col gap-5">
+      {/* Stays in view while the long form scrolls; scrolls on its own if taller than the screen. */}
+      <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:pr-1 [scrollbar-width:thin]">
       <aside className="flat-card overflow-hidden">
         <div className="bg-navy-deep px-5 py-4 text-white">
           <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>
