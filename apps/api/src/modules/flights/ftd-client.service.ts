@@ -7,6 +7,26 @@ const REQUEST_TIMEOUT_MS = 20_000;
 /** FTD tokens are valid "for the entire day" and capped at 25/day — cache well under that. */
 const TOKEN_CACHE_TTL_SECONDS = 60 * 60 * 18;
 
+/**
+ * A token is good until the end of the day it was made (FTD: "Generate and use new Token every day"),
+ * so cache it only until just before the next midnight in India, never a fixed 18 hours: a token
+ * made in the evening would otherwise outlive midnight and every search would fail with
+ * "Token Expired" until the cache ran out.
+ */
+export function tokenTtlSeconds(now: Date = new Date()): number {
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + IST_OFFSET_MS);
+  const nextIstMidnightUtc = Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate() + 1) - IST_OFFSET_MS;
+  const secondsLeft = Math.floor((nextIstMidnightUtc - now.getTime()) / 1000) - 5 * 60;
+  return Math.max(60, Math.min(TOKEN_CACHE_TTL_SECONDS, secondsLeft));
+}
+
+function isTokenExpiredError(err: unknown): boolean {
+  const response = (err as { getResponse?: () => unknown }).getResponse?.();
+  const message = typeof response === "object" && response ? (response as { message?: unknown }).message : (err as Error)?.message;
+  return typeof message === "string" && /token\s*(has\s*)?expired|invalid\s*token/i.test(message);
+}
+
 export class FtdApiError extends Error {
   constructor(
     message: string,
@@ -66,9 +86,25 @@ export class FtdClientService {
   // Auth
   // ---------------------------------------------------------------------------
 
+  private get tokenCacheKey(): string {
+    return `ftd:token:${this.mode}`;
+  }
+
   private async getToken(): Promise<string> {
-    const cacheKey = `ftd:token:${this.mode}`;
-    return this.cache.getOrSet(cacheKey, TOKEN_CACHE_TTL_SECONDS, () => this.createToken());
+    return this.cache.getOrSet(this.tokenCacheKey, tokenTtlSeconds(), () => this.createToken());
+  }
+
+  /** A daily-token call; if FTD says the cached token has expired anyway, makes a new one and retries once. */
+  private async withToken<T = Record<string, unknown>>(endpoint: string, options: (token: string) => FtdCallOptions): Promise<T> {
+    const run = async () => this.call<T>(endpoint, options(await this.getToken()));
+    try {
+      return await run();
+    } catch (err) {
+      if (!isTokenExpiredError(err)) throw err;
+      this.logger.warn(`FTD token expired on ${endpoint}; creating a new one and retrying once.`);
+      await this.cache.invalidate(this.tokenCacheKey);
+      return run();
+    }
   }
 
   private async createToken(): Promise<string> {
@@ -91,38 +127,31 @@ export class FtdClientService {
   // ---------------------------------------------------------------------------
 
   async search(body: Record<string, unknown>): Promise<Record<string, unknown>> {
-    const token = await this.getToken();
-    return this.call("postSearchFlightV3", { method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body });
+    return this.withToken("postSearchFlightV3", (token) => ({ method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body }));
   }
 
   async fareDetails(flightID: number, refID: string): Promise<Record<string, unknown>> {
-    const token = await this.getToken();
-    return this.call("postFareDetails", { method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID, refID } });
+    return this.withToken("postFareDetails", (token) => ({ method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID, refID } }));
   }
 
   async priceCheck(flightID: number, refID: string): Promise<Record<string, unknown>> {
-    const token = await this.getToken();
-    return this.call("postPriceVerify", { method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID, refID } });
+    return this.withToken("postPriceVerify", (token) => ({ method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID, refID } }));
   }
 
   async fareRules(flightID: number): Promise<Record<string, unknown>> {
-    const token = await this.getToken();
-    return this.call("postFareRules", { method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID } });
+    return this.withToken("postFareRules", (token) => ({ method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID } }));
   }
 
   async seats(flightID: number, refID: string, passenger: Array<Record<string, unknown>>): Promise<Record<string, unknown>> {
-    const token = await this.getToken();
-    return this.call("seats", { method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID, refID, passenger } });
+    return this.withToken("seats", (token) => ({ method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { flightID, refID, passenger } }));
   }
 
   async balance(): Promise<{ balance: string }> {
-    const token = await this.getToken();
-    return this.call("balance", { method: "GET", authHeaderName: "x-api-key", headers: { "x-api-key": token } });
+    return this.withToken("balance", (token) => ({ method: "GET", authHeaderName: "x-api-key", headers: { "x-api-key": token } }));
   }
 
   async statement(date: string): Promise<Record<string, unknown>> {
-    const token = await this.getToken();
-    return this.call("statement", { method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { date } });
+    return this.withToken("statement", (token) => ({ method: "POST", authHeaderName: "x-api-key", headers: { "x-api-key": token }, body: { date } }));
   }
 
   /** Book/Cancel/Reissue/Booking Status use the raw API key directly, not the daily token. */
