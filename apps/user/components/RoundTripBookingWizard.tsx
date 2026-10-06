@@ -15,6 +15,8 @@ import { TravellerCountEditor, takeCarriedPassengers } from "@/components/Travel
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
 import { sumSsrChoice, sumSeatChoice, cleanSsrChoice, type PassengerSsrChoice } from "@/components/FlightSsr";
 import { FlightTripDetails } from "@/components/FlightTripDetails";
+import { FareSummary } from "@/components/FareSummary";
+import { StickySidebar } from "@/components/StickySidebar";
 import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/components/FareUpgradeSection";
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
 import { FlightAddOns } from "@/components/FlightAddOns";
@@ -695,8 +697,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         )}
       </div>
 
-      {/* Stays in view while the long form scrolls; scrolls on its own if taller than the screen. */}
-      <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:pr-1 [scrollbar-width:thin]">
+      <StickySidebar>
       <aside className="flat-card overflow-hidden">
         <div className="bg-navy-deep px-5 py-4 text-white">
           <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>
@@ -707,48 +708,32 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         <div className="p-5">
         <TripLegSummary label="Departure" option={onwardPrice.option} />
         <TripLegSummary label="Return" option={returnPrice.option} />
-        <div className="mt-3 border-t border-slate-100 pt-3 text-sm">
-          <div className="flex justify-between text-slate-500">
-            <span>Departure fare</span>
-            <span>₹{onwardPrice.option.fare.total.toLocaleString("en-IN")}</span>
-          </div>
-          <div className="flex justify-between text-slate-500">
-            <span>Return fare</span>
-            <span>₹{returnPrice.option.fare.total.toLocaleString("en-IN")}</span>
-          </div>
-          {ssrAddOnTotal > 0 ? (
-            <div className="flex justify-between text-slate-500">
-              <span>Extras (baggage/meals)</span>
-              <span>₹{ssrAddOnTotal.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          {seatAddOnTotal > 0 ? (
-            <div className="flex justify-between text-slate-500">
-              <span>Seats</span>
-              <span>₹{seatAddOnTotal.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          {webCheckinTotal > 0 ? (
-            <div className="flex justify-between text-slate-500">
-              <span>Web check-in</span>
-              <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          {discount > 0 ? (
-            <div className="flex justify-between font-semibold text-emerald-700">
-              <span>Coupon {coupon.applied?.code}</span>
-              <span>−₹{discount.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 font-bold text-navy-deep">
-            <span>Total</span>
-            <span className="font-display text-2xl font-extrabold">₹{combinedTotal.toLocaleString("en-IN")}</span>
-          </div>
+        <div className="mt-4">
+          <FareSummary
+            base={onwardPrice.option.fare.base + returnPrice.option.fare.base}
+            taxes={onwardPrice.option.fare.total - onwardPrice.option.fare.base + (returnPrice.option.fare.total - returnPrice.option.fare.base)}
+            baseDetail={[
+              { label: `Departure ${onwardPrice.option.legs[0]?.depCode ?? ""}–${onwardPrice.option.legs[onwardPrice.option.legs.length - 1]?.arrCode ?? ""}`, amount: onwardPrice.option.fare.base },
+              { label: `Return ${returnPrice.option.legs[0]?.depCode ?? ""}–${returnPrice.option.legs[returnPrice.option.legs.length - 1]?.arrCode ?? ""}`, amount: returnPrice.option.fare.base },
+            ]}
+            taxDetail={[
+              { label: "Departure", amount: onwardPrice.option.fare.total - onwardPrice.option.fare.base },
+              { label: "Return", amount: returnPrice.option.fare.total - returnPrice.option.fare.base },
+            ]}
+            extras={[
+              { label: "Extra baggage & meals", amount: ssrAddOnTotal },
+              { label: "Seats", amount: seatAddOnTotal },
+              { label: "Web check-in", amount: webCheckinTotal },
+            ]}
+            discount={coupon.applied ? { code: coupon.applied.code, amount: discount } : null}
+            total={combinedTotal}
+            travellers={selection.onward.context.adt + (selection.onward.context.chd ?? 0) + (selection.onward.context.inf ?? 0)}
+          />
         </div>
         </div>
       </aside>
       <FlightCouponBox coupon={coupon} className="hidden lg:block" />
-      </div>
+      </StickySidebar>
 
       <Modal open={loginOpen} onClose={() => setLoginOpen(false)} title="Log in to complete your booking" subtitle="Your passenger details are saved — you won't need to re-enter them.">
         <LoginForm

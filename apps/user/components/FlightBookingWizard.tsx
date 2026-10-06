@@ -26,6 +26,8 @@ import { TravellerCountEditor, takeCarriedPassengers } from "@/components/Travel
 import { SeatMapPicker, type SeatMapPassenger } from "@/components/SeatMapPicker";
 import { cleanSsrChoice, sumSeatChoice, sumSsrChoice, type PassengerSsrChoice } from "@/components/FlightSsr";
 import { FlightTripDetails } from "@/components/FlightTripDetails";
+import { FareSummary } from "@/components/FareSummary";
+import { StickySidebar } from "@/components/StickySidebar";
 import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/components/FareUpgradeSection";
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
 import { FlightAddOns } from "@/components/FlightAddOns";
@@ -659,8 +661,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         )}
       </div>
 
-      {/* Stays in view while the long form scrolls; scrolls on its own if taller than the screen. */}
-      <div className="flex min-w-0 flex-col gap-5 lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-2 lg:pr-1 [scrollbar-width:thin]">
+      <StickySidebar>
       <aside className="flat-card overflow-hidden">
         <div className="bg-navy-deep px-5 py-4 text-white">
           <p className="script-eyebrow text-2xl !text-accent">Trip summary</p>
@@ -692,48 +693,24 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           <p className="mt-1">Baggage: {option.fare.baggageCheckIn ? formatBaggage(option.fare.baggageCheckIn) : "As per airline"} check-in, {formatBaggage(option.fare.baggageCabin)} cabin</p>
         </div>
 
-        <div className="mt-3 border-t border-slate-100 pt-3 text-sm">
-          <div className="flex justify-between text-slate-500">
-            <span>Base fare</span>
-            <span>₹{option.fare.base.toLocaleString("en-IN")}</span>
-          </div>
-          <div className="flex justify-between text-slate-500">
-            <span>Taxes &amp; fees</span>
-            <span>₹{option.fare.tax.toLocaleString("en-IN")}</span>
-          </div>
-          {ssrAddOnTotal > 0 ? (
-            <div className="flex justify-between text-slate-500">
-              <span>Extras (baggage/meals)</span>
-              <span>₹{ssrAddOnTotal.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          {seatAddOnTotal > 0 ? (
-            <div className="flex justify-between text-slate-500">
-              <span>Seats</span>
-              <span>₹{seatAddOnTotal.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          {webCheckinTotal > 0 ? (
-            <div className="flex justify-between text-slate-500">
-              <span>Web check-in</span>
-              <span>₹{webCheckinTotal.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          {discount > 0 ? (
-            <div className="flex justify-between font-semibold text-emerald-700">
-              <span>Coupon {coupon.applied?.code}</span>
-              <span>−₹{discount.toLocaleString("en-IN")}</span>
-            </div>
-          ) : null}
-          <div className="mt-3 flex items-baseline justify-between rounded-2xl bg-cream px-4 py-3 font-bold text-navy-deep">
-            <span>Total</span>
-            <span className="font-display text-2xl font-extrabold">₹{displayTotal.toLocaleString("en-IN")}</span>
-          </div>
+        <div className="mt-4">
+          <FareSummary
+            base={option.fare.base}
+            taxes={option.fare.total - option.fare.base}
+            extras={[
+              { label: "Extra baggage & meals", amount: ssrAddOnTotal },
+              { label: "Seats", amount: seatAddOnTotal },
+              { label: "Web check-in", amount: webCheckinTotal },
+            ]}
+            discount={coupon.applied ? { code: coupon.applied.code, amount: discount } : null}
+            total={displayTotal}
+            travellers={searchContext.adt + searchContext.chd + searchContext.inf}
+          />
         </div>
         </div>
       </aside>
       <FlightCouponBox coupon={coupon} className="hidden lg:block" />
-      </div>
+      </StickySidebar>
 
       <Modal open={loginOpen} onClose={() => setLoginOpen(false)} title="Log in to complete your booking" subtitle="Your passenger details are saved — you won't need to re-enter them.">
         <LoginForm
