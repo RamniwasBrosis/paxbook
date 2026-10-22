@@ -28,3 +28,4 @@ rzp-test-key.csv
 user access.txt
 *.tsbuildinfo
 .claude/scheduled_tasks.lock
+exports/
