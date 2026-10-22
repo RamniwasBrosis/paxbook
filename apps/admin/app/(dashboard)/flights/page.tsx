@@ -98,13 +98,21 @@ export default function FlightsPage() {
           { header: "PNR", cell: (b: FlightBookingDto) => b.pnr ?? "—" },
           { header: "Amount", cell: (b: FlightBookingDto) => `${b.currency} ${b.totalAmount.toLocaleString("en-IN")}` },
           {
-            header: "Margin",
+            header: "Final margin",
             cell: (b: FlightBookingDto) => {
               if (b.providerFareAmount == null) return <span className="text-slate-400">—</span>;
-              const margin = b.totalAmount - b.providerFareAmount;
-              return <span className={margin >= 0 ? "text-emerald-600" : "text-red-600"}>{margin >= 0 ? "+" : ""}₹{margin.toLocaleString("en-IN")}</span>;
+              const fee = b.convenienceFee ?? 0;
+              const discount = b.discountAmount ?? 0;
+              const margin = (b.marginAmount ?? b.totalAmount - b.providerFareAmount + discount - fee) - discount;
+              return (
+                <span className={margin >= 0 ? "text-emerald-600" : "text-red-600"}>
+                  {margin >= 0 ? "+" : ""}₹{(Math.round(margin * 100) / 100).toLocaleString("en-IN")}
+                  {discount > 0 ? <span className="block text-xs text-slate-400">after ₹{discount.toLocaleString("en-IN")} coupon</span> : null}
+                </span>
+              );
             },
           },
+          { header: "Conv. fee", cell: (b: FlightBookingDto) => (b.convenienceFee ? `₹${b.convenienceFee.toLocaleString("en-IN")}` : "—") },
           { header: "Status", cell: (b: FlightBookingDto) => <Badge tone={STATUS_TONE[b.status]}>{b.status.replace(/_/g, " ")}</Badge> },
           { header: "Payment", cell: (b: FlightBookingDto) => <Badge tone={PAYMENT_TONE[b.paymentStatus]}>{b.paymentStatus}</Badge> },
           {

@@ -26,6 +26,7 @@ export interface TicketSource {
   totalAmount: { toNumber(): number };
   couponCode?: string | null;
   discountAmount?: { toNumber(): number } | null;
+  convenienceFee?: { toNumber(): number } | null;
   currency: string;
   passengers: Array<{ title: string; fName: string; lName: string; pType: string; ticketNo: string | null; pnr: string | null }>;
 }
@@ -107,8 +108,9 @@ export function buildTicket(b: TicketSource): FlightTicketDto {
   }
   const webCheckin = extras._bookingInput?.webCheckin ? (extras.ssr?.webCheckinAmount ?? 0) : 0;
   const discount = b.discountAmount ? b.discountAmount.toNumber() : 0;
+  const convenienceFee = b.convenienceFee ? b.convenienceFee.toNumber() : 0;
   const grandTotal = b.totalAmount.toNumber();
-  const fareTotal = fare?.total ?? round2(grandTotal + discount - baggageAndMeals - seats - webCheckin);
+  const fareTotal = fare?.total ?? round2(grandTotal + discount - convenienceFee - baggageAndMeals - seats - webCheckin);
   const base = fare?.base ?? fareTotal;
 
   return {
@@ -129,6 +131,7 @@ export function buildTicket(b: TicketSource): FlightTicketDto {
       webCheckin: round2(webCheckin),
       couponCode: b.couponCode ?? null,
       discount: round2(discount),
+      convenienceFee: round2(convenienceFee),
       grandTotal: round2(grandTotal),
       currency: b.currency,
     },
@@ -308,6 +311,7 @@ export async function buildTicketPdf(t: FlightTicketDto): Promise<Buffer> {
       ["Baggage & meals", f.baggageAndMeals],
       ["Seats", f.seats],
       ["Web check-in", f.webCheckin],
+      ["Convenience fee", f.convenienceFee],
     ];
     const fw = Math.min(W, 340);
     for (const [label, amount, bold] of rows) {

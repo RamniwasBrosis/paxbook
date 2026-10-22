@@ -171,6 +171,9 @@ export interface FlightSsrDto {
 export interface FlightPriceCheckDto {
   option: FlightOptionDto;
   ssr: FlightSsrDto | null;
+  /** For previewing the convenience fee: GST at `gstPercent` on (`base` - coupon discount), when
+   * enabled. `base` is our margin on this fare. The server computes the real fee at booking. */
+  convenience?: { enabled: boolean; gstPercent: number; base: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -338,6 +341,11 @@ export interface FlightBookingDto {
   /** Coupon redeemed and this booking's share of the discount (already taken off totalAmount). */
   couponCode: string | null;
   discountAmount: number | null;
+  /** Our margin on the fare and the convenience fee (GST on margin minus discount) charged. */
+  marginAmount: number | null;
+  convenienceFee: number | null;
+  /** Payment must start before this (ISO); null for bookings made before the time limit existed. */
+  paymentExpiresAt: string | null;
   currency: string;
   status: FlightBookingStatus;
   paymentStatus: "PENDING" | "PARTIAL" | "PAID" | "REFUNDED";
@@ -446,7 +454,16 @@ export interface FlightPricingSettingDto {
   marginPercent: number;
   marginFlat: number;
   marginType: FlightMarginType;
+  convenienceFeeEnabled: boolean;
+  convenienceFeeGstPercent: number;
+  paymentWindowMinutes: number;
   updatedAt: string;
+}
+
+export interface UpdateFlightCheckoutSettingDto {
+  convenienceFeeEnabled: boolean;
+  convenienceFeeGstPercent: number;
+  paymentWindowMinutes: number;
 }
 
 export interface UpdateFlightPricingSettingDto {
@@ -673,6 +690,7 @@ export interface FlightTicketDto {
     webCheckin: number;
     couponCode: string | null;
     discount: number;
+    convenienceFee: number;
     grandTotal: number;
     currency: string;
   };

@@ -56,36 +56,84 @@ function toRouteDto(r: {
  * schema.prisma. Precedence, most specific wins: exact flight + exact cabin > exact flight (any cabin)
  * > route + exact cabin > route (any cabin) > the global default.
  */
+export interface PricingSetting {
+  marginPercent: number;
+  marginFlat: number;
+  marginType: MarginType;
+  convenienceFeeEnabled: boolean;
+  convenienceFeeGstPercent: number;
+  paymentWindowMinutes: number;
+  updatedAt: Date;
+}
+
+const DEFAULT_SETTING = {
+  marginPercent: 0,
+  marginFlat: 0,
+  marginType: "PERCENT" as MarginType,
+  convenienceFeeEnabled: true,
+  convenienceFeeGstPercent: 18,
+  paymentWindowMinutes: 9,
+};
+
+function toSetting(s: {
+  marginPercent: { toNumber(): number };
+  marginFlat: { toNumber(): number };
+  marginType: string;
+  convenienceFeeEnabled: boolean;
+  convenienceFeeGstPercent: { toNumber(): number };
+  paymentWindowMinutes: number;
+  updatedAt: Date;
+}): PricingSetting {
+  return {
+    marginPercent: s.marginPercent.toNumber(),
+    marginFlat: s.marginFlat.toNumber(),
+    marginType: (s.marginType as MarginType) ?? "PERCENT",
+    convenienceFeeEnabled: s.convenienceFeeEnabled,
+    convenienceFeeGstPercent: s.convenienceFeeGstPercent.toNumber(),
+    paymentWindowMinutes: s.paymentWindowMinutes,
+    updatedAt: s.updatedAt,
+  };
+}
+
 @Injectable()
 export class FlightPricingService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getSetting(): Promise<{ marginPercent: number; marginFlat: number; marginType: MarginType; updatedAt: Date }> {
+  async getSetting(): Promise<PricingSetting> {
     const setting = await this.prisma.flightPricingSetting.findUnique({ where: { id: SETTING_ID } });
-    if (setting)
-      return {
-        marginPercent: setting.marginPercent.toNumber(),
-        marginFlat: setting.marginFlat.toNumber(),
-        marginType: (setting.marginType as MarginType) ?? "PERCENT",
-        updatedAt: setting.updatedAt,
-      };
-    return { marginPercent: 0, marginFlat: 0, marginType: "PERCENT", updatedAt: new Date(0) };
+    return setting ? toSetting(setting) : { ...DEFAULT_SETTING, updatedAt: new Date(0) };
   }
 
   /** Only one of marginPercent/marginFlat is ever actually applied (see EffectiveMargin) — the
    * unused number is still stored so switching the radio back doesn't lose what was there before. */
-  async updateSetting(marginPercent: number, marginFlat: number, marginType: MarginType) {
+  async updateSetting(marginPercent: number, marginFlat: number, marginType: MarginType): Promise<PricingSetting> {
     const setting = await this.prisma.flightPricingSetting.upsert({
       where: { id: SETTING_ID },
       update: { marginPercent, marginFlat, marginType },
       create: { id: SETTING_ID, marginPercent, marginFlat, marginType },
     });
-    return {
-      marginPercent: setting.marginPercent.toNumber(),
-      marginFlat: setting.marginFlat.toNumber(),
-      marginType: setting.marginType as MarginType,
-      updatedAt: setting.updatedAt,
-    };
+    return toSetting(setting);
+  }
+
+  /** Convenience fee (GST on the final margin) and the payment time limit. */
+  async updateCheckoutSetting(patch: { convenienceFeeEnabled: boolean; convenienceFeeGstPercent: number; paymentWindowMinutes: number }): Promise<PricingSetting> {
+    const setting = await this.prisma.flightPricingSetting.upsert({
+      where: { id: SETTING_ID },
+      update: patch,
+      create: { id: SETTING_ID, marginPercent: 0, marginFlat: 0, marginType: "PERCENT", ...patch },
+    });
+    return toSetting(setting);
+  }
+
+  /**
+   * Convenience fee for one booking: GST (admin %, default 18) on our final margin, i.e. the margin we
+   * added to the provider fare minus the coupon discount given. Nothing when the margin is used up.
+   */
+  convenienceFee(setting: Pick<PricingSetting, "convenienceFeeEnabled" | "convenienceFeeGstPercent">, margin: number, discount: number): number {
+    if (!setting.convenienceFeeEnabled) return 0;
+    const finalMargin = margin - discount;
+    if (finalMargin <= 0) return 0;
+    return Math.round(finalMargin * setting.convenienceFeeGstPercent) / 100;
   }
 
   async listRoutes() {

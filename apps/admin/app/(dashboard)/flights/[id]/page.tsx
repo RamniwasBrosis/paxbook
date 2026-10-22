@@ -118,14 +118,8 @@ export default function FlightBookingDetailPage() {
         <CardHeader>
           <CardTitle>Pricing</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 gap-4 text-sm sm:grid-cols-3">
-          <Field label="Provider fare (real cost)" value={booking.providerFareAmount != null ? `${booking.currency} ${booking.providerFareAmount.toLocaleString("en-IN")}` : "—"} />
-          <Field label="Customer paid" value={`${booking.currency} ${booking.totalAmount.toLocaleString("en-IN")}`} />
-          <Field
-            label="Your margin"
-            value={booking.providerFareAmount != null ? `${booking.currency} ${(booking.totalAmount - booking.providerFareAmount).toLocaleString("en-IN")}` : "—"}
-            className={booking.providerFareAmount != null && booking.totalAmount - booking.providerFareAmount < 0 ? "text-red-600" : "text-emerald-600"}
-          />
+        <CardContent className="text-sm">
+          <PricingBreakdown booking={booking} />
         </CardContent>
       </Card>
 
@@ -418,5 +412,42 @@ function FlightLegRows({ legs }: { legs: FlightLegDto[] }) {
         </div>
       ))}
     </>
+  );
+}
+
+/** How the customer's amount is built: provider fare, our margin, coupon, convenience fee, add-ons. */
+function PricingBreakdown({ booking }: { booking: { currency: string; totalAmount: number; providerFareAmount: number | null; marginAmount: number | null; discountAmount: number | null; couponCode: string | null; convenienceFee: number | null } }) {
+  const c = booking.currency;
+  const money = (n: number) => `${c} ${(Math.round(n * 100) / 100).toLocaleString("en-IN")}`;
+  if (booking.providerFareAmount == null) return <p className="text-slate-500">Customer paid {money(booking.totalAmount)} (no cost breakdown for this older booking).</p>;
+  const provider = booking.providerFareAmount;
+  const discount = booking.discountAmount ?? 0;
+  const fee = booking.convenienceFee ?? 0;
+  // Bookings made before margins were stored: derive it from what was paid.
+  const margin = booking.marginAmount ?? booking.totalAmount - provider + discount - fee;
+  const finalMargin = margin - discount;
+  const addOns = Math.round((booking.totalAmount - (provider + margin - discount + fee)) * 100) / 100;
+  const rows: Array<[string, string, string?]> = [
+    ["Provider fare (our cost)", money(provider)],
+    ["+ Our margin", money(margin)],
+    ["= Fare shown to customer", money(provider + margin)],
+    ...(discount > 0 ? ([[`− Coupon ${booking.couponCode ?? ""}`, money(discount), "text-emerald-700"]] as Array<[string, string, string?]>) : []),
+    ["Final margin (after coupon)", money(finalMargin), finalMargin < 0 ? "text-red-600 font-semibold" : "text-emerald-700 font-semibold"],
+    ["+ Convenience fee (GST on final margin)", money(fee)],
+    ...(Math.abs(addOns) >= 0.01 ? ([["+ Add-ons (baggage, meals, seats, web check-in)", money(addOns)]] as Array<[string, string, string?]>) : []),
+  ];
+  return (
+    <dl className="max-w-lg divide-y divide-slate-100 rounded-lg border border-slate-200">
+      {rows.map(([k, v, cls]) => (
+        <div key={k} className={`flex justify-between px-4 py-2 ${cls ?? "text-slate-700"}`}>
+          <dt>{k}</dt>
+          <dd>{v}</dd>
+        </div>
+      ))}
+      <div className="flex justify-between bg-slate-50 px-4 py-2.5 font-semibold text-slate-900">
+        <dt>Customer paid</dt>
+        <dd>{money(booking.totalAmount)}</dd>
+      </div>
+    </dl>
   );
 }

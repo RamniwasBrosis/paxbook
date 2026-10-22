@@ -150,7 +150,7 @@ export class AdminFlightBookingsService {
 
   private toDto(b: {
     id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null;
-    adt: number; chd: number; inf: number; cabin: string; fareSnapshot: unknown; providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; couponCode: string | null; discountAmount: { toNumber(): number } | null; currency: string; status: string;
+    adt: number; chd: number; inf: number; cabin: string; fareSnapshot: unknown; providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; couponCode: string | null; discountAmount: { toNumber(): number } | null; marginAmount: { toNumber(): number } | null; convenienceFee: { toNumber(): number } | null; paymentExpiresAt: Date | null; currency: string; status: string;
     paymentStatus: string; pnr: string | null; providerStatus: string | null; errorMessage: string | null;
     cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
     refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
@@ -181,6 +181,9 @@ export class AdminFlightBookingsService {
       totalAmount: b.totalAmount.toNumber(),
       couponCode: b.couponCode,
       discountAmount: b.discountAmount ? b.discountAmount.toNumber() : null,
+      marginAmount: b.marginAmount ? b.marginAmount.toNumber() : null,
+      convenienceFee: b.convenienceFee ? b.convenienceFee.toNumber() : null,
+      paymentExpiresAt: b.paymentExpiresAt ? b.paymentExpiresAt.toISOString() : null,
       currency: b.currency,
       status: b.status as FlightBookingDto["status"],
       paymentStatus: b.paymentStatus as FlightBookingDto["paymentStatus"],

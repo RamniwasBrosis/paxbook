@@ -5,7 +5,7 @@ import { RequirePermissions } from "../../common/decorators/require-permissions.
 import { FlightPricingService } from "./flight-pricing.service";
 import { FlightsService } from "./flights.service";
 import { SearchFlightDto } from "./dto/search-flight.dto";
-import { UpdateFlightPricingSettingDto } from "./dto/update-flight-pricing-setting.dto";
+import { UpdateFlightCheckoutSettingDto, UpdateFlightPricingSettingDto } from "./dto/update-flight-pricing-setting.dto";
 import { SaveFlightRoutePricingRuleDto, UpdateFlightRoutePricingRuleDto } from "./dto/save-flight-route-pricing-rule.dto";
 
 /** Admin's "Flight Pricing" section — the margin/discount applied on top of the provider's real fares. */
@@ -36,6 +36,12 @@ export class AdminFlightPricingController {
   @RequirePermissions(PERMISSIONS.FLIGHTS_WRITE)
   updateSetting(@Body() dto: UpdateFlightPricingSettingDto) {
     return this.pricing.updateSetting(dto.marginPercent, dto.marginFlat, dto.marginType);
+  }
+
+  @Patch("checkout-settings")
+  @RequirePermissions(PERMISSIONS.FLIGHTS_WRITE)
+  updateCheckoutSetting(@Body() dto: UpdateFlightCheckoutSettingDto) {
+    return this.pricing.updateCheckoutSetting(dto);
   }
 
   @Get("routes")

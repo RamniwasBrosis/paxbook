@@ -52,6 +52,7 @@ export function ETicketView({ ticket, pdfHref }: { ticket: FlightTicketDto; pdfH
     ["Baggage & meals", f.baggageAndMeals],
     ["Seats", f.seats],
     ["Web check-in", f.webCheckin],
+    ["Convenience fee", f.convenienceFee],
   ];
 
   return (

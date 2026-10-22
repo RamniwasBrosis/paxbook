@@ -32,11 +32,12 @@ import { StickySidebar } from "@/components/StickySidebar";
 import { MobileCheckoutBar } from "@/components/MobileCheckoutBar";
 import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/components/FareUpgradeSection";
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
-import { FlightAddOns } from "@/components/FlightAddOns";
+import { FlightAddOns, ssrHasOptions } from "@/components/FlightAddOns";
 import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
 import { TravellerBasicFields, FIELD_INPUT, FieldLabel, RequiredMark } from "@/components/TravellerBasicFields";
 import { GuestCheckoutOption } from "@/components/GuestCheckoutOption";
 import { ReviewTripModal } from "@/components/ReviewTripModal";
+import { PaymentSessionModal, convenienceFeeFor, secondsLeft } from "@/components/PaymentSessionModal";
 import { confirmationUrl, createDraft, createPaymentOrder, fareChanged, verifyPayment } from "@/lib/flight-checkout";
 import { formatBaggage, formatDateTimeLong, formatMinutes, getClientTenantHeader, isoToDdMmYyyy, searchContextFromParams , isDobOptional } from "@/lib/flights";
 
@@ -113,6 +114,9 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const [guestToken, setGuestToken] = React.useState<string | null>(null);
   /** What the server will actually charge for the current draft (it re-prices with the airline). */
   const [chargedTotal, setChargedTotal] = React.useState<number | null>(null);
+  const [paymentExpiresAt, setPaymentExpiresAt] = React.useState<string | null>(null);
+  const [paymentOpen, setPaymentOpen] = React.useState(false);
+  const [fareNotice, setFareNotice] = React.useState<string | null>(null);
   const [payError, setPayError] = React.useState<string | null>(null);
 
   // Load fare + baggage/meal breakdown (this also freezes the price we display; the server re-verifies again at booking time).
@@ -183,6 +187,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   // Resolved only after a seat-map fetch attempt settles (see goToSeatsOrReview) — replaces the old
   // blanket "seat selection isn't supported yet" block now that it actually is.
   const unsupportedMandatory = seatMandatoryButUnavailable;
+  // Meals & baggage live on the "Seats & meals" step, so that step is shown when there are add-ons even without a seat map.
+  const hasAddOns = ssrHasOptions(priceCheck?.ssr);
 
   function validatePassengers(): string | null {
     for (const [idx, p] of passengers.entries()) {
@@ -232,7 +238,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         if (validation?.seatMandatory) {
           setSeatMandatoryButUnavailable(true);
         } else {
-          setStep("review");
+          setStep(hasAddOns ? "seats" : "review");
         }
         return;
       }
@@ -243,7 +249,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
       if (validation?.seatMandatory) {
         setSeatMandatoryButUnavailable(true);
       } else {
-        setStep("review");
+        setStep(hasAddOns ? "seats" : "review");
       }
     } finally {
       setLoadingSeats(false);
@@ -268,6 +274,8 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     });
   }
 
+  /** "Confirm & continue": log in or continue as guest, create the booking (prices and the payment
+   * deadline are fixed on the server), then show the payment step with its timer. */
   async function handleConfirmAndPay(asGuest = guestCheckout) {
     if (!isLoggedIn && !asGuest) {
       setLoginOpen(true);
@@ -277,9 +285,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     setPayError(null);
     setBusy(true);
     try {
-      let currentBookingId = bookingId;
-      let currentGuestToken = guestToken;
-      if (!currentBookingId) {
+      if (!bookingId) {
         const payload: CreateFlightBookingRequestDto = {
           flightID: Number(flightId),
           refID: refId,
@@ -305,27 +311,34 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           ...(couponCode ? { couponCode } : {}),
         };
         const draft = await createDraft("booking", payload, Boolean(asGuest && !isLoggedIn));
-        currentBookingId = draft.id;
-        currentGuestToken = draft.guestToken;
-        setBookingId(currentBookingId);
-        setGuestToken(currentGuestToken);
+        setBookingId(draft.id);
+        setGuestToken(draft.guestToken);
         setChargedTotal(draft.total);
-        if (fareChanged(displayTotal, draft.total)) {
-          // The airline re-priced the fare; show the new total and let the customer confirm it.
-          setPayError(`The airline updated this fare. New total: ₹${draft.total.toLocaleString("en-IN")}. Tap Confirm & pay again to continue.`);
-          setBusy(false);
-          return;
-        }
+        setPaymentExpiresAt(draft.expiresAt);
+        setFareNotice(fareChanged(displayTotal, draft.total) ? `The airline updated this fare. New total: ₹${draft.total.toLocaleString("en-IN")}.` : null);
         if (flightId && refId) window.sessionStorage.removeItem(storageKey(flightId, refId));
       }
+      setPaymentOpen(true);
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
-      const order = await createPaymentOrder<PaymentOrder>("booking", currentBookingId, currentGuestToken);
-
+  /** "Pay" on the payment step: opens Razorpay, closing it by itself when the time limit ends. */
+  async function payNow() {
+    if (!bookingId || !searchContext) return;
+    setPayError(null);
+    setBusy(true);
+    try {
+      const order = await createPaymentOrder<PaymentOrder>("booking", bookingId, guestToken);
       if (order.mock || !order.keyId || !window.Razorpay) {
-        await finishPayment(currentBookingId, order.paymentId, { devConfirm: true }, currentGuestToken);
+        await finishPayment(bookingId, order.paymentId, { devConfirm: true }, guestToken);
         return;
       }
-
+      const id = bookingId;
+      const token = guestToken;
       const rzp = new window.Razorpay({
         key: order.keyId,
         amount: Math.round(order.amount * 100),
@@ -334,21 +347,34 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         name: "Paxbook Flights",
         description: `${searchContext.depCity} → ${searchContext.arrCity}`,
         prefill: { email, contact: mobile },
+        timeout: secondsLeft(paymentExpiresAt),
+        modal: { ondismiss: () => setBusy(false) },
         handler: (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
           void finishPayment(
-            currentBookingId!,
+            id,
             order.paymentId,
             { razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id, razorpaySignature: response.razorpay_signature },
-            currentGuestToken,
+            token,
           );
         },
       });
       rzp.open();
-      setBusy(false);
     } catch (err) {
       setPayError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setBusy(false);
     }
+  }
+
+  /** The payment time ran out: keep what was typed and reload, which re-checks the fare. */
+  function restartAfterExpiry() {
+    if (flightId && refId) {
+      try {
+        window.sessionStorage.setItem(storageKey(flightId, refId), JSON.stringify({ passengers, mobile, email, panNo, ssrChoices, wantsWebCheckin }));
+      } catch {
+        // storage blocked: the page still reloads with a fresh fare
+      }
+    }
+    window.location.reload();
   }
 
   async function finishPayment(id: string, paymentId: string, payload: Record<string, unknown>, token: string | null) {
@@ -392,6 +418,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     setBookingId(null);
     setGuestToken(null);
     setChargedTotal(null);
+    setPaymentExpiresAt(null);
   }, [passengers, ssrChoices, wantsWebCheckin, couponCode, mobile, email, panNo, wantsGst, gst]);
 
   if (!flightId || !refId || !searchContext) {
@@ -429,8 +456,10 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const seatAddOnTotal = sumSeatChoice(ssrChoices, seatMap);
   const webCheckinTotal = wantsWebCheckin && ssr?.webCheckinEnabled ? ssr.webCheckinAmount : 0;
   const discount = coupon.applied?.discount ?? 0;
-  const displayTotal = Math.max(0, Math.round((option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal - discount) * 100) / 100);
-  const stepperSteps = ["Passenger details", "Select seats", "Review & pay"];
+  // GST on our final margin (after the coupon); the server computes the same when booking.
+  const convenienceFee = convenienceFeeFor(priceCheck.convenience, discount);
+  const displayTotal = Math.max(0, Math.round((option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal - discount + convenienceFee) * 100) / 100);
+  const stepperSteps = ["Passenger details", "Seats & meals", "Review & pay"];
   const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
   const seatPassengers: SeatMapPassenger[] = passengers
     .map((p, idx) => ({ index: idx, label: `${p.fName.trim() || `Passenger ${idx + 1}`}`, pType: p.pType }))
@@ -571,7 +600,6 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               ) : null}
             </div>
 
-            <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <FlightCouponBox coupon={coupon} className="lg:hidden" />
 
@@ -588,6 +616,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
           </form>
         ) : step === "seats" ? (
           <div className="flex flex-col gap-4">
+            {seatMapHasAnySeats(seatMap) ? (
             <div className="flat-card p-3 sm:p-5">
               <p className="mb-1 font-display text-lg font-bold text-navy-deep">Choose your seats</p>
               <p className="mb-4 text-sm text-ink-muted">Optional for most passengers — tap a passenger, then tap a seat to assign it.</p>
@@ -616,6 +645,9 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                 />
               ) : null}
             </div>
+            ) : null}
+
+            <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
@@ -668,9 +700,9 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
                 ← Edit passengers
               </button>
-              {seatMapHasAnySeats(seatMap) ? (
+              {seatMapHasAnySeats(seatMap) || hasAddOns ? (
                 <button type="button" onClick={() => setStep("seats")} className="text-sm font-semibold text-slate-500 hover:text-brand">
-                  ← Edit seats
+                  ← Edit seats &amp; meals
                 </button>
               ) : null}
               <button
@@ -737,6 +769,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
               { label: "Extra baggage & meals", amount: ssrAddOnTotal },
               { label: "Seats", amount: seatAddOnTotal },
               { label: "Web check-in", amount: webCheckinTotal },
+              { label: "Convenience fee", amount: convenienceFee },
             ]}
             discount={coupon.applied ? { code: coupon.applied.code, amount: discount } : null}
             total={displayTotal}
@@ -748,6 +781,30 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
       <FlightCouponBox coupon={coupon} className="hidden lg:block" />
       </StickySidebar>
 
+      <PaymentSessionModal
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        expiresAt={paymentExpiresAt}
+        total={chargedTotal ?? displayTotal}
+        lines={[
+          { label: "Fare (incl. taxes)", amount: option.fare.total },
+          { label: "Extra baggage & meals", amount: ssrAddOnTotal },
+          { label: "Seats", amount: seatAddOnTotal },
+          { label: "Web check-in", amount: webCheckinTotal },
+          { label: "Convenience fee", amount: convenienceFee },
+          ...(coupon.applied ? [{ label: `Coupon ${coupon.applied.code}`, amount: discount, discount: true }] : []),
+        ]}
+        trip={[
+          `${option.legs[0]?.depCityName} → ${option.legs[option.legs.length - 1]?.arrCityName} · ${new Date(option.legs[0]?.depDateTime ?? "").toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`,
+        ]}
+        travellers={passengers.map((p) => `${p.fName} ${p.lName}`.trim().toUpperCase())}
+        contact={`${email} · ${mobile}`}
+        notice={fareNotice}
+        error={payError}
+        busy={busy}
+        onPay={() => void payNow()}
+        onRestart={restartAfterExpiry}
+      />
       <ReviewTripModal
         open={reviewOpen}
         onClose={() => setReviewOpen(false)}

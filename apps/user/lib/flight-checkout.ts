@@ -27,22 +27,31 @@ async function send<T>(url: string, init: { method: string; body?: unknown; gues
  * Creates the draft; returns its id (booking id or trip id), what the server will charge (it prices
  * the fare again with the airline) and, for a guest, the token for it.
  */
-export async function createDraft(kind: CheckoutKind, payload: unknown, asGuest: boolean): Promise<{ id: string; total: number; guestToken: string | null }> {
+export async function createDraft(
+  kind: CheckoutKind,
+  payload: unknown,
+  asGuest: boolean,
+): Promise<{ id: string; total: number; guestToken: string | null; expiresAt: string | null }> {
+  type Booking = { id: string; totalAmount: number; paymentExpiresAt: string | null };
+  type Trip = { tripId: string; totalAmount: number; onward: Booking };
   if (asGuest) {
-    const data = await send<{ booking?: { id: string; totalAmount: number }; trip?: { tripId: string; totalAmount: number }; guestToken: string }>(
-      `${API_BASE_URL}/public/flights/guest/${kind === "trip" ? "trips" : "bookings"}`,
-      { method: "POST", body: payload, direct: true },
-    );
+    const data = await send<{ booking?: Booking; trip?: Trip; guestToken: string }>(`${API_BASE_URL}/public/flights/guest/${kind === "trip" ? "trips" : "bookings"}`, {
+      method: "POST",
+      body: payload,
+      direct: true,
+    });
     return kind === "trip"
-      ? { id: data.trip!.tripId, total: data.trip!.totalAmount, guestToken: data.guestToken }
-      : { id: data.booking!.id, total: data.booking!.totalAmount, guestToken: data.guestToken };
+      ? { id: data.trip!.tripId, total: data.trip!.totalAmount, guestToken: data.guestToken, expiresAt: data.trip!.onward.paymentExpiresAt }
+      : { id: data.booking!.id, total: data.booking!.totalAmount, guestToken: data.guestToken, expiresAt: data.booking!.paymentExpiresAt };
   }
-  const data = await send<{ id?: string; tripId?: string; totalAmount: number }>(kind === "trip" ? "/api/customer/flight-bookings/round-trip" : "/api/customer/flight-bookings", {
+  const data = await send<Booking & Trip>(kind === "trip" ? "/api/customer/flight-bookings/round-trip" : "/api/customer/flight-bookings", {
     method: "POST",
     body: payload,
     direct: false,
   });
-  return { id: kind === "trip" ? data.tripId! : data.id!, total: data.totalAmount, guestToken: null };
+  return kind === "trip"
+    ? { id: data.tripId, total: data.totalAmount, guestToken: null, expiresAt: data.onward.paymentExpiresAt }
+    : { id: data.id, total: data.totalAmount, guestToken: null, expiresAt: data.paymentExpiresAt };
 }
 
 /** True when the airline's fresh price differs from what the customer was shown (beyond rounding). */

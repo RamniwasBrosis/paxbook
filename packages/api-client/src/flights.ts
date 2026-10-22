@@ -5,6 +5,7 @@ import type {
   AirportDto,
   CreateFlightBookingRequestDto,
   FlightImportantInfoSectionDto,
+  UpdateFlightCheckoutSettingDto,
   FlightApiLogDto,
   FlightApiStatusDto,
   FlightBookingDto,
@@ -350,5 +351,13 @@ export function useResetFlightImportantInfo() {
   return useMutation({
     mutationFn: () => apiFetch<FlightImportantInfoSectionDto[]>("/admin/flights/checkout/important-info", { method: "DELETE" }),
     onSuccess: (data) => queryClient.setQueryData(["admin-flight-important-info"], data),
+  });
+}
+
+export function useUpdateFlightCheckoutSetting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: UpdateFlightCheckoutSettingDto) => apiFetch<FlightPricingSettingDto>("/admin/flights/pricing/checkout-settings", { method: "PATCH", body: payload }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-flight-pricing-setting"] }),
   });
 }

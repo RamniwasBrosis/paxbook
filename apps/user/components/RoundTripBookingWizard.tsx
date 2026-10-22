@@ -21,11 +21,12 @@ import { StickySidebar } from "@/components/StickySidebar";
 import { MobileCheckoutBar } from "@/components/MobileCheckoutBar";
 import { FareUpgradeCards, FareUpgradeSection, useFareOptions } from "@/components/FareUpgradeSection";
 import { FlightImportantInfo } from "@/components/FlightImportantInfo";
-import { FlightAddOns } from "@/components/FlightAddOns";
+import { FlightAddOns, ssrHasOptions } from "@/components/FlightAddOns";
 import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
 import { TravellerBasicFields, FIELD_INPUT, FieldLabel, RequiredMark } from "@/components/TravellerBasicFields";
 import { GuestCheckoutOption } from "@/components/GuestCheckoutOption";
 import { ReviewTripModal } from "@/components/ReviewTripModal";
+import { PaymentSessionModal, convenienceFeeFor, secondsLeft } from "@/components/PaymentSessionModal";
 import { confirmationUrl, createDraft, createPaymentOrder, fareChanged, verifyPayment } from "@/lib/flight-checkout";
 import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy , isDobOptional } from "@/lib/flights";
 
@@ -135,6 +136,9 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   const [guestToken, setGuestToken] = React.useState<string | null>(null);
   /** What the server will actually charge for the current draft (it re-prices with the airline). */
   const [chargedTotal, setChargedTotal] = React.useState<number | null>(null);
+  const [paymentExpiresAt, setPaymentExpiresAt] = React.useState<string | null>(null);
+  const [paymentOpen, setPaymentOpen] = React.useState(false);
+  const [fareNotice, setFareNotice] = React.useState<string | null>(null);
   const [payError, setPayError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
@@ -202,6 +206,8 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   // step — this only blocks when a seat map turned out to be genuinely unavailable for a fare that
   // requires one (set once the seat-map fetch settles, mirrors the one-way wizard).
   const unsupportedMandatory = seatMandatoryButUnavailable;
+  // Meals & baggage live on the "Seats & meals" step, so that step is shown when either leg has add-ons.
+  const hasAddOns = ssrHasOptions(onwardPrice?.ssr) || ssrHasOptions(returnPrice?.ssr);
 
   function validatePassengers(): string | null {
     for (const [idx, p] of passengers.entries()) {
@@ -262,7 +268,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         return;
       }
       if (!onwardHasSeats && !returnHasSeats) {
-        setStep("review");
+        setStep(hasAddOns ? "seats" : "review");
         return;
       }
       setSeatDirection(onwardHasSeats ? "onward" : "return");
@@ -273,13 +279,15 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
       if (onwardValidation?.seatMandatory || returnValidation?.seatMandatory) {
         setSeatMandatoryButUnavailable(true);
       } else {
-        setStep("review");
+        setStep(hasAddOns ? "seats" : "review");
       }
     } finally {
       setLoadingSeats(false);
     }
   }
 
+  /** "Confirm & continue": log in or continue as guest, create the trip (prices and the payment
+   * deadline are fixed on the server), then show the payment step with its timer. */
   async function handleConfirmAndPay(asGuest = guestCheckout) {
     if (!isLoggedIn && !asGuest) {
       setLoginOpen(true);
@@ -289,9 +297,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     setPayError(null);
     setBusy(true);
     try {
-      let currentTripId = tripId;
-      let currentGuestToken = guestToken;
-      if (!currentTripId) {
+      if (!tripId) {
         const passengerPayload: FlightPassengerInputDto[] = passengers.map((p, idx) => ({
           title: p.title,
           fName: p.fName.trim(),
@@ -319,27 +325,34 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
           },
           Boolean(asGuest && !isLoggedIn),
         );
-        currentTripId = draft.id;
-        currentGuestToken = draft.guestToken;
-        setTripId(currentTripId);
-        setGuestToken(currentGuestToken);
+        setTripId(draft.id);
+        setGuestToken(draft.guestToken);
         setChargedTotal(draft.total);
-        if (fareChanged(combinedTotal, draft.total)) {
-          // The airline re-priced the fare; show the new total and let the customer confirm it.
-          setPayError(`The airline updated this fare. New total: ₹${draft.total.toLocaleString("en-IN")}. Tap Confirm & pay again to continue.`);
-          setBusy(false);
-          return;
-        }
+        setPaymentExpiresAt(draft.expiresAt);
+        setFareNotice(fareChanged(combinedTotal, draft.total) ? `The airline updated these fares. New total: ₹${draft.total.toLocaleString("en-IN")}.` : null);
         sessionStorage.removeItem(STORAGE_KEY);
       }
+      setPaymentOpen(true);
+    } catch (err) {
+      setPayError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
-      const order = await createPaymentOrder<{ orderId: string; amount: number; currency: string; keyId: string | null; mock: boolean }>("trip", currentTripId, currentGuestToken);
-
+  /** "Pay" on the payment step: opens Razorpay, closing it by itself when the time limit ends. */
+  async function payNow() {
+    if (!tripId || !selection) return;
+    setPayError(null);
+    setBusy(true);
+    try {
+      const order = await createPaymentOrder<{ orderId: string; amount: number; currency: string; keyId: string | null; mock: boolean }>("trip", tripId, guestToken);
       if (order.mock || !order.keyId || !window.Razorpay) {
-        await finishPayment(currentTripId, { devConfirm: true }, currentGuestToken);
+        await finishPayment(tripId, { devConfirm: true }, guestToken);
         return;
       }
-
+      const id = tripId;
+      const token = guestToken;
       const rzp = new window.Razorpay({
         key: order.keyId,
         amount: Math.round(order.amount * 100),
@@ -348,20 +361,31 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
         name: "Paxbook Flights",
         description: `${selection.onward.context.depCity} ⇄ ${selection.onward.context.arrCity} round trip`,
         prefill: { email, contact: mobile },
+        timeout: secondsLeft(paymentExpiresAt),
+        modal: { ondismiss: () => setBusy(false) },
         handler: (response: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string }) => {
           void finishPayment(
-            currentTripId!,
+            id,
             { razorpayOrderId: response.razorpay_order_id, razorpayPaymentId: response.razorpay_payment_id, razorpaySignature: response.razorpay_signature },
-            currentGuestToken,
+            token,
           );
         },
       });
       rzp.open();
-      setBusy(false);
     } catch (err) {
       setPayError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
       setBusy(false);
     }
+  }
+
+  /** The payment time ran out: keep what was typed and reload, which re-checks both fares. */
+  function restartAfterExpiry() {
+    try {
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ passengers, mobile, email, panNo, ssrChoices, wantsWebCheckin }));
+    } catch {
+      // storage blocked: the page still reloads with fresh fares
+    }
+    window.location.reload();
   }
 
   async function finishPayment(currentTripId: string, payload: Record<string, unknown>, token: string | null) {
@@ -420,6 +444,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
     setTripId(null);
     setGuestToken(null);
     setChargedTotal(null);
+    setPaymentExpiresAt(null);
   }, [passengers, ssrChoices, wantsWebCheckin, couponCode, mobile, email, panNo]);
 
   if (!loadedSelection) {
@@ -480,11 +505,16 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   const bothLegsSupportWebCheckin = Boolean(onwardPrice.ssr?.webCheckinEnabled && returnPrice.ssr?.webCheckinEnabled);
   const webCheckinTotal = wantsWebCheckin && bothLegsSupportWebCheckin ? (onwardPrice.ssr?.webCheckinAmount ?? 0) + (returnPrice.ssr?.webCheckinAmount ?? 0) : 0;
   const discount = coupon.applied?.discount ?? 0;
+  // The coupon comes off the onward fare first, then the return; each leg's convenience fee is GST
+  // on that leg's final margin. The server splits and computes the same way.
+  const onwardShare = Math.min(discount, onwardPrice.option.fare.total);
+  const convenienceFee =
+    convenienceFeeFor(onwardPrice.convenience, onwardShare) + convenienceFeeFor(returnPrice.convenience, Math.round((discount - onwardShare) * 100) / 100);
   const combinedTotal = Math.max(
     0,
-    Math.round((onwardPrice.option.fare.total + returnPrice.option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal - discount) * 100) / 100,
+    Math.round((onwardPrice.option.fare.total + returnPrice.option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal - discount + convenienceFee) * 100) / 100,
   );
-  const stepperSteps = ["Passenger details", "Select seats", "Review & pay"];
+  const stepperSteps = ["Passenger details", "Seats & meals", "Review & pay"];
   const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
   const seatPassengers: SeatMapPassenger[] = passengers
     .map((p, idx) => ({ index: idx, label: p.fName.trim() || `Passenger ${idx + 1}`, pType: p.pType }))
@@ -608,7 +638,6 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               ) : null}
             </div>
 
-            <FlightAddOns passengers={passengers} ssr={mergedSsr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <FlightCouponBox coupon={coupon} className="lg:hidden" />
 
@@ -625,6 +654,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
           </form>
         ) : step === "seats" ? (
           <div className="flex flex-col gap-4">
+            {seatMapHasAnySeats(onwardSeatMap) || seatMapHasAnySeats(returnSeatMap) ? (
             <div className="flat-card p-3 sm:p-5">
               <p className="mb-1 font-display text-lg font-bold text-navy-deep">Choose your seats</p>
               <p className="mb-4 text-xs text-slate-500">Optional for most passengers — tap a passenger, then tap a seat to assign it.</p>
@@ -653,6 +683,9 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
                 />
               ) : null}
             </div>
+            ) : null}
+
+            <FlightAddOns passengers={passengers} ssr={mergedSsr} choices={ssrChoices} onChange={updatePassengerSsr} />
 
             <div className="flex items-center gap-3">
               <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
@@ -705,9 +738,9 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
                 ← Edit passengers
               </button>
-              {seatMapHasAnySeats(onwardSeatMap) || seatMapHasAnySeats(returnSeatMap) ? (
+              {seatMapHasAnySeats(onwardSeatMap) || seatMapHasAnySeats(returnSeatMap) || hasAddOns ? (
                 <button type="button" onClick={() => setStep("seats")} className="text-sm font-semibold text-slate-500 hover:text-brand">
-                  ← Edit seats
+                  ← Edit seats &amp; meals
                 </button>
               ) : null}
               <button
@@ -761,6 +794,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               { label: "Extra baggage & meals", amount: ssrAddOnTotal },
               { label: "Seats", amount: seatAddOnTotal },
               { label: "Web check-in", amount: webCheckinTotal },
+              { label: "Convenience fee", amount: convenienceFee },
             ]}
             discount={coupon.applied ? { code: coupon.applied.code, amount: discount } : null}
             total={combinedTotal}
@@ -772,6 +806,31 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
       <FlightCouponBox coupon={coupon} className="hidden lg:block" />
       </StickySidebar>
 
+      <PaymentSessionModal
+        open={paymentOpen}
+        onClose={() => setPaymentOpen(false)}
+        expiresAt={paymentExpiresAt}
+        total={chargedTotal ?? combinedTotal}
+        lines={[
+          { label: "Fares (incl. taxes)", amount: onwardPrice.option.fare.total + returnPrice.option.fare.total },
+          { label: "Extra baggage & meals", amount: ssrAddOnTotal },
+          { label: "Seats", amount: seatAddOnTotal },
+          { label: "Web check-in", amount: webCheckinTotal },
+          { label: "Convenience fee", amount: convenienceFee },
+          ...(coupon.applied ? [{ label: `Coupon ${coupon.applied.code}`, amount: discount, discount: true }] : []),
+        ]}
+        trip={[onwardPrice.option, returnPrice.option].map(
+          (o, i) =>
+            `${i === 0 ? "Departure" : "Return"}: ${o.legs[0]?.depCityName} → ${o.legs[o.legs.length - 1]?.arrCityName} · ${new Date(o.legs[0]?.depDateTime ?? "").toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`,
+        )}
+        travellers={passengers.map((p) => `${p.fName} ${p.lName}`.trim().toUpperCase())}
+        contact={`${email} · ${mobile}`}
+        notice={fareNotice}
+        error={payError}
+        busy={busy}
+        onPay={() => void payNow()}
+        onRestart={restartAfterExpiry}
+      />
       <ReviewTripModal
         open={reviewOpen}
         onClose={() => setReviewOpen(false)}

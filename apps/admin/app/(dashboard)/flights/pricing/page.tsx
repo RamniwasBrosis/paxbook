@@ -7,6 +7,7 @@ import {
   useSession,
   useFlightPricingSetting,
   useUpdateFlightPricingSetting,
+  useUpdateFlightCheckoutSetting,
   useFlightRoutePricingRules,
   useCreateFlightRoutePricingRule,
   useUpdateFlightRoutePricingRule,
@@ -91,9 +92,77 @@ export default function FlightPricingPage() {
       </div>
 
       <GlobalMarginCard canWrite={canWrite} />
+      <CheckoutSettingsCard canWrite={canWrite} />
       <LiveFlightOverrideCard canWrite={canWrite} />
       <RoutePricingCard canWrite={canWrite} />
     </div>
+  );
+}
+
+/** Convenience fee (GST on the final margin) and the payment time limit for customers. */
+function CheckoutSettingsCard({ canWrite }: { canWrite: boolean }) {
+  const settingQuery = useFlightPricingSetting();
+  const update = useUpdateFlightCheckoutSetting();
+  const [enabled, setEnabled] = React.useState(true);
+  const [gst, setGst] = React.useState(18);
+  const [minutes, setMinutes] = React.useState(9);
+  const [error, setError] = React.useState<string | null>(null);
+  const [saved, setSaved] = React.useState(false);
+
+  React.useEffect(() => {
+    if (settingQuery.data) {
+      setEnabled(settingQuery.data.convenienceFeeEnabled);
+      setGst(settingQuery.data.convenienceFeeGstPercent);
+      setMinutes(settingQuery.data.paymentWindowMinutes);
+    }
+  }, [settingQuery.data]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSaved(false);
+    try {
+      await update.mutateAsync({ convenienceFeeEnabled: enabled, convenienceFeeGstPercent: Number(gst), paymentWindowMinutes: Number(minutes) });
+      setSaved(true);
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : "Could not save checkout settings.");
+    }
+  }
+
+  // Example: provider ₹5,000, customer fare ₹5,750 (₹750 margin), coupon ₹250.
+  const exampleFee = enabled ? Math.max(0, Math.round((750 - 250) * Number(gst)) / 100) : 0;
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Convenience fee &amp; payment time limit</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+            <input type="checkbox" checked={enabled} disabled={!canWrite} onChange={(e) => setEnabled(e.target.checked)} />
+            Charge a convenience fee (GST on our final margin)
+          </label>
+          <div className="flex flex-wrap items-end gap-4">
+            <Input id="conv-gst" label="GST % on final margin" type="number" min={0} max={100} step="0.01" value={gst} disabled={!canWrite || !enabled} onChange={(e) => setGst(Number(e.target.value))} className="w-40" />
+            <Input id="pay-minutes" label="Payment time limit (minutes)" type="number" min={2} max={60} value={minutes} disabled={!canWrite} onChange={(e) => setMinutes(Number(e.target.value))} className="w-48" />
+            {canWrite ? (
+              <Button type="submit" isLoading={update.isPending}>
+                Save
+              </Button>
+            ) : null}
+            {saved ? <span className="text-sm text-emerald-600">Saved.</span> : null}
+          </div>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
+          <p className="rounded-lg bg-slate-50 px-4 py-3 text-sm text-slate-600">
+            Final margin = customer fare (with your margin) − provider fare − coupon discount. Convenience fee = {enabled ? `${gst}%` : "0%"} of the final margin, added to
+            what the customer pays. Example: provider ₹5,000, customer fare ₹5,750 (margin ₹750), coupon ₹250 → final margin ₹500 → fee{" "}
+            <strong>₹{exampleFee.toLocaleString("en-IN")}</strong>; customer pays ₹{(5750 - 250 + exampleFee).toLocaleString("en-IN")}. After confirming the review, customers
+            get {minutes} minutes to pay; then the session expires and the fare is checked again.
+          </p>
+        </form>
+      </CardContent>
+    </Card>
   );
 }
 

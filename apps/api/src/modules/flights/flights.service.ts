@@ -179,6 +179,12 @@ export class FlightsService {
     const arrCity = mapped.option.legs[mapped.option.legs.length - 1]?.arrCode ?? "";
     const margin = await this.pricing.getEffectiveMargin(depCity, arrCity, mapped.option.legs[0]?.airlineCode, mapped.option.legs[0]?.flightNo, mapped.option.legs[0]?.cabin);
     mapped.option = { ...mapped.option, fare: this.pricing.applyMargin(mapped.option.fare, margin) };
+    const setting = await this.pricing.getSetting();
+    mapped.convenience = {
+      enabled: setting.convenienceFeeEnabled,
+      gstPercent: setting.convenienceFeeGstPercent,
+      base: Math.round((mapped.option.fare.total - providerTotal) * 100) / 100,
+    };
     return { dto: mapped, providerTotal };
   }
 
@@ -431,7 +437,13 @@ export class FlightsService {
     const grossAmount = priceCheck.option.fare.total + ssrTotal + seatTotal + webCheckinTotal;
     // A round trip redeems its coupon once across both legs (createRoundTripDraftBooking), never per leg.
     const coupon = !trip && dto.couponCode ? await this.checkout.quote(tenantId, dto.couponCode, grossAmount) : null;
-    const totalAmount = coupon ? coupon.payable : grossAmount;
+    // Convenience fee: GST on our final margin (margin on the fare minus the coupon discount).
+    // A round trip's coupon is applied later across both legs, which recomputes this fee.
+    const setting = await this.pricing.getSetting();
+    const marginAmount = Math.round((priceCheck.option.fare.total - providerTotal) * 100) / 100;
+    const convenienceFee = this.pricing.convenienceFee(setting, marginAmount, coupon?.discount ?? 0);
+    const totalAmount = Math.round(((coupon ? coupon.payable : grossAmount) + convenienceFee) * 100) / 100;
+    const paymentExpiresAt = new Date(Date.now() + setting.paymentWindowMinutes * 60 * 1000);
 
     const booking = await this.prisma.flightBooking.create({
       data: {
@@ -457,6 +469,9 @@ export class FlightsService {
         totalAmount,
         couponCode: coupon?.code ?? null,
         discountAmount: coupon?.discount ?? null,
+        marginAmount,
+        convenienceFee,
+        paymentExpiresAt,
         currency: "INR",
         status: "DRAFT",
         paymentStatus: "PENDING",
@@ -525,21 +540,25 @@ export class FlightsService {
     let returnLeg = await this.createDraftBooking(tenantId, customerId, legInput(dto.return, "return"), dto.return.searchContext, { tripId, tripRole: "RETURN" });
 
     if (dto.couponCode) {
-      // One coupon for the whole trip, priced on both legs together; the discount comes off the
-      // onward leg first and any remainder off the return, so each leg's own refund stays bounded.
-      const quote = await this.checkout.quote(tenantId, dto.couponCode, onward.totalAmount + returnLeg.totalAmount);
-      const onwardShare = Math.min(quote.discount, onward.totalAmount);
+      // One coupon for the whole trip, priced on both legs together (before convenience fees). It
+      // comes off the onward fare first and any remainder off the return, so each leg's own refund
+      // stays bounded; each leg's convenience fee is then recomputed on its final margin.
+      const setting = await this.pricing.getSetting();
+      const gross = (leg: FlightBookingDto) => leg.totalAmount - (leg.convenienceFee ?? 0);
+      const quote = await this.checkout.quote(tenantId, dto.couponCode, gross(onward) + gross(returnLeg));
+      const onwardShare = Math.min(quote.discount, onward.fare?.total ?? gross(onward));
       const returnShare = Math.round((quote.discount - onwardShare) * 100) / 100;
       const applyShare = async (leg: FlightBookingDto, share: number): Promise<FlightBookingDto> => {
-        const totalAmount = Math.round((leg.totalAmount - share) * 100) / 100;
-        await this.prisma.flightBooking.update({ where: { id: leg.id }, data: { totalAmount, couponCode: quote.code, discountAmount: share } });
-        return { ...leg, totalAmount, couponCode: quote.code, discountAmount: share };
+        const convenienceFee = this.pricing.convenienceFee(setting, leg.marginAmount ?? 0, share);
+        const totalAmount = Math.round((gross(leg) - share + convenienceFee) * 100) / 100;
+        await this.prisma.flightBooking.update({ where: { id: leg.id }, data: { totalAmount, couponCode: quote.code, discountAmount: share, convenienceFee } });
+        return { ...leg, totalAmount, couponCode: quote.code, discountAmount: share, convenienceFee };
       };
       onward = await applyShare(onward, onwardShare);
       returnLeg = await applyShare(returnLeg, returnShare);
     }
 
-    return { tripId, onward, return: returnLeg, totalAmount: onward.totalAmount + returnLeg.totalAmount, currency: onward.currency };
+    return { tripId, onward, return: returnLeg, totalAmount: Math.round((onward.totalAmount + returnLeg.totalAmount) * 100) / 100, currency: onward.currency };
   }
 
   private async getTripBookings(tenantId: string, customerId: string, tripId: string): Promise<{ onward: FlightBookingDto; return: FlightBookingDto }> {
@@ -552,7 +571,7 @@ export class FlightsService {
 
   async getTrip(tenantId: string, customerId: string, tripId: string): Promise<FlightTripDto> {
     const { onward, return: returnLeg } = await this.getTripBookings(tenantId, customerId, tripId);
-    return { tripId, onward, return: returnLeg, totalAmount: onward.totalAmount + returnLeg.totalAmount, currency: onward.currency };
+    return { tripId, onward, return: returnLeg, totalAmount: Math.round((onward.totalAmount + returnLeg.totalAmount) * 100) / 100, currency: onward.currency };
   }
 
   /** One combined Razorpay order for both legs' total — split back into two FlightPayment rows (one
@@ -562,6 +581,7 @@ export class FlightsService {
     if (onward.paymentStatus === "PAID" || returnLeg.paymentStatus === "PAID") {
       throw new BadRequestException({ code: "ALREADY_PAID", message: "This trip is already paid." });
     }
+    assertPaymentWindowOpen(onward.paymentExpiresAt);
     const combinedTotal = Math.round((onward.totalAmount + returnLeg.totalAmount) * 100) / 100;
 
     const onwardPayment = await this.prisma.flightPayment.create({ data: { tenantId, flightBookingId: onward.id, amount: onward.totalAmount, provider: "razorpay" } });
@@ -610,7 +630,7 @@ export class FlightsService {
       this.bookWithProvider(tenantId, customerId, returnLeg.id),
     ]);
 
-    return { tripId, onward: bookedOnward, return: bookedReturn, totalAmount: bookedOnward.totalAmount + bookedReturn.totalAmount, currency: bookedOnward.currency };
+    return { tripId, onward: bookedOnward, return: bookedReturn, totalAmount: Math.round((bookedOnward.totalAmount + bookedReturn.totalAmount) * 100) / 100, currency: bookedOnward.currency };
   }
 
   async createPaymentOrder(tenantId: string, customerId: string, flightBookingId: string): Promise<FlightPaymentOrderDto> {
@@ -618,6 +638,7 @@ export class FlightsService {
     if (booking.paymentStatus === "PAID") {
       throw new BadRequestException({ code: "ALREADY_PAID", message: "This booking is already paid." });
     }
+    assertPaymentWindowOpen(booking.paymentExpiresAt ? booking.paymentExpiresAt.toISOString() : null);
 
     const payment = await this.prisma.flightPayment.create({
       data: { tenantId, flightBookingId: booking.id, amount: booking.totalAmount, provider: "razorpay" },
@@ -1159,6 +1180,7 @@ export class FlightsService {
     id: string; clientId: string; refId: string | null; depCity: string; arrCity: string; onDate: string; reDate: string | null; adt: number; chd: number; inf: number; cabin: string;
     fareSnapshot: unknown;
     providerFareAmount: { toNumber(): number } | null; totalAmount: { toNumber(): number }; couponCode: string | null; discountAmount: { toNumber(): number } | null;
+    marginAmount: { toNumber(): number } | null; convenienceFee: { toNumber(): number } | null; paymentExpiresAt: Date | null;
     currency: string; status: string; paymentStatus: string; pnr: string | null;
     providerStatus: string | null; errorMessage: string | null; cancellationReason: string | null; cancellationStatus: string | null; cancelledAt: Date | null;
     refundAmount: { toNumber(): number } | null; refundedAt: Date | null; refundReference: string | null;
@@ -1187,6 +1209,9 @@ export class FlightsService {
       totalAmount: b.totalAmount.toNumber(),
       couponCode: b.couponCode,
       discountAmount: b.discountAmount ? b.discountAmount.toNumber() : null,
+      marginAmount: b.marginAmount ? b.marginAmount.toNumber() : null,
+      convenienceFee: b.convenienceFee ? b.convenienceFee.toNumber() : null,
+      paymentExpiresAt: b.paymentExpiresAt ? b.paymentExpiresAt.toISOString() : null,
       currency: b.currency,
       status: b.status as FlightBookingDto["status"],
       paymentStatus: b.paymentStatus as FlightBookingDto["paymentStatus"],
@@ -1252,4 +1277,11 @@ export function resolvePassengerDobs<T extends { pType: string; dob?: string }>(
     if (dobIsOptional(p.pType, searchContext)) return { ...p, dob: DEFAULT_ADULT_DOB };
     throw new BadRequestException({ code: "DOB_REQUIRED", message: `Enter the date of birth for passenger ${idx + 1}.` });
   });
+}
+
+/** Payment can start only within the time limit set when the booking was made (admin setting). */
+function assertPaymentWindowOpen(expiresAtIso: string | null): void {
+  if (expiresAtIso && new Date(expiresAtIso).getTime() < Date.now()) {
+    throw new BadRequestException({ code: "PAYMENT_SESSION_EXPIRED", message: "Your payment session has expired. Please start again to get the latest fare." });
+  }
 }
