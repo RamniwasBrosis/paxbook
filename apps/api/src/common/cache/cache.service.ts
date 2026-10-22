@@ -62,8 +62,10 @@ export class CacheService implements OnModuleDestroy {
   async takeOnce(key: string): Promise<string | null> {
     if (this.client && this.client.status === "ready") {
       try {
-        const value = await this.client.getdel(key);
-        if (value !== null) return value;
+        // GET + DEL in one MULTI (atomic): the live server runs Redis 3.2, which has no GETDEL.
+        const results = await this.client.multi().get(key).del(key).exec();
+        const value = results?.[0]?.[1];
+        if (typeof value === "string") return value;
       } catch {
         // fall through to memory
       }
