@@ -20,6 +20,7 @@ import { PromoBannerStrip } from "@/components/PromoBannerStrip";
 import { PromotionalPosters } from "@/components/PromotionalPosters";
 import { FlightHelpSection } from "@/components/FlightHelpSection";
 import { ReviewCard } from "@/components/ReviewCard";
+import { HideOnFlightsTab, HomeTabProvider } from "@/components/HomeTabContext";
 
 export const metadata: Metadata = {
   title: "Paxbook — Travel, Explore, Experience",
@@ -44,12 +45,15 @@ export default async function HomePage() {
   );
 
   return (
+    <HomeTabProvider>
     <div>
       {branding.templateSlug === "modern" ? (
         <ModernHero backgroundImageUrl={heroImageUrl} stats={stats} destinations={home.featuredDestinations} />
       ) : (
-        <ClassicHero backgroundImageUrl={heroImageUrl} stats={stats} destinations={home.featuredDestinations} />
+        <ClassicHero backgroundImageUrl={heroImageUrl} heroVideoUrl={branding.heroVideoUrl} stats={stats} destinations={home.featuredDestinations} />
       )}
+
+      <HideOnFlightsTab>
 
       <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} siteName={branding.siteName} types={["why_choose"]} />
 
@@ -82,7 +86,11 @@ export default async function HomePage() {
 
       <PackagesByStyleSection packages={home.recentPackages} />
 
+      </HideOnFlightsTab>
+
       <FlightHelpSection />
+
+      <HideOnFlightsTab>
 
       <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} types={["how_it_works"]} />
 
@@ -137,6 +145,8 @@ export default async function HomePage() {
       </section>
 
       <PromotionalPosters posters={home.banners.filter((b) => b.placement === "homepage_bottom")} />
+      </HideOnFlightsTab>
     </div>
+    </HomeTabProvider>
   );
 }

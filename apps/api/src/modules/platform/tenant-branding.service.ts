@@ -27,6 +27,7 @@ export class TenantBrandingService {
           templateSlug: dto.templateSlug,
           customDomain: dto.customDomain,
           aiPlannerEnabled: dto.aiPlannerEnabled,
+          heroVideoKey: dto.heroVideoKey === undefined ? undefined : dto.heroVideoKey || null,
         },
       });
       return this.toDto(tenant);
@@ -38,7 +39,7 @@ export class TenantBrandingService {
     }
   }
 
-  private toDto(tenant: { name: string; slug: string; logoStorageKey: string | null; primaryColor: string | null; templateSlug: string; customDomain: string | null; aiPlannerEnabled: boolean }): TenantBrandingDto {
+  private toDto(tenant: { name: string; slug: string; logoStorageKey: string | null; primaryColor: string | null; templateSlug: string; customDomain: string | null; aiPlannerEnabled: boolean; heroVideoKey: string | null }): TenantBrandingDto {
     return {
       siteName: tenant.name,
       logoStorageKey: tenant.logoStorageKey,
@@ -48,6 +49,8 @@ export class TenantBrandingService {
       slug: tenant.slug,
       customDomain: tenant.customDomain,
       aiPlannerEnabled: tenant.aiPlannerEnabled,
+      heroVideoKey: tenant.heroVideoKey,
+      heroVideoUrl: this.storageService.buildPublicUrl(tenant.heroVideoKey),
     };
   }
 }

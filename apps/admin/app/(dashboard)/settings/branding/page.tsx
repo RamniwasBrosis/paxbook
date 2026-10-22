@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import { PERMISSIONS } from "@paxbook/config";
-import { useSession, useBranding, useUpdateBranding, useUploadFile } from "@paxbook/api-client";
+import { useSession, useBranding, useUpdateBranding, useUploadFile, useUploadVideo } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
 import type { TemplateSlug } from "@paxbook/types";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Select } from "@paxbook/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Select, VideoUploadField } from "@paxbook/ui";
 
 export default function BrandingSettingsPage() {
   const { hasPermission } = useSession();
@@ -43,7 +43,7 @@ function BrandingForm({
   initial,
   canWrite,
 }: {
-  initial: { logoUrl: string | null; primaryColor: string | null; templateSlug: TemplateSlug; customDomain: string | null; aiPlannerEnabled: boolean };
+  initial: { logoUrl: string | null; primaryColor: string | null; templateSlug: TemplateSlug; customDomain: string | null; aiPlannerEnabled: boolean; heroVideoUrl: string | null };
   canWrite: boolean;
 }) {
   const updateBranding = useUpdateBranding();
@@ -53,6 +53,10 @@ function BrandingForm({
   const [customDomain, setCustomDomain] = React.useState(initial.customDomain ?? "");
   const [aiPlannerEnabled, setAiPlannerEnabled] = React.useState(Boolean(initial.aiPlannerEnabled));
   const [logoStorageKey, setLogoStorageKey] = React.useState<string | undefined>(undefined);
+  const uploadVideo = useUploadVideo();
+  /** undefined = unchanged, "" = back to the built-in video, else the uploaded key. */
+  const [heroVideoKey, setHeroVideoKey] = React.useState<string | undefined>(undefined);
+  const [heroVideoPreview, setHeroVideoPreview] = React.useState<string | null>(initial.heroVideoUrl);
   const [logoPreview, setLogoPreview] = React.useState(initial.logoUrl);
   const [error, setError] = React.useState<string | null>(null);
   const [saved, setSaved] = React.useState(false);
@@ -78,6 +82,7 @@ function BrandingForm({
         customDomain: customDomain || undefined,
         logoStorageKey,
         aiPlannerEnabled,
+        heroVideoKey,
       });
       setSaved(true);
     } catch (err) {
@@ -145,6 +150,36 @@ function BrandingForm({
           <p className="text-xs text-slate-400 sm:col-span-2">
             Pointing a custom domain here still requires DNS + SSL setup outside Paxbook — this field just tells the platform which domain to match to your storefront.
           </p>
+
+          <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3 sm:col-span-2">
+            <VideoUploadField
+              label="Homepage hero video"
+              videoUrl={heroVideoPreview}
+              isUploading={uploadVideo.isPending}
+              onFileSelected={async (file) => {
+                setError(null);
+                try {
+                  const uploaded = await uploadVideo.mutateAsync(file);
+                  setHeroVideoKey(uploaded.key);
+                  setHeroVideoPreview(uploaded.url);
+                } catch (err) {
+                  setError(err instanceof ApiRequestError ? err.message : "Could not upload the video.");
+                }
+              }}
+              onClear={
+                heroVideoPreview
+                  ? () => {
+                      setHeroVideoKey("");
+                      setHeroVideoPreview(null);
+                    }
+                  : undefined
+              }
+            />
+            <p className="text-xs text-slate-500">
+              Plays muted on a loop in the arch on the homepage. Use a short MP4 (10–20 seconds, 720p, under 10 MB) so it loads fast.{" "}
+              {heroVideoPreview ? "Remove it to go back to the built-in travel video." : "Currently showing the built-in travel video."} Click Save branding after changing it.
+            </p>
+          </div>
 
           <label className="flex items-start gap-3 rounded-lg border border-slate-200 p-3 sm:col-span-2">
             <input

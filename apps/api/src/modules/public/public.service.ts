@@ -361,6 +361,7 @@ export class PublicService {
       templateSlug: tenant.templateSlug === "modern" ? "modern" : "classic",
       googleLoginEnabled: Boolean(tenant.googleClientId && tenant.googleClientSecretEncrypted),
       aiPlannerEnabled: tenant.aiPlannerEnabled,
+      heroVideoUrl: this.storage.buildPublicUrl(tenant.heroVideoKey),
       ga4MeasurementId: tenant.ga4MeasurementId,
       facebookPixelId: tenant.facebookPixelId,
       googleMapsApiKey: tenant.googleMapsApiKey,

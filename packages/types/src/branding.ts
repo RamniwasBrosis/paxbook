@@ -10,6 +10,8 @@ export interface TenantBrandingDto {
   customDomain: string | null;
   /** Shows the AI Trip Planner on the public site. */
   aiPlannerEnabled: boolean;
+  heroVideoKey: string | null;
+  heroVideoUrl: string | null;
 }
 
 export interface UpdateTenantBrandingDto {
@@ -18,6 +20,8 @@ export interface UpdateTenantBrandingDto {
   templateSlug?: TemplateSlug;
   customDomain?: string;
   aiPlannerEnabled?: boolean;
+  /** "" resets to the built-in video. */
+  heroVideoKey?: string;
 }
 
 export interface PublicBrandingDto {
@@ -27,6 +31,8 @@ export interface PublicBrandingDto {
   templateSlug: TemplateSlug;
   googleLoginEnabled: boolean;
   aiPlannerEnabled: boolean;
+  /** Homepage hero video; null = the built-in one. */
+  heroVideoUrl: string | null;
   ga4MeasurementId: string | null;
   facebookPixelId: string | null;
   googleMapsApiKey: string | null;

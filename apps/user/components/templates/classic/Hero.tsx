@@ -3,6 +3,7 @@ import { ShieldCheck, Headset, Star, Plane } from "lucide-react";
 import type { DestinationDto, PublicStatsDto } from "@paxbook/types";
 import { PlanTripButton } from "@/components/PlanTripButton";
 import { HomeSearchTabs } from "@/components/HomeSearchTabs";
+import { HeroVideo } from "@/components/HeroVideo";
 
 /**
  * Design 2 (paxbook.in pattern) homepage hero: cream band, handwritten eyebrow, headline with a
@@ -11,10 +12,13 @@ import { HomeSearchTabs } from "@/components/HomeSearchTabs";
  */
 export function ClassicHero({
   backgroundImageUrl,
+  heroVideoUrl,
   stats,
   destinations = [],
 }: {
   backgroundImageUrl?: string | null;
+  /** Admin-uploaded hero video; the built-in travel video when empty. */
+  heroVideoUrl?: string | null;
   stats?: PublicStatsDto;
   destinations?: DestinationDto[];
 }) {
@@ -75,7 +79,7 @@ export function ClassicHero({
               <circle cx="540" cy="24" r="7" fill="#db2777" />
             </svg>
             <div className="arch absolute left-1/2 top-6 h-[88%] w-[72%] -translate-x-1/2 overflow-hidden rounded-b-[1.75rem] border-8 border-white bg-mist shadow-float">
-              {backgroundImageUrl ? <img src={backgroundImageUrl} alt="" className="h-full w-full object-cover" /> : null}
+              <HeroVideo src={heroVideoUrl || "/hero.mp4"} poster={backgroundImageUrl} />
             </div>
             <div className="absolute right-0 top-16 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-float sm:flex">
               <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-100">

@@ -8,6 +8,7 @@ const FALLBACK: PublicBrandingDto = {
   templateSlug: "classic",
   googleLoginEnabled: false,
   aiPlannerEnabled: false,
+  heroVideoUrl: null,
   ga4MeasurementId: null,
   facebookPixelId: null,
   googleMapsApiKey: null,

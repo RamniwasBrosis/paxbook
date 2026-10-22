@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Search, Plane, Palmtree, FileCheck2 } from "lucide-react";
 import type { DestinationDto } from "@paxbook/types";
 import { FlightSearchForm } from "@/components/FlightSearchForm";
+import { useHomeTab } from "@/components/HomeTabContext";
 
 const TRAVEL_STYLES = ["Honeymoon", "Family", "Adventure", "Luxury", "Budget", "Seasonal"];
 
@@ -28,7 +29,7 @@ const SUBMIT =
  */
 export function HomeSearchTabs({ destinations }: { destinations: DestinationDto[] }) {
   const router = useRouter();
-  const [tab, setTab] = React.useState<Tab>("holidays");
+  const [tab, setTab] = useHomeTab();
 
   React.useEffect(() => {
     const fromHash = window.location.hash.slice(1);

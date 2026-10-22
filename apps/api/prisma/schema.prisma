@@ -65,6 +65,8 @@ model Tenant {
   ftdEnabled      Boolean      @default(false)
   /// Shows the AI Trip Planner (menu link, homepage section, /ai-planner page) on the public site. Off until the owner switches it on in Settings -> Branding.
   aiPlannerEnabled Boolean     @default(false)
+  /// Video in the homepage hero arch (plays muted on loop). Null = the built-in travel video.
+  heroVideoKey     String?
   /// "Important information" shown on the flight booking page: [{ title, points: string[] }]. Null = built-in defaults.
   flightImportantInfo Json?
   createdAt       DateTime     @default(now())

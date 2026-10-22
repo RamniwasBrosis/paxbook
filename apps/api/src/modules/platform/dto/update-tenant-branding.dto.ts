@@ -20,4 +20,9 @@ export class UpdateTenantBrandingDto {
   @IsOptional()
   @IsBoolean()
   aiPlannerEnabled?: boolean;
+
+  /** Uploaded hero video key; "" resets to the built-in video. */
+  @IsOptional()
+  @IsString()
+  heroVideoKey?: string;
 }
