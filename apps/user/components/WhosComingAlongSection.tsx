@@ -82,21 +82,24 @@ export function WhosComingAlongSection({ personas, travelerTypes }: { personas?:
               <Link
                 key={item.label}
                 href={`/destinations?category=${encodeURIComponent(item.category)}`}
-                className={`group relative block aspect-[3/4] w-52 shrink-0 snap-start overflow-hidden rounded-[1.75rem] bg-navy-deep shadow-card ring-4 ring-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-float sm:w-auto ${c.ring}`}
+                className={`group block aspect-[3/4] w-52 shrink-0 snap-start rounded-[1.9rem] border border-slate-200 bg-white p-2 shadow-card ring-4 ring-transparent transition-all duration-300 hover:-translate-y-2 hover:shadow-float sm:w-auto ${c.ring}`}
               >
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                ) : null}
-                <span aria-hidden="true" className={`absolute inset-0 bg-gradient-to-t ${c.glow} via-black/10 to-transparent`} />
-                <span className={`absolute left-4 top-4 grid h-11 w-11 place-items-center rounded-2xl text-white shadow-lg ${c.chip}`}>
-                  <Icon className="h-5 w-5" strokeWidth={2} />
-                </span>
-                <span className="absolute inset-x-0 bottom-0 flex flex-col p-5 text-white">
-                  <span className="font-display text-lg font-extrabold uppercase tracking-[0.1em] sm:text-xl">{item.label}</span>
-                  <span aria-hidden="true" className={`mt-2 h-1 w-10 rounded-full transition-all duration-300 group-hover:w-16 ${c.bar}`} />
-                  {item.tagline ? <span className="mt-2 text-sm text-white/85">{item.tagline}</span> : null}
-                  <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent">
-                    Explore trips <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                {/* The white frame (p-2) keeps the photo inset from the card edge on every side. */}
+                <span className="relative block h-full w-full overflow-hidden rounded-[1.4rem] bg-navy-deep">
+                  {item.imageUrl ? (
+                    <img src={item.imageUrl} alt="" className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  ) : null}
+                  <span aria-hidden="true" className={`absolute inset-0 bg-gradient-to-t ${c.glow} via-black/10 to-transparent`} />
+                  <span className={`absolute left-3 top-3 grid h-10 w-10 place-items-center rounded-2xl text-white shadow-lg ${c.chip}`}>
+                    <Icon className="h-5 w-5" strokeWidth={2} />
+                  </span>
+                  <span className="absolute inset-x-0 bottom-0 flex flex-col p-4 text-white">
+                    <span className="font-display text-lg font-extrabold uppercase tracking-[0.1em] sm:text-xl">{item.label}</span>
+                    <span aria-hidden="true" className={`mt-2 h-1 w-10 rounded-full transition-all duration-300 group-hover:w-16 ${c.bar}`} />
+                    {item.tagline ? <span className="mt-2 text-sm text-white/85">{item.tagline}</span> : null}
+                    <span className="mt-3 inline-flex items-center gap-1.5 text-sm font-bold text-accent">
+                      Explore trips <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
                   </span>
                 </span>
               </Link>

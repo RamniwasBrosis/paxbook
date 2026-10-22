@@ -15,6 +15,7 @@ import { FeaturedPackagesBand } from "@/components/FeaturedPackagesBand";
 import { PackagesByStyleSection } from "@/components/PackagesByStyleSection";
 import { PackagesByDurationSection } from "@/components/PackagesByDurationSection";
 import { ChooseDestinationSection } from "@/components/ChooseDestinationSection";
+import { RecentBookingsMarquee } from "@/components/RecentBookingsMarquee";
 import { AiPlannerMock } from "@/components/AiPlannerMock";
 import { PromoBannerStrip } from "@/components/PromoBannerStrip";
 import { PromotionalPosters } from "@/components/PromotionalPosters";
@@ -57,11 +58,16 @@ export default async function HomePage() {
 
       <WhosComingAlongSection personas={personas} travelerTypes={travelerTypes} />
 
+      <RecentBookingsMarquee bookings={home.recentBookings} />
+
       <FeaturedPackagesBand packages={home.recentPackages} />
 
-      <ChooseDestinationSection destinations={home.featuredDestinations} priceByDestinationId={priceByDestinationId} />
+      <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} siteName={branding.siteName} types={["why_choose"]} />
 
+      {/* Hidden on request; kept so they can be switched back on.
+      <ChooseDestinationSection destinations={home.featuredDestinations} priceByDestinationId={priceByDestinationId} />
       <PackagesByDurationSection destinations={home.featuredDestinations} packages={home.recentPackages} />
+      */}
 
       <PromoBannerStrip banners={home.banners} />
 

@@ -48,6 +48,12 @@ export class PublicFlightsController {
     return this.airportsService.listActive();
   }
 
+  /** Departure-city suggestions for the trip customizer: distinct cities from the airports table. */
+  @Get("cities")
+  cities(@Query("q") q?: string) {
+    return this.airportsService.searchCities(q ?? "");
+  }
+
   @Post("search")
   search(@Body() dto: SearchFlightDto) {
     return this.flightsService.search(dto);

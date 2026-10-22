@@ -17,6 +17,29 @@ export class AirportsService {
     return airports.map(toDto);
   }
 
+  /** Active airports' cities matching `q` (city, airport name or code), one row per city, at most 8. */
+  async searchCities(q: string): Promise<{ city: string; country: string; code: string }[]> {
+    const term = q.trim().slice(0, 40);
+    const airports = await this.prisma.airport.findMany({
+      where: {
+        isActive: true,
+        ...(term
+          ? { OR: [{ city: { contains: term, mode: "insensitive" } }, { name: { contains: term, mode: "insensitive" } }, { code: { equals: term.toUpperCase() } }] }
+          : {}),
+      },
+      orderBy: [{ city: "asc" }, { code: "asc" }],
+      take: 40,
+    });
+    const seen = new Set<string>();
+    const lower = term.toLowerCase();
+    return airports
+      .filter((a) => (seen.has(a.city) ? false : (seen.add(a.city), true)))
+      // Cities that start with what was typed come first ("Del" -> Delhi before Adelaide).
+      .sort((a, b) => Number(!a.city.toLowerCase().startsWith(lower)) - Number(!b.city.toLowerCase().startsWith(lower)))
+      .slice(0, 8)
+      .map((a) => ({ city: a.city, country: a.country, code: a.code }));
+  }
+
   async listAll(): Promise<AirportDto[]> {
     const airports = await this.prisma.airport.findMany({ orderBy: { city: "asc" } });
     return airports.map(toDto);

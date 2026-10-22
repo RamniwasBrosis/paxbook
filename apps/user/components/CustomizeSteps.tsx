@@ -1,6 +1,6 @@
 import { Check } from "lucide-react";
 
-export const CUSTOMIZE_STEPS = ["Destination", "Travellers", "Interests", "Duration", "Departure City", "Departure Date"] as const;
+export const CUSTOMIZE_STEPS = ["Destination", "Travellers", "Interests", "Duration", "Stay", "Pace", "Departure City", "Departure Date"] as const;
 export type CustomizeStepName = (typeof CUSTOMIZE_STEPS)[number];
 
 export function CustomizeSteps<T extends string>({ steps, current }: { steps: readonly T[]; current: T }) {

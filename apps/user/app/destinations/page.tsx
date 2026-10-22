@@ -5,7 +5,6 @@ import type { DestinationDto, PackageSummaryDto } from "@paxbook/types";
 import { publicFetch } from "@/lib/api";
 import { DestinationListCard } from "@/components/DestinationListCard";
 import { DestinationCustomizeCard } from "@/components/DestinationCustomizeCard";
-import { ScrollCarousel } from "@/components/ScrollCarousel";
 import { PageHero } from "@/components/PageHero";
 import { CustomizeSteps, CUSTOMIZE_STEPS } from "@/components/CustomizeSteps";
 
@@ -102,7 +101,7 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
         {destinations.length === 0 ? (
           <p className="text-slate-500">No destinations found.</p>
         ) : inCustomizeFlow ? (
-          <ScrollCarousel>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6 lg:grid-cols-4">
             {destinations.map((d) => (
               <DestinationCustomizeCard
                 key={d.id}
@@ -111,7 +110,7 @@ export default async function DestinationsPage({ searchParams }: { searchParams:
                 href={`/customize/${d.slug}?travellerType=${encodeURIComponent(searchParams.category!)}`}
               />
             ))}
-          </ScrollCarousel>
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {destinations.map((d) => (
