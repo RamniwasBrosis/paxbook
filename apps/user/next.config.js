@@ -8,6 +8,12 @@ const nextConfig = {
       { protocol: "https", hostname: "api.web.paxbook.in" },
     ],
   },
+  // The hero video must be cacheable: cPanel's nginx in front of the site drops Range requests for
+  // uncacheable responses (sending the whole file with 200), and Safari won't play a video without
+  // 206 range replies. Once cached, nginx answers ranges itself. Replace the file under a new name.
+  async headers() {
+    return [{ source: "/hero.mp4", headers: [{ key: "Cache-Control", value: "public, max-age=604800" }] }];
+  },
   experimental: {
     // Constrained to 1 worker: the deployment host's CloudLinux LVE caps
     // concurrent processes per account low enough that Next's default

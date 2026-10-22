@@ -30,7 +30,9 @@ async function bootstrap() {
   });
 
   const storageRoot = configService.get<string>("STORAGE_ROOT", "./uploads");
-  app.useStaticAssets(join(process.cwd(), storageRoot), { prefix: "/uploads" });
+  // Uploaded files get unique names, so they can be cached for a week. Being cacheable also lets
+  // cPanel's nginx answer Range requests, which Safari needs to play uploaded videos.
+  app.useStaticAssets(join(process.cwd(), storageRoot), { prefix: "/uploads", maxAge: "7d" });
 
   app.setGlobalPrefix("api");
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: "1" });
