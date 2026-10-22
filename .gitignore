@@ -29,3 +29,6 @@ user access.txt
 *.tsbuildinfo
 .claude/scheduled_tasks.lock
 exports/
+
+# also match symlinked node_modules (a bare file, not a directory)
+node_modules
