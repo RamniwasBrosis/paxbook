@@ -52,6 +52,9 @@ export interface DestinationDto {
   description: string | null;
   heroImageKey: string | null;
   heroImageUrl: string | null;
+  /** Homepage card video (plays in place of the photo), if set. */
+  cardVideoKey: string | null;
+  cardVideoUrl: string | null;
   isFeatured: boolean;
   isActive: boolean;
   bestTimeToVisit: string | null;
@@ -68,6 +71,8 @@ export interface CreateDestinationDto {
   slug: string;
   description?: string;
   heroImageKey?: string;
+  /** "" removes it. */
+  cardVideoKey?: string;
   isFeatured?: boolean;
   isActive?: boolean;
   bestTimeToVisit?: string;

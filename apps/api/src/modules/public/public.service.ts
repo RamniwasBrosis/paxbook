@@ -396,6 +396,8 @@ export class PublicService {
       description: destination.description,
       heroImageKey: destination.heroImageKey,
       heroImageUrl: this.storage.buildPublicUrl(destination.heroImageKey),
+      cardVideoKey: destination.cardVideoKey,
+      cardVideoUrl: this.storage.buildPublicUrl(destination.cardVideoKey),
       isFeatured: destination.isFeatured,
       isActive: destination.isActive,
       bestTimeToVisit: destination.bestTimeToVisit,

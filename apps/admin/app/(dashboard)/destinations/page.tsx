@@ -11,10 +11,11 @@ import {
   useUpdateDestination,
   useDeleteDestination,
   useUploadFile,
+  useUploadVideo,
 } from "@paxbook/api-client";
 import { ApiRequestError } from "@paxbook/auth-client";
 import type { DestinationDto } from "@paxbook/types";
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, CheckboxGroup, DataTable, ImageUploadField, Input, Select } from "@paxbook/ui";
+import { Badge, Button, Card, CardContent, CardHeader, CardTitle, CheckboxGroup, DataTable, ImageUploadField, Input, Select, VideoUploadField } from "@paxbook/ui";
 import { DestinationContentEditor } from "./DestinationContentEditor";
 
 const EMPTY_FORM = {
@@ -25,6 +26,8 @@ const EMPTY_FORM = {
   description: "",
   heroImageKey: "",
   heroImageUrl: "" as string | null,
+  cardVideoKey: "",
+  cardVideoUrl: null as string | null,
   isFeatured: false,
   isActive: true,
   bestTimeToVisit: "",
@@ -64,6 +67,7 @@ function DestinationsContent({ canWrite }: { canWrite: boolean }) {
   const updateDestination = useUpdateDestination();
   const deleteDestination = useDeleteDestination();
   const uploadFile = useUploadFile();
+  const uploadVideo = useUploadVideo();
 
   const [form, setForm] = React.useState(EMPTY_FORM);
   const [error, setError] = React.useState<string | null>(null);
@@ -78,6 +82,8 @@ function DestinationsContent({ canWrite }: { canWrite: boolean }) {
       description: destination.description ?? "",
       heroImageKey: destination.heroImageKey ?? "",
       heroImageUrl: destination.heroImageUrl,
+      cardVideoKey: destination.cardVideoKey ?? "",
+      cardVideoUrl: destination.cardVideoUrl,
       isFeatured: destination.isFeatured,
       isActive: destination.isActive,
       bestTimeToVisit: destination.bestTimeToVisit ?? "",
@@ -94,6 +100,7 @@ function DestinationsContent({ canWrite }: { canWrite: boolean }) {
       slug: form.slug,
       description: form.description || undefined,
       heroImageKey: form.heroImageKey || undefined,
+      cardVideoKey: form.cardVideoKey,
       isFeatured: form.isFeatured,
       isActive: form.isActive,
       bestTimeToVisit: form.bestTimeToVisit || undefined,
@@ -118,6 +125,15 @@ function DestinationsContent({ canWrite }: { canWrite: boolean }) {
       if (form.id === id) setForm(EMPTY_FORM);
     } catch (err) {
       setError(err instanceof ApiRequestError ? err.message : "Could not delete destination.");
+    }
+  }
+
+  async function handleVideoUpload(file: File) {
+    try {
+      const result = await uploadVideo.mutateAsync(file);
+      setForm((f) => ({ ...f, cardVideoKey: result.key, cardVideoUrl: result.url }));
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.message : "Video upload failed.");
     }
   }
 
@@ -255,6 +271,19 @@ function DestinationsContent({ canWrite }: { canWrite: boolean }) {
                   onFileSelected={handleHeroUpload}
                   onClear={() => setForm((f) => ({ ...f, heroImageKey: "", heroImageUrl: null }))}
                 />
+              </div>
+
+              <div className="sm:col-span-2">
+                <VideoUploadField
+                  label="Homepage card video (optional)"
+                  videoUrl={form.cardVideoUrl}
+                  isUploading={uploadVideo.isPending}
+                  onFileSelected={handleVideoUpload}
+                  onClear={() => setForm((f) => ({ ...f, cardVideoKey: "", cardVideoUrl: null }))}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Plays instead of the photo in &ldquo;Where do you want to go?&rdquo; on the homepage (featured destinations). Visitors can turn the sound on. Short MP4, 10–20 seconds, under 10 MB.
+                </p>
               </div>
 
               <div className="sm:col-span-2">

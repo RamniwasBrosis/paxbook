@@ -304,6 +304,8 @@ model Destination {
   slug          String
   description   String?
   heroImageKey  String?
+  /// Short clip for the homepage "Where do you want to go?" cards (plays in place of the photo).
+  cardVideoKey  String?
   isFeatured    Boolean  @default(false)
   /// Admin show/hide toggle — same semantics as Coupon.isActive / Plan.isActive. When false the
   /// destination is fully hidden from every public query but stays intact for the admin to re-enable.

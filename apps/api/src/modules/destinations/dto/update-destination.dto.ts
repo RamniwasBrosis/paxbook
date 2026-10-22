@@ -33,6 +33,11 @@ export class UpdateDestinationDto {
   @IsString()
   heroImageKey?: string;
 
+  /** Homepage card video; "" removes it. */
+  @IsOptional()
+  @IsString()
+  cardVideoKey?: string;
+
   @IsOptional()
   @IsBoolean()
   isFeatured?: boolean;

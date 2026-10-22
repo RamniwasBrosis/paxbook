@@ -11,7 +11,7 @@ import { ReviewStars } from "@/components/ReviewStars";
 import { ScrollCarousel } from "@/components/ScrollCarousel";
 import { PlanTripButton } from "@/components/PlanTripButton";
 import { WhosComingAlongSection, type PersonaConfig, type TravelerTypeConfig } from "@/components/WhosComingAlongSection";
-import { TripsLovingSection } from "@/components/TripsLovingSection";
+import { FeaturedPackagesBand } from "@/components/FeaturedPackagesBand";
 import { PackagesByStyleSection } from "@/components/PackagesByStyleSection";
 import { PackagesByDurationSection } from "@/components/PackagesByDurationSection";
 import { ChooseDestinationSection } from "@/components/ChooseDestinationSection";
@@ -55,17 +55,15 @@ export default async function HomePage() {
 
       <HideOnFlightsTab>
 
-      <HomepageBlockRenderer blocks={home.homepageBlocks} stats={stats} siteName={branding.siteName} types={["why_choose"]} />
-
       <WhosComingAlongSection personas={personas} travelerTypes={travelerTypes} />
 
-      <PromoBannerStrip banners={home.banners} />
+      <FeaturedPackagesBand packages={home.recentPackages} />
 
       <ChooseDestinationSection destinations={home.featuredDestinations} priceByDestinationId={priceByDestinationId} />
 
       <PackagesByDurationSection destinations={home.featuredDestinations} packages={home.recentPackages} />
 
-      <TripsLovingSection packages={home.recentPackages} />
+      <PromoBannerStrip banners={home.banners} />
 
       {home.visaFreeDestinations.length > 0 ? (
         <section className="shell py-16 lg:py-20">
