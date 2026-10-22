@@ -1,0 +1,55 @@
+Last updated: 22 October 2026
+
+This policy explains what personal information Paxbook collects when you use web.paxbook.in, why we collect it, who we share it with, and the choices you have. We handle personal data in line with applicable Indian law. For any privacy question or request, write to planners@paxbook.in.
+
+## 1. What we collect
+### Information you give us
+- Account details: your name, email address, mobile number and password. Passwords are stored only in a protected, hashed form that we cannot read.
+- Traveller details for bookings: names, title, gender, date of birth, and, when an airline requires it, ID proof, passport or PAN details.
+- Contact details for the booking (email and mobile) and, if you ask for a business invoice, GST details.
+- Messages you send us, enquiries and trip plans, and reviews you post.
+### Information collected automatically
+- Your IP address, browser and device type, pages visited and the time of visits.
+- Cookies that keep you logged in and remember the booking you are filling in.
+- If analytics are switched on for this website, Google Analytics and Meta (Facebook) measure visits in aggregate.
+### Payments
+Payments are handled by our payment partner Razorpay. Paxbook does not receive or store your full card number, UPI PIN or bank login.
+
+## 2. Why we use it
+- To create and secure your account, including sending one-time codes to your email or mobile.
+- To make your bookings with airlines and travel partners, issue e-tickets and vouchers, and send booking updates by email, SMS or WhatsApp.
+- To process payments, refunds, cancellations and date changes.
+- To help you when you contact support.
+- To prevent fraud and misuse, for example with security codes and limits on login attempts.
+- To send offers and newsletters, only if you subscribe. You can unsubscribe at any time.
+- To improve the website and meet our legal and tax obligations.
+
+## 3. Who we share it with
+We share only what each party needs:
+- Airlines, our flight supplier and holiday partners (hotels, transport, activities), to make and manage your booking.
+- Razorpay, to take payments and process refunds.
+- Email, SMS and WhatsApp providers, to send codes, tickets and updates.
+- Analytics providers, if switched on, in aggregate form.
+- Government authorities, when the law requires it, for example immigration or security agencies through the airline.
+We do not sell your personal information.
+
+## 4. How long we keep it
+We keep account details while your account is open. Booking and payment records are kept for as long as tax and accounting law requires. One-time codes expire within minutes, and an unfinished signup expires after 30 minutes.
+
+## 5. How we protect it
+The website uses encrypted (HTTPS) connections. Passwords are hashed, one-time codes are single use and limited to a few tries, and access to customer data is limited to staff who need it. No system is completely secure, so please keep your password and codes private.
+
+## 6. Your choices and rights
+- See and update your profile and saved travellers in My Account.
+- Ask us for a copy of your data, to correct it, or to delete your account, by writing to planners@paxbook.in. Some booking records must be kept for legal reasons even after an account is deleted.
+- Unsubscribe from offers using the link in any newsletter.
+- Block cookies in your browser settings; you will then not be able to stay logged in.
+
+## 7. Children
+Bookings must be made by an adult. Details of children and infants are collected only as travellers on an adult's booking.
+
+## 8. Changes to this policy
+We may update this policy. The latest version is always on this page, with the date at the top.
+
+## 9. Contact
+Paxbook · Email: planners@paxbook.in · Phone: 7300047077

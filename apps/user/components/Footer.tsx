@@ -46,6 +46,8 @@ const COLUMNS = [
       { href: "/contact", label: "Contact us" },
       { href: "/account", label: "My account" },
       { href: "/account/bookings", label: "My bookings" },
+      { href: "/pages/terms-and-conditions", label: "Terms & Conditions" },
+      { href: "/pages/privacy-policy", label: "Privacy Policy" },
     ],
   },
 ];

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { PageDto } from "@paxbook/types";
 import { publicFetchOrNull } from "@/lib/api";
 import { PageHero } from "@/components/PageHero";
+import { SimpleRichText } from "@/components/SimpleRichText";
 
 async function getPage(slug: string) {
   return publicFetchOrNull<PageDto>(`/public/pages/${slug}`);
@@ -26,7 +27,9 @@ export default async function StaticPage({ params }: { params: { slug: string } 
     <div>
       <PageHero breadcrumbs={[{ label: page.title }]} title={page.title} />
       <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-        <div className="whitespace-pre-wrap text-lg leading-relaxed text-ink-muted">{page.body}</div>
+        <div className="text-[1.05rem] text-ink-muted [&>*:first-child]:mt-0">
+          <SimpleRichText text={page.body} />
+        </div>
       </article>
     </div>
   );
