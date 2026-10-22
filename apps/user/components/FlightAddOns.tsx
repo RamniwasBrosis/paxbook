@@ -20,14 +20,17 @@ export function FlightAddOns({
   ssr,
   choices,
   onChange,
+  defaultOpen = false,
 }: {
+  /** Open the first traveller's panel straight away (after the seat step). */
+  defaultOpen?: boolean;
   passengers: Array<{ fName: string; lName: string; pType: "A" | "C" | "I" }>;
   ssr: FlightSsrDto | null;
   choices: Record<number, PassengerSsrChoice>;
   onChange: (index: number, next: PassengerSsrChoice) => void;
 }) {
-  // All panels start closed; a traveller opens with the arrow.
-  const [open, setOpen] = React.useState(-1);
+  // Closed unless asked; a traveller opens with the arrow.
+  const [open, setOpen] = React.useState(() => (defaultOpen ? passengers.findIndex((p) => p.pType !== "I") : -1));
   if (!ssr || !ssrHasOptions(ssr)) return null;
   const eligible = passengers.map((p, index) => ({ ...p, index })).filter((p): p is typeof p & { pType: "A" | "C" } => p.pType !== "I");
   if (eligible.length === 0) return null;

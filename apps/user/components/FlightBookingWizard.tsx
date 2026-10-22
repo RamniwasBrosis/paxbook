@@ -111,6 +111,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   const [bookingId, setBookingId] = React.useState<string | null>(null);
   const [guestCheckout, setGuestCheckout] = React.useState(false);
   const [reviewOpen, setReviewOpen] = React.useState(false);
+  const [seatsDone, setSeatsDone] = React.useState(false);
   const [guestToken, setGuestToken] = React.useState<string | null>(null);
   /** What the server will actually charge for the current draft (it re-prices with the airline). */
   const [chargedTotal, setChargedTotal] = React.useState<number | null>(null);
@@ -219,6 +220,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
     if (!flightId || !refId) return;
 
     setLoadingSeats(true);
+    setSeatsDone(false);
     setSeatMandatoryButUnavailable(false);
     try {
       const res = await fetch(`${API_BASE_URL}/public/flights/seats`, {
@@ -459,6 +461,14 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   // GST on our final margin (after the coupon); the server computes the same when booking.
   const convenienceFee = convenienceFeeFor(priceCheck.convenience, discount);
   const displayTotal = Math.max(0, Math.round((option.fare.total + ssrAddOnTotal + seatAddOnTotal + webCheckinTotal - discount + convenienceFee) * 100) / 100);
+  // Seats & meals step: the seat map comes first; "Skip" or "Continue" reveals meals & baggage.
+  const showSeatPicker = seatMapHasAnySeats(seatMap);
+  const seatPhase = showSeatPicker && !seatsDone;
+  const anySeatChosen = Object.values(ssrChoices).some((c) => Boolean(c?.onward?.seatId || c?.return?.seatId));
+  function finishSeats() {
+    if (hasAddOns) setSeatsDone(true);
+    else setStep("review");
+  }
   const stepperSteps = ["Passenger details", "Seats & meals", "Review & pay"];
   const activeStepIndex = step === "passengers" ? 0 : step === "seats" ? 1 : 2;
   const seatPassengers: SeatMapPassenger[] = passengers
@@ -647,20 +657,42 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
             </div>
             ) : null}
 
-            <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} />
-
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
-                ← Edit passengers
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep("review")}
-                className="inline-flex h-12 items-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
-              >
-                Continue to review
-              </button>
-            </div>
+            {seatPhase ? (
+              /* Seats first: skip or continue, then meals & baggage open up. */
+              <div className="flex flex-wrap items-center gap-3">
+                <button type="button" onClick={() => setStep("passengers")} className="text-sm font-semibold text-slate-500 hover:text-brand">
+                  ← Edit passengers
+                </button>
+                <button type="button" onClick={finishSeats} className="h-12 rounded-full border-2 border-navy-deep px-6 text-base font-bold text-navy-deep hover:bg-navy-deep hover:text-white">
+                  Skip seat selection
+                </button>
+                {anySeatChosen ? (
+                  <button
+                    type="button"
+                    onClick={finishSeats}
+                    className="inline-flex h-12 items-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+                  >
+                    Continue with selected seats
+                  </button>
+                ) : null}
+              </div>
+            ) : (
+              <>
+                <FlightAddOns passengers={passengers} ssr={ssr} choices={ssrChoices} onChange={updatePassengerSsr} defaultOpen />
+                <div className="flex flex-wrap items-center gap-3">
+                  <button type="button" onClick={() => (showSeatPicker ? setSeatsDone(false) : setStep("passengers"))} className="text-sm font-semibold text-slate-500 hover:text-brand">
+                    {showSeatPicker ? "← Change seats" : "← Edit passengers"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep("review")}
+                    className="inline-flex h-12 items-center rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark"
+                  >
+                    Continue to review
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ) : (
           <div className="flex flex-col gap-4">
@@ -723,9 +755,9 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
         <MobileCheckoutBar
           total={chargedTotal ?? displayTotal}
           note={discount > 0 ? `Incl. taxes · ₹${discount.toLocaleString("en-IN")} coupon off` : undefined}
-          label={step === "review" ? "Confirm & pay" : "Continue"}
+          label={step === "review" ? "Confirm & pay" : seatPhase && !anySeatChosen ? "Skip seats" : "Continue"}
           formId={step === "passengers" ? "pax-form" : undefined}
-          onClick={step === "seats" ? () => setStep("review") : step === "review" ? () => setReviewOpen(true) : undefined}
+          onClick={step === "seats" ? (seatPhase ? finishSeats : () => setStep("review")) : step === "review" ? () => setReviewOpen(true) : undefined}
           busy={step === "passengers" ? loadingSeats : step === "review" ? busy : false}
         />
       ) : null}
