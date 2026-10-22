@@ -25,6 +25,7 @@ import { FlightAddOns } from "@/components/FlightAddOns";
 import { FlightCouponBox, useFlightCoupon } from "@/components/FlightCouponBox";
 import { TravellerBasicFields, FIELD_INPUT, FieldLabel, RequiredMark } from "@/components/TravellerBasicFields";
 import { GuestCheckoutOption } from "@/components/GuestCheckoutOption";
+import { ReviewTripModal } from "@/components/ReviewTripModal";
 import { confirmationUrl, createDraft, createPaymentOrder, fareChanged, verifyPayment } from "@/lib/flight-checkout";
 import { formatDateTimeLong, getClientTenantHeader, isoToDdMmYyyy , isDobOptional } from "@/lib/flights";
 
@@ -130,6 +131,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
   const [busy, setBusy] = React.useState(false);
   const [tripId, setTripId] = React.useState<string | null>(null);
   const [guestCheckout, setGuestCheckout] = React.useState(false);
+  const [reviewOpen, setReviewOpen] = React.useState(false);
   const [guestToken, setGuestToken] = React.useState<string | null>(null);
   /** What the server will actually charge for the current draft (it re-prices with the airline). */
   const [chargedTotal, setChargedTotal] = React.useState<number | null>(null);
@@ -710,7 +712,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
               ) : null}
               <button
                 type="button"
-                onClick={() => void handleConfirmAndPay()}
+                onClick={() => setReviewOpen(true)}
                 disabled={busy}
                 className="flex h-12 items-center gap-2 rounded-full bg-accent px-8 text-base font-extrabold text-navy-deep shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:bg-accent-dark disabled:opacity-60"
               >
@@ -728,7 +730,7 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
           note={discount > 0 ? `Incl. taxes · ₹${discount.toLocaleString("en-IN")} coupon off` : undefined}
           label={step === "review" ? "Confirm & pay" : "Continue"}
           formId={step === "passengers" ? "pax-form" : undefined}
-          onClick={step === "seats" ? () => setStep("review") : step === "review" ? () => void handleConfirmAndPay() : undefined}
+          onClick={step === "seats" ? () => setStep("review") : step === "review" ? () => setReviewOpen(true) : undefined}
           busy={step === "passengers" ? loadingSeats : step === "review" ? busy : false}
         />
       ) : null}
@@ -770,6 +772,30 @@ export function RoundTripBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLo
       <FlightCouponBox coupon={coupon} className="hidden lg:block" />
       </StickySidebar>
 
+      <ReviewTripModal
+        open={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+        onConfirm={() => {
+          setReviewOpen(false);
+          void handleConfirmAndPay();
+        }}
+        journeys={[
+          { label: "Departure", legs: onwardPrice.option.legs, fareType: onwardPrice.option.fare.fareTypeLabel || null, searchedFrom: selection.onward.context.depCity, searchedTo: selection.onward.context.arrCity },
+          { label: "Return", legs: returnPrice.option.legs, fareType: returnPrice.option.fare.fareTypeLabel || null, searchedFrom: selection.return.context.depCity, searchedTo: selection.return.context.arrCity },
+        ]}
+        travellers={passengers.map((p, idx) => ({
+          title: p.title,
+          fName: p.fName.trim(),
+          lName: p.lName.trim(),
+          pType: p.pType,
+          gender: p.gender,
+          dobIso: p.dobIso,
+          seats: [ssrChoices[idx]?.onward?.seatId, ssrChoices[idx]?.return?.seatId].filter((x): x is string => Boolean(x)),
+        }))}
+        contact={{ mobile, email }}
+        total={chargedTotal ?? combinedTotal}
+        busy={busy}
+      />
       <Modal open={loginOpen} onClose={() => setLoginOpen(false)} title="Log in to complete your booking" subtitle="Your passenger details are saved — you won't need to re-enter them.">
         <LoginForm
           nextPath={typeof window !== "undefined" ? `${window.location.pathname}${window.location.search}` : "/flights"}

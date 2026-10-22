@@ -26,7 +26,8 @@ export function FlightAddOns({
   choices: Record<number, PassengerSsrChoice>;
   onChange: (index: number, next: PassengerSsrChoice) => void;
 }) {
-  const [open, setOpen] = React.useState(0);
+  // All panels start closed; a traveller opens with the arrow.
+  const [open, setOpen] = React.useState(-1);
   if (!ssr || !ssrHasOptions(ssr)) return null;
   const eligible = passengers.map((p, index) => ({ ...p, index })).filter((p): p is typeof p & { pType: "A" | "C" } => p.pType !== "I");
   if (eligible.length === 0) return null;
