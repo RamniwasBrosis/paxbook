@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { MapPin, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import type { DestinationDto } from "@paxbook/types";
 import { LockedPrice } from "@/components/LockedPrice";
 
+/** Destinations listing card, same compact arched style as the customize-flow picks, with price and trip count. */
 export function DestinationListCard({
   destination,
   startingPrice,
@@ -12,50 +13,42 @@ export function DestinationListCard({
   startingPrice?: number;
   tripCount?: number;
 }) {
+  const place = destination.countryName && destination.countryName !== destination.name ? `${destination.name}, ${destination.countryName}` : destination.name;
+  const tag = destination.categoryNames[0];
+
   return (
     <Link
       href={`/destinations/${destination.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-premium"
+      className="group flex flex-col items-center rounded-b-3xl rounded-t-[999px] border-2 border-sand-frame bg-white p-3 pb-5 text-center shadow-soft transition-all duration-300 hover:-translate-y-1.5 hover:border-navy-deep hover:shadow-card"
     >
-      <div className="relative h-44 overflow-hidden">
+      <span className="block aspect-[5/4] w-full overflow-hidden rounded-b-2xl rounded-t-[999px] bg-mist">
         {destination.heroImageUrl ? (
-          <img
-            src={destination.heroImageUrl}
-            alt={destination.name}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+          <img src={destination.heroImageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand to-brand-dark text-white/40">
-            <span className="text-sm">{destination.name}</span>
-          </div>
+          <span className="flex h-full w-full items-center justify-center bg-gradient-to-br from-brand-blue to-navy-deep font-display font-bold text-white/80">{destination.name}</span>
         )}
-        <span className="absolute left-3 top-3 flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-navy-deep backdrop-blur-sm">
-          <MapPin className="h-3 w-3" strokeWidth={2} />
-          {destination.countryName}
+      </span>
+      <span className="mt-4 px-2 font-display text-lg font-bold leading-snug text-navy-deep">{place}</span>
+      {destination.description ? <span className="mt-1 line-clamp-1 px-3 text-sm text-ink-muted">{destination.description}</span> : null}
+      <span aria-hidden="true" className="my-3 h-px w-16 bg-sand-frame" />
+      <span className="flex items-baseline gap-1.5 text-xs text-ink-muted">
+        {startingPrice ? (
+          <>
+            from <LockedPrice amount={startingPrice} size="sm" asLink={false} colorClassName="text-navy-deep" />
+          </>
+        ) : (
+          "Ask for pricing"
+        )}
+      </span>
+      <span className="mt-3 flex flex-wrap justify-center gap-1.5 px-2">
+        {tag ? (
+          <span className="hidden rounded-full border border-slate-200 px-3 py-1 text-[0.7rem] font-bold uppercase tracking-wide text-ink-muted sm:inline">{tag}</span>
+        ) : null}
+        <span className="inline-flex items-center gap-1 rounded-full bg-accent px-3 py-1 text-[0.7rem] font-extrabold uppercase tracking-wide text-navy-deep">
+          {tripCount ? `${tripCount} ${tripCount === 1 ? "trip" : "trips"}` : "Explore"}
+          <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" strokeWidth={3} />
         </span>
-      </div>
-      <div className="flex flex-1 flex-col gap-1 p-4">
-        <h3 className="font-display text-lg tracking-tight text-navy-deep">{destination.name}</h3>
-        {destination.description ? <p className="line-clamp-2 text-sm text-slate-500">{destination.description}</p> : null}
-        <div className="mt-auto flex items-center justify-between border-t border-dashed border-slate-200 pt-3">
-          <div>
-            {startingPrice ? (
-              <>
-                <p className="text-[0.65rem] uppercase tracking-wider text-slate-400">Starting from</p>
-                <LockedPrice amount={startingPrice} asLink={false} />
-              </>
-            ) : (
-              <p className="text-xs text-slate-400">Ask for pricing</p>
-            )}
-          </div>
-          {tripCount ? (
-            <span className="flex items-center gap-1 rounded-full border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-600 transition-colors group-hover:border-brand group-hover:text-brand">
-              {tripCount} {tripCount === 1 ? "trip" : "trips"}
-              <ArrowRight className="h-3 w-3" strokeWidth={2.5} />
-            </span>
-          ) : null}
-        </div>
-      </div>
+      </span>
     </Link>
   );
 }

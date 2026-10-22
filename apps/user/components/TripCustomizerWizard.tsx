@@ -108,11 +108,15 @@ export function TripCustomizerWizard({
   destination,
   initialTravellerType,
   travellerImages,
+  review,
+  rating,
 }: {
   destination: PublicDestinationDetailDto;
   initialTravellerType?: string;
   /** Photo per traveller type (Solo, Couple...) from the homepage CMS personas. */
   travellerImages?: Record<string, string>;
+  review?: { name: string; content: string; imageUrl: string | null };
+  rating?: { average: number; count: number };
 }) {
   const initialType = TRAVELLER_TYPES.find((t) => t.toLowerCase() === initialTravellerType?.toLowerCase().replace(/s$/, "")) ?? "";
   const [step, setStep] = React.useState<Step>("travellers");
@@ -243,6 +247,29 @@ export function TripCustomizerWizard({
                       +
                     </button>
                   </div>
+                </div>
+              ) : null}
+              {review || rating ? (
+                <div className="mx-auto mt-10 flex max-w-4xl flex-col items-center gap-5 rounded-3xl border border-sand-frame bg-white/80 p-5 shadow-soft sm:flex-row sm:p-6">
+                  {review ? (
+                    <div className="flex min-w-0 flex-1 items-start gap-4">
+                      <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-accent bg-brand-light font-display font-bold text-navy-deep">
+                        {review.imageUrl ? <img src={review.imageUrl} alt="" className="h-full w-full object-cover" /> : review.name.charAt(0)}
+                      </span>
+                      <figure className="min-w-0">
+                        <blockquote className="line-clamp-2 text-sm leading-relaxed text-navy-deep sm:text-base">&ldquo;{review.content}&rdquo;</blockquote>
+                        <figcaption className="mt-1 text-xs font-bold text-ink-muted">— {review.name}</figcaption>
+                      </figure>
+                    </div>
+                  ) : null}
+                  {rating ? (
+                    <div className="shrink-0 text-center sm:border-l sm:border-slate-200 sm:pl-6">
+                      <p className="font-display text-2xl font-extrabold text-navy-deep">
+                        {rating.average}/5 <span className="text-amber-500">★</span>
+                      </p>
+                      <p className="text-xs font-semibold text-ink-muted">{rating.count}+ reviews</p>
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
             </WizardStep>

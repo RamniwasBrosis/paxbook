@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import type { PublicDestinationDetailDto, PublicHomepageDto } from "@paxbook/types";
+import type { PublicDestinationDetailDto, PublicHomepageDto, PublicStatsDto } from "@paxbook/types";
 import { publicFetchOrNull } from "@/lib/api";
 import { TripCustomizerWizard } from "@/components/TripCustomizerWizard";
 import { TRAVELLER_TYPES } from "@/lib/trip-wizard-constants";
@@ -21,7 +21,11 @@ export default async function CustomizeTripPage({
   params: { slug: string };
   searchParams: { travellerType?: string };
 }) {
-  const [destination, home] = await Promise.all([getDestination(params.slug), publicFetchOrNull<PublicHomepageDto>("/public/homepage")]);
+  const [destination, home, stats] = await Promise.all([
+    getDestination(params.slug),
+    publicFetchOrNull<PublicHomepageDto>("/public/homepage"),
+    publicFetchOrNull<PublicStatsDto>("/public/stats"),
+  ]);
   if (!destination) notFound();
 
   // Traveller-type photos come from the homepage "who_coming_along" personas (CMS), Group has a built-in one.
@@ -33,5 +37,16 @@ export default async function CustomizeTripPage({
     if (photo) travellerImages[type] = photo;
   }
 
-  return <TripCustomizerWizard destination={destination} initialTravellerType={searchParams.travellerType} travellerImages={travellerImages} />;
+  // A real published review (best-rated featured one) and the overall rating, shown under the first step.
+  const review = home?.featuredTestimonials.slice().sort((a, b) => b.rating - a.rating)[0];
+
+  return (
+    <TripCustomizerWizard
+      destination={destination}
+      initialTravellerType={searchParams.travellerType}
+      travellerImages={travellerImages}
+      review={review ? { name: review.customerName, content: review.content, imageUrl: review.imageUrl } : undefined}
+      rating={stats?.averageRating ? { average: stats.averageRating, count: stats.reviewCount } : undefined}
+    />
+  );
 }
