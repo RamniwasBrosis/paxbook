@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Headers, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Post, Query, Res } from "@nestjs/common";
+import type { Response } from "express";
 import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../../common/decorators/public.decorator";
 import { SkipAudit } from "../../common/decorators/skip-audit.decorator";
@@ -31,6 +32,20 @@ export class GuestFlightCheckoutController {
   @Get("bookings/:id")
   async findOne(@CurrentTenant() tenant: ResolvedTenant, @Param("id") id: string, @Headers(TOKEN_HEADER) token?: string) {
     return this.flights.findOneForCustomer(tenant.id, await this.guest.bookingCustomer(tenant.id, id, token), id);
+  }
+
+  @Get("bookings/:id/ticket")
+  async ticket(@CurrentTenant() tenant: ResolvedTenant, @Param("id") id: string, @Headers(TOKEN_HEADER) token?: string) {
+    return this.flights.getTicket(tenant.id, await this.guest.bookingCustomer(tenant.id, id, token), id);
+  }
+
+  /** Download link, so the token comes in the URL (a plain link can't send a header). */
+  @Get("bookings/:id/ticket.pdf")
+  async ticketPdf(@CurrentTenant() tenant: ResolvedTenant, @Param("id") id: string, @Query("t") token: string | undefined, @Res() res: Response) {
+    const { filename, pdf } = await this.flights.getTicketPdf(tenant.id, await this.guest.bookingCustomer(tenant.id, id, token), id);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(pdf);
   }
 
   @Post("bookings/:id/payment/order")

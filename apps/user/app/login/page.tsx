@@ -5,7 +5,7 @@ import { AuthShell } from "@/components/AuthShell";
 
 export const metadata: Metadata = { title: "Login" };
 
-export default async function LoginPage({ searchParams }: { searchParams: { next?: string; error?: string; registered?: string; reset?: string } }) {
+export default async function LoginPage({ searchParams }: { searchParams: { next?: string; error?: string; registered?: string; reset?: string; email?: string } }) {
   const branding = await getBranding();
   return (
     <AuthShell
@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
         <>
           {searchParams.registered === "1" ? (
             <p className="mb-4 rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-700">
-              Your registration was successful. Please login to access your profile.
+              Your email is verified and your account is ready. Please log in.
             </p>
           ) : null}
           {searchParams.reset === "1" ? (
@@ -29,7 +29,7 @@ export default async function LoginPage({ searchParams }: { searchParams: { next
         </>
       }
     >
-      <LoginForm nextPath={searchParams.next ?? "/account"} googleEnabled={branding.googleLoginEnabled} />
+      <LoginForm nextPath={searchParams.next ?? "/account"} googleEnabled={branding.googleLoginEnabled} initialIdentifier={searchParams.email} />
     </AuthShell>
   );
 }

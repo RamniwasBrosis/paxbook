@@ -230,10 +230,30 @@ model OtpCode {
   codeHash    String
   expiresAt   DateTime
   consumedAt  DateTime?
+  /// Wrong guesses so far; the code is burnt after a few, so a 6-digit code can't be brute-forced.
+  attempts    Int       @default(0)
   createdAt   DateTime  @default(now())
 
   @@index([subjectType, subjectId])
   @@map("otp_codes")
+}
+
+/// A signup waiting for its email OTP. The customer account is created (or a password-less guest
+/// account claimed) only once the email is verified, so unverified signups never become accounts.
+model PendingCustomerSignup {
+  id           String   @id @default(uuid())
+  tenantId     String
+  name         String
+  email        String
+  phone        String?
+  passwordHash String
+  /// Whether an SMS code was sent too (only when an SMS provider is configured).
+  phoneOtpSent Boolean  @default(false)
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  @@index([tenantId, email])
+  @@map("pending_customer_signups")
 }
 
 // ============================================================================
@@ -800,6 +820,7 @@ model Customer {
   status          CustomerStatus @default(ACTIVE)
   phoneVerifiedAt DateTime?
   emailVerifiedAt DateTime?
+  termsAcceptedAt DateTime?
   createdAt       DateTime       @default(now())
 
   documents            CustomerDocument[]

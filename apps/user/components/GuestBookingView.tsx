@@ -4,10 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { CheckCircle2, Loader2, Mail, RefreshCw } from "lucide-react";
-import type { FlightBookingDto, FlightTripDto } from "@paxbook/types";
+import type { FlightBookingDto, FlightTicketDto, FlightTripDto } from "@paxbook/types";
 import { fetchGuest, type CheckoutKind } from "@/lib/flight-checkout";
 import { FlightJourneyCard } from "@/components/FlightJourneyCard";
 import { BookingConfirmedBanner } from "@/components/BookingConfirmedBanner";
+import { ETicketView } from "@/components/ETicketView";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
 const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Awaiting payment",
@@ -31,6 +34,7 @@ export function GuestBookingView({ kind, id }: { kind: CheckoutKind; id: string 
   const [total, setTotal] = React.useState(0);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [ticket, setTicket] = React.useState<FlightTicketDto | null>(null);
 
   const load = React.useCallback(() => {
     if (!token) {
@@ -45,6 +49,11 @@ export function GuestBookingView({ kind, id }: { kind: CheckoutKind; id: string 
         : fetchGuest<FlightBookingDto>("booking", id, token).then((b) => ({ list: [b], total: b.totalAmount }));
     req
       .then(({ list, total: sum }) => {
+        if (kind === "booking") {
+          fetchGuest<FlightTicketDto>("booking", `${id}/ticket`, token)
+            .then(setTicket)
+            .catch(() => setTicket(null));
+        }
         setBookings(list);
         setTotal(sum);
         setError(null);
@@ -101,23 +110,28 @@ export function GuestBookingView({ kind, id }: { kind: CheckoutKind; id: string 
         </div>
       </div>
 
-      {bookings.map((b, i) =>
-        b.legs.length ? <FlightJourneyCard key={b.id} legs={b.legs} label={kind === "trip" ? (i === 0 ? "Departure" : "Return") : "Your flight"} /> : null,
+      {ticket ? (
+        <ETicketView ticket={ticket} pdfHref={`${API_BASE_URL}/public/flights/guest/bookings/${id}/ticket.pdf?t=${encodeURIComponent(token!)}`} />
+      ) : (
+        <>
+          {bookings.map((b, i) =>
+            b.legs.length ? <FlightJourneyCard key={b.id} legs={b.legs} label={kind === "trip" ? (i === 0 ? "Departure" : "Return") : "Your flight"} /> : null,
+          )}
+          <section className="flat-card p-5 sm:p-6">
+            <h2 className="font-display text-lg font-extrabold text-navy-deep">Travellers</h2>
+            <ul className="mt-3 divide-y divide-slate-100 text-sm text-navy-deep">
+              {first.passengers.map((p) => (
+                <li key={p.id} className="flex flex-wrap justify-between gap-2 py-2.5">
+                  <span className="font-semibold">
+                    {p.title} {p.fName} {p.lName} <span className="text-xs font-normal text-ink-muted">({TYPE_LABEL[p.pType] ?? p.pType})</span>
+                  </span>
+                  {p.ticketNo ? <span className="font-mono text-xs text-ink-muted">Ticket {p.ticketNo}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </section>
+        </>
       )}
-
-      <section className="flat-card p-5 sm:p-6">
-        <h2 className="font-display text-lg font-extrabold text-navy-deep">Travellers</h2>
-        <ul className="mt-3 divide-y divide-slate-100 text-sm text-navy-deep">
-          {first.passengers.map((p) => (
-            <li key={p.id} className="flex flex-wrap justify-between gap-2 py-2.5">
-              <span className="font-semibold">
-                {p.title} {p.fName} {p.lName} <span className="text-xs font-normal text-ink-muted">({TYPE_LABEL[p.pType] ?? p.pType})</span>
-              </span>
-              {p.ticketNo ? <span className="font-mono text-xs text-ink-muted">Ticket {p.ticketNo}</span> : null}
-            </li>
-          ))}
-        </ul>
-      </section>
 
       <div className="flex items-start gap-3 rounded-2xl bg-mist px-5 py-4 text-sm text-navy-deep">
         <Mail className="mt-0.5 h-5 w-5 shrink-0 text-brand-blue" />

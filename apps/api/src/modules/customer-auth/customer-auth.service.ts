@@ -22,7 +22,22 @@ export interface IssuedCustomerTokens {
   refreshTokenExpiresAt: Date;
 }
 
+type OtpChannel = "EMAIL" | "SMS";
+
+export interface SignupStartResult {
+  signupId: string;
+  email: string;
+  phone: string | null;
+  /** False until an SMS provider is configured; the mobile is then saved unverified. */
+  phoneOtpRequired: boolean;
+  resendAvailableAt: string;
+  devEmailOtp?: string;
+  devPhoneOtp?: string;
+}
+
 const OTP_TTL_MINUTES = 5;
+const OTP_MAX_ATTEMPTS = 5;
+const SIGNUP_TTL_MINUTES = 30;
 const OTP_RESEND_COOLDOWN_SECONDS = 60;
 const PASSWORD_RESET_TTL_MINUTES = 60;
 const OTP_PLACEHOLDER_EMAIL_SUFFIX = "@otp.paxbook.local";
@@ -37,84 +52,252 @@ export class CustomerAuthService {
     private readonly emailService: EmailService,
   ) {}
 
-  async requestOtp(tenantId: string, phone: string): Promise<{ devOtp?: string; sent: boolean; resendAvailableAt: string }> {
+  // ---------------------------------------------------------------------------
+  // One-time codes
+  // ---------------------------------------------------------------------------
+
+  /** A fresh 6-digit code for `subjectId`, unless one was sent less than a minute ago. */
+  private async issueOtp(subjectType: string, subjectId: string, channel: OtpChannel): Promise<{ code: string; resendAvailableAt: string }> {
     const recent = await this.prisma.otpCode.findFirst({
-      where: { subjectType: "CUSTOMER", subjectId: phone, channel: "SMS", consumedAt: null },
+      where: { subjectType, subjectId, channel, consumedAt: null },
       orderBy: { createdAt: "desc" },
     });
     const cooldownUntil = recent ? new Date(recent.createdAt.getTime() + OTP_RESEND_COOLDOWN_SECONDS * 1000) : null;
     if (cooldownUntil && cooldownUntil > new Date()) {
-      throw new BadRequestException({
-        code: "OTP_COOLDOWN",
-        message: "Please wait before requesting another code.",
-      });
+      const wait = Math.ceil((cooldownUntil.getTime() - Date.now()) / 1000);
+      throw new BadRequestException({ code: "OTP_COOLDOWN", message: `Please wait ${wait} seconds before requesting another code.` });
     }
-
     const code = String(randomInt(100000, 1000000));
-    const codeHash = await hashPassword(code);
-    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
-
     await this.prisma.otpCode.create({
-      data: { subjectType: "CUSTOMER", subjectId: phone, channel: "SMS", codeHash, expiresAt },
+      data: { subjectType, subjectId, channel, codeHash: await hashPassword(code), expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000) },
     });
-
-    const smsResult = await this.smsService.send(tenantId, phone, `Your Paxbook verification code is ${code}. It expires in ${OTP_TTL_MINUTES} minutes.`);
-
-    const isProduction = this.configService.get<string>("NODE_ENV") === "production";
-    return {
-      devOtp: isProduction ? undefined : code,
-      sent: smsResult.sent,
-      resendAvailableAt: new Date(Date.now() + OTP_RESEND_COOLDOWN_SECONDS * 1000).toISOString(),
-    };
+    return { code, resendAvailableAt: new Date(Date.now() + OTP_RESEND_COOLDOWN_SECONDS * 1000).toISOString() };
   }
 
-  async verifyOtp(tenantId: string, phone: string, code: string): Promise<IssuedCustomerTokens> {
+  /**
+   * Checks the latest code; a wrong guess counts towards a small limit, after which the code is burnt
+   * and a new one must be requested. Returns the code's id so the caller decides when to consume it
+   * (signup checks the email and mobile codes before consuming either).
+   */
+  private async checkOtp(subjectType: string, subjectId: string, channel: OtpChannel, code: string): Promise<string> {
     const otp = await this.prisma.otpCode.findFirst({
-      where: { subjectType: "CUSTOMER", subjectId: phone, channel: "SMS", consumedAt: null },
+      where: { subjectType, subjectId, channel, consumedAt: null },
       orderBy: { createdAt: "desc" },
     });
+    const label = channel === "EMAIL" ? "email" : "mobile";
     if (!otp || otp.expiresAt < new Date()) {
-      throw new UnauthorizedException({ code: "OTP_EXPIRED", message: "This code has expired. Please request a new one." });
+      throw new UnauthorizedException({ code: "OTP_EXPIRED", message: `The ${label} code has expired. Please request a new one.` });
     }
-    const matches = await verifyPassword(otp.codeHash, code);
-    if (!matches) {
-      throw new UnauthorizedException({ code: "OTP_INVALID", message: "Incorrect code." });
-    }
-    await this.prisma.otpCode.update({ where: { id: otp.id }, data: { consumedAt: new Date() } });
-
-    let customer = await this.prisma.customer.findFirst({ where: { tenantId, phone } });
-    if (!customer) {
-      // Email is a required column (also used by admin's Customer directory) — OTP-only
-      // signups get a recognizable placeholder until the customer sets a real one from their profile.
-      customer = await this.prisma.customer.create({
-        data: { tenantId, phone, name: "Traveler", email: `${phone.replace(/[^0-9]/g, "")}${OTP_PLACEHOLDER_EMAIL_SUFFIX}`, phoneVerifiedAt: new Date() },
+    if (!(await verifyPassword(otp.codeHash, code))) {
+      const attempts = otp.attempts + 1;
+      const burnt = attempts >= OTP_MAX_ATTEMPTS;
+      await this.prisma.otpCode.update({ where: { id: otp.id }, data: { attempts, ...(burnt ? { consumedAt: new Date() } : {}) } });
+      throw new UnauthorizedException({
+        code: burnt ? "OTP_LOCKED" : "OTP_INVALID",
+        message: burnt
+          ? `Too many wrong tries. Please request a new ${label} code.`
+          : `Incorrect ${label} code. ${OTP_MAX_ATTEMPTS - attempts} ${OTP_MAX_ATTEMPTS - attempts === 1 ? "try" : "tries"} left.`,
       });
-    } else if (!customer.phoneVerifiedAt) {
-      customer = await this.prisma.customer.update({ where: { id: customer.id }, data: { phoneVerifiedAt: new Date() } });
     }
+    return otp.id;
+  }
 
+  private async sendEmailCode(tenantId: string, email: string, name: string, code: string, purpose: "signup" | "login"): Promise<void> {
+    await this.emailService.send(
+      tenantId,
+      email,
+      purpose === "signup" ? `${code} is your Paxbook verification code` : `${code} is your Paxbook login code`,
+      renderEmail({
+        preheader: `Your code is ${code}. It expires in ${OTP_TTL_MINUTES} minutes.`,
+        eyebrow: purpose === "signup" ? "Verify your email" : "Log in",
+        title: purpose === "signup" ? "Confirm your email address" : "Your one-time login code",
+        recipientName: name,
+        paragraphs: [
+          purpose === "signup" ? "Enter this code on Paxbook to finish creating your account." : "Enter this code on Paxbook to log in.",
+          `It expires in ${OTP_TTL_MINUTES} minutes. Never share it with anyone, including Paxbook staff.`,
+        ],
+        details: [["Your code", code]],
+        note: "Didn't ask for this? You can ignore this email; nothing changes without the code.",
+      }),
+    );
+  }
+
+  private async sendSmsCode(tenantId: string, phone: string, code: string): Promise<boolean> {
+    const result = await this.smsService.send(tenantId, phone, `${code} is your Paxbook verification code. It expires in ${OTP_TTL_MINUTES} minutes. Do not share it.`);
+    return result.sent;
+  }
+
+  private devCode(code: string): string | undefined {
+    return this.configService.get<string>("NODE_ENV") === "production" ? undefined : code;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Finding a customer by email or mobile
+  // ---------------------------------------------------------------------------
+
+  private async findByIdentifier(tenantId: string, identifier: string): Promise<Customer | null> {
+    const id = identifier.trim();
+    if (id.includes("@")) {
+      return this.prisma.customer.findFirst({ where: { tenantId, email: { equals: id, mode: "insensitive" } } });
+    }
+    const variants = phoneVariants(id);
+    if (variants.length === 0) return null;
+    return this.prisma.customer.findFirst({ where: { tenantId, phone: { in: variants } } });
+  }
+
+  // ---------------------------------------------------------------------------
+  // OTP login (email or mobile)
+  // ---------------------------------------------------------------------------
+
+  async requestOtp(tenantId: string, identifier: string): Promise<{ channel: OtpChannel; sentTo: string; resendAvailableAt: string; devOtp?: string }> {
+    const customer = await this.findByIdentifier(tenantId, identifier);
+    const isEmail = identifier.includes("@");
+    if (!customer) {
+      throw new BadRequestException({
+        code: "CUSTOMER_NOT_FOUND",
+        message: `No account found with this ${isEmail ? "email" : "mobile number"}. Please sign up first.`,
+      });
+    }
+    if (isEmail) {
+      const { code, resendAvailableAt } = await this.issueOtp("CUSTOMER", `${tenantId}:${customer.id}`, "EMAIL");
+      await this.sendEmailCode(tenantId, customer.email, customer.name, code, "login");
+      return { channel: "EMAIL", sentTo: maskEmail(customer.email), resendAvailableAt, devOtp: this.devCode(code) };
+    }
+    if (!(await this.smsService.isConfigured(tenantId))) {
+      throw new BadRequestException({
+        code: "SMS_NOT_AVAILABLE",
+        message: "Login with a mobile OTP isn't available yet. Please use your email for the code, or log in with your password.",
+      });
+    }
+    const { code, resendAvailableAt } = await this.issueOtp("CUSTOMER", `${tenantId}:${customer.id}`, "SMS");
+    await this.sendSmsCode(tenantId, customer.phone!, code);
+    return { channel: "SMS", sentTo: maskPhone(customer.phone!), resendAvailableAt, devOtp: this.devCode(code) };
+  }
+
+  async verifyOtp(tenantId: string, identifier: string, code: string): Promise<IssuedCustomerTokens> {
+    const customer = await this.findByIdentifier(tenantId, identifier);
+    if (!customer) throw new UnauthorizedException({ code: "OTP_EXPIRED", message: "This code has expired. Please request a new one." });
+    const channel: OtpChannel = identifier.includes("@") ? "EMAIL" : "SMS";
+    const otpId = await this.checkOtp("CUSTOMER", `${tenantId}:${customer.id}`, channel, code);
+    await this.prisma.otpCode.update({ where: { id: otpId }, data: { consumedAt: new Date() } });
     if (customer.status !== "ACTIVE") {
       throw new UnauthorizedException({ code: "ACCOUNT_SUSPENDED", message: "This account has been suspended." });
     }
-
-    return this.issueTokensFor(customer);
+    // Receiving the code proves the address works.
+    const verified = channel === "EMAIL" ? (customer.emailVerifiedAt ? null : { emailVerifiedAt: new Date() }) : customer.phoneVerifiedAt ? null : { phoneVerifiedAt: new Date() };
+    const fresh = verified ? await this.prisma.customer.update({ where: { id: customer.id }, data: verified }) : customer;
+    return this.issueTokensFor(fresh);
   }
 
-  async register(tenantId: string, dto: RegisterCustomerDto): Promise<IssuedCustomerTokens> {
-    const passwordHash = await hashPassword(dto.password);
+  // ---------------------------------------------------------------------------
+  // Signup: details → email (and mobile) code → account → log in
+  // ---------------------------------------------------------------------------
+
+  async startSignup(tenantId: string, dto: RegisterCustomerDto): Promise<SignupStartResult> {
+    if (dto.password !== dto.confirmPassword) {
+      throw new BadRequestException({ code: "PASSWORD_MISMATCH", message: "Password and confirm password don't match." });
+    }
+    const email = dto.email.trim().toLowerCase();
+    const phone = normalizePhone(dto.phone);
+    const byEmail = await this.prisma.customer.findFirst({ where: { tenantId, email: { equals: email, mode: "insensitive" } } });
+    if (byEmail?.passwordHash) {
+      throw new ConflictException({ code: "CUSTOMER_ALREADY_EXISTS", message: "An account with this email already exists. Please log in." });
+    }
+    const byPhone = phone ? await this.prisma.customer.findFirst({ where: { tenantId, phone: { in: phoneVariants(phone) } } }) : null;
+    if (byPhone && byPhone.id !== byEmail?.id && byPhone.passwordHash) {
+      throw new ConflictException({ code: "PHONE_ALREADY_EXISTS", message: "This mobile number is already registered. Please log in." });
+    }
+
+    await this.prisma.pendingCustomerSignup.deleteMany({ where: { tenantId, email } });
+    const smsReady = Boolean(phone) && (await this.smsService.isConfigured(tenantId));
+    const pending = await this.prisma.pendingCustomerSignup.create({
+      data: {
+        tenantId,
+        name: dto.name.trim(),
+        email,
+        phone,
+        passwordHash: await hashPassword(dto.password),
+        phoneOtpSent: smsReady,
+        expiresAt: new Date(Date.now() + SIGNUP_TTL_MINUTES * 60 * 1000),
+      },
+    });
+
+    const emailOtp = await this.issueOtp("SIGNUP", pending.id, "EMAIL");
+    await this.sendEmailCode(tenantId, email, pending.name, emailOtp.code, "signup");
+    let phoneDev: string | undefined;
+    if (smsReady && phone) {
+      const phoneOtp = await this.issueOtp("SIGNUP", pending.id, "SMS");
+      await this.sendSmsCode(tenantId, phone, phoneOtp.code);
+      phoneDev = this.devCode(phoneOtp.code);
+    }
+    return {
+      signupId: pending.id,
+      email: maskEmail(email),
+      phone: phone ? maskPhone(phone) : null,
+      phoneOtpRequired: smsReady,
+      resendAvailableAt: emailOtp.resendAvailableAt,
+      devEmailOtp: this.devCode(emailOtp.code),
+      devPhoneOtp: phoneDev,
+    };
+  }
+
+  async resendSignupOtp(tenantId: string, signupId: string, channel: OtpChannel): Promise<{ resendAvailableAt: string; devOtp?: string }> {
+    const pending = await this.activePendingSignup(tenantId, signupId);
+    if (channel === "SMS" && (!pending.phoneOtpSent || !pending.phone)) {
+      throw new BadRequestException({ code: "SMS_NOT_AVAILABLE", message: "Mobile verification isn't available yet." });
+    }
+    const { code, resendAvailableAt } = await this.issueOtp("SIGNUP", pending.id, channel);
+    if (channel === "EMAIL") await this.sendEmailCode(tenantId, pending.email, pending.name, code, "signup");
+    else await this.sendSmsCode(tenantId, pending.phone!, code);
+    return { resendAvailableAt, devOtp: this.devCode(code) };
+  }
+
+  /** Verifies the codes and creates the account (or claims a password-less guest one). No session: the customer logs in next. */
+  async completeSignup(tenantId: string, signupId: string, emailCode: string, phoneCode?: string): Promise<{ email: string }> {
+    const pending = await this.activePendingSignup(tenantId, signupId);
+    const emailOtpId = await this.checkOtp("SIGNUP", pending.id, "EMAIL", emailCode);
+    let phoneOtpId: string | null = null;
+    if (pending.phoneOtpSent) {
+      if (!phoneCode) throw new BadRequestException({ code: "PHONE_CODE_REQUIRED", message: "Enter the code sent to your mobile." });
+      phoneOtpId = await this.checkOtp("SIGNUP", pending.id, "SMS", phoneCode);
+    }
+    await this.prisma.otpCode.updateMany({ where: { id: { in: [emailOtpId, ...(phoneOtpId ? [phoneOtpId] : [])] } }, data: { consumedAt: new Date() } });
+
+    const now = new Date();
+    const existing = await this.prisma.customer.findFirst({ where: { tenantId, email: { equals: pending.email, mode: "insensitive" } } });
+    if (existing?.passwordHash) {
+      throw new ConflictException({ code: "CUSTOMER_ALREADY_EXISTS", message: "An account with this email already exists. Please log in." });
+    }
+    const base = {
+      name: pending.name,
+      passwordHash: pending.passwordHash,
+      emailVerifiedAt: now,
+      termsAcceptedAt: now,
+      ...(phoneOtpId ? { phoneVerifiedAt: now } : {}),
+    };
+    const save = (phone: string | null) =>
+      existing
+        ? this.prisma.customer.update({ where: { id: existing.id }, data: { ...base, ...(phone && !existing.phone ? { phone } : {}) } })
+        : this.prisma.customer.create({ data: { tenantId, email: pending.email, phone, ...base } });
     let customer: Customer;
     try {
-      customer = await this.prisma.customer.create({
-        data: { tenantId, name: dto.name, email: dto.email, phone: dto.phone, passwordHash },
-      });
+      customer = await save(pending.phone);
     } catch (err) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
-        throw new ConflictException({ code: "CUSTOMER_ALREADY_EXISTS", message: "An account with this email or phone already exists." });
-      }
-      throw err;
+      // The mobile belongs to another (password-less) record: keep the account, leave the mobile off.
+      if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002")) throw err;
+      customer = await save(null);
     }
+    await this.prisma.pendingCustomerSignup.delete({ where: { id: pending.id } });
     await this.sendWelcomeEmail(tenantId, customer);
-    return this.issueTokensFor(customer);
+    return { email: customer.email };
+  }
+
+  private async activePendingSignup(tenantId: string, signupId: string) {
+    const pending = await this.prisma.pendingCustomerSignup.findFirst({ where: { id: signupId, tenantId } });
+    if (!pending || pending.expiresAt < new Date()) {
+      throw new BadRequestException({ code: "SIGNUP_EXPIRED", message: "This signup has expired. Please fill in your details again." });
+    }
+    return pending;
   }
 
   private async sendWelcomeEmail(tenantId: string, customer: Customer): Promise<void> {
@@ -141,15 +324,11 @@ export class CustomerAuthService {
     );
   }
 
-  async login(tenantId: string, email: string, password: string): Promise<IssuedCustomerTokens> {
-    const customer = await this.prisma.customer.findFirst({ where: { tenantId, email } });
-    if (!customer || !customer.passwordHash) {
-      throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Incorrect email or password." });
-    }
-    const matches = await verifyPassword(customer.passwordHash, password);
-    if (!matches) {
-      throw new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Incorrect email or password." });
-    }
+  async login(tenantId: string, identifier: string, password: string): Promise<IssuedCustomerTokens> {
+    const customer = await this.findByIdentifier(tenantId, identifier);
+    const wrong = new UnauthorizedException({ code: "INVALID_CREDENTIALS", message: "Incorrect email/mobile or password." });
+    if (!customer || !customer.passwordHash) throw wrong;
+    if (!(await verifyPassword(customer.passwordHash, password))) throw wrong;
     if (customer.status !== "ACTIVE") {
       throw new UnauthorizedException({ code: "ACCOUNT_SUSPENDED", message: "This account has been suspended." });
     }
@@ -365,4 +544,30 @@ function toAuthenticatedCustomerDto(customer: Customer): AuthenticatedCustomerDt
     phone: customer.phone,
     tenantId: customer.tenantId,
   };
+}
+
+/** Indian mobiles are stored as their last 10 digits; other lengths are kept as entered digits. */
+function normalizePhone(raw: string | undefined | null): string | null {
+  const digits = (raw ?? "").replace(/\D/g, "");
+  if (!digits) return null;
+  return digits.length >= 10 ? digits.slice(-10) : digits;
+}
+
+/** Older accounts kept phones as typed (+91 98..., 98...), so a lookup tries the usual spellings. */
+function phoneVariants(raw: string): string[] {
+  const digits = raw.replace(/\D/g, "");
+  if (digits.length < 6) return [];
+  const last10 = digits.slice(-10);
+  return [...new Set([raw.trim(), digits, last10, `+91${last10}`, `+91 ${last10}`, `91${last10}`, `0${last10}`])];
+}
+
+function maskEmail(email: string): string {
+  const [user, domain] = email.split("@");
+  if (!user || !domain) return email;
+  return `${user.slice(0, 2)}${"*".repeat(Math.max(1, user.length - 2))}@${domain}`;
+}
+
+function maskPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "");
+  return d.length >= 4 ? `******${d.slice(-4)}` : phone;
 }

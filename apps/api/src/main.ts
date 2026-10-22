@@ -13,6 +13,13 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
 
+  // The API sits behind nginx and Apache on the same machine (and the site's own server calls it
+  // too). Trust only those hops, so req.ip is the visitor's address: without this every request
+  // looked like 127.0.0.1 and all visitors shared one rate-limit bucket. A forged X-Forwarded-For
+  // from a visitor is ignored, because the hop that added it is not trusted.
+  const trustedProxies = (configService.get<string>("TRUSTED_PROXY_IPS") ?? "").split(",").map((ip) => ip.trim()).filter(Boolean);
+  app.set("trust proxy", ["loopback", ...trustedProxies]);
+
   app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
   app.use(cookieParser());
   // cPanel's nginx in front of the API caches every 200 GET for 60 minutes unless told not to, so

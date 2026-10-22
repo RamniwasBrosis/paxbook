@@ -1,4 +1,5 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Res, Get, Param, Post, UseGuards } from "@nestjs/common";
+import type { Response } from "express";
 import { ApiTags } from "@nestjs/swagger";
 import { Public } from "../../common/decorators/public.decorator";
 import { SkipAudit } from "../../common/decorators/skip-audit.decorator";
@@ -28,6 +29,19 @@ export class CustomerFlightsController {
   @Get(":id")
   findOne(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string) {
     return this.flightsService.findOneForCustomer(customer.tenantId, customer.sub, id);
+  }
+
+  @Get(":id/ticket")
+  ticket(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string) {
+    return this.flightsService.getTicket(customer.tenantId, customer.sub, id);
+  }
+
+  @Get(":id/ticket.pdf")
+  async ticketPdf(@CurrentCustomer() customer: RequestCustomer, @Param("id") id: string, @Res() res: Response) {
+    const { filename, pdf } = await this.flightsService.getTicketPdf(customer.tenantId, customer.sub, id);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(pdf);
   }
 
   @Post(":id/refresh-status")

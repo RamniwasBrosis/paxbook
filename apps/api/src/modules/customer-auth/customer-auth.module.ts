@@ -5,6 +5,7 @@ import { PassportModule } from "@nestjs/passport";
 import { CustomerAuthService } from "./customer-auth.service";
 import { CustomerAuthController } from "./customer-auth.controller";
 import { CustomerJwtStrategy } from "./strategies/customer-jwt.strategy";
+import { CaptchaService } from "../../common/captcha/captcha.service";
 
 @Module({
   imports: [
@@ -18,6 +19,6 @@ import { CustomerJwtStrategy } from "./strategies/customer-jwt.strategy";
     }),
   ],
   controllers: [CustomerAuthController],
-  providers: [CustomerAuthService, CustomerJwtStrategy],
+  providers: [CustomerAuthService, CustomerJwtStrategy, CaptchaService],
 })
 export class CustomerAuthModule {}

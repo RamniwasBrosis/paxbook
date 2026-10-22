@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type {
+  FlightTicketDto,
   AdminFlightSearchResultDto,
   CreateFlightBookingRequestDto,
   FareRulesDto,
@@ -32,7 +33,7 @@ import { FlightCancellationEstimateService } from "./flight-cancellation-estimat
 import { extractFlightSnapshot, mapBookingResponse, mapCancelResponse, mapFareRules, mapPriceCheck, mapRescheduleResponse, mapSearchOrFareDetails, mapSeats, mapStatementResponse } from "./flight-response-mapper";
 import { buildBookingConfirmedEmail, buildDateChangeRequestedEmail, buildFlightCancelledEmail, buildFlightFailedEmail } from "./flight-email-templates";
 import type { EmailBody } from "../../common/email/email.service";
-import { buildTicketPdf } from "./flight-ticket-pdf";
+import { buildTicket, buildTicketPdf } from "./flight-ticket-pdf";
 import type { SearchFlightDto } from "./dto/search-flight.dto";
 import type { CreateFlightBookingDto, FlightSsrSelectionDto } from "./dto/create-flight-booking.dto";
 import type { FlightSeatLookupPassengerDto } from "./dto/flight-seat-lookup.dto";
@@ -823,6 +824,8 @@ export class FlightsService {
       fareSnapshot: unknown;
       providerFareAmount: { toNumber(): number } | null;
       totalAmount: { toNumber(): number };
+      couponCode?: string | null;
+      discountAmount?: { toNumber(): number } | null;
       currency: string;
       passengers: Array<{ title: string; fName: string; lName: string; pType: string; ticketNo: string | null; pnr: string | null }>;
     },
@@ -835,18 +838,9 @@ export class FlightsService {
 
     // A PDF-rendering bug must never block the confirmation itself going out — worst case the
     // customer just gets the email without an attachment and can still view the ticket online.
-    const pdfBuffer = await buildTicketPdf({
-      status: booking.status,
-      pnr: resolvedPnr,
-      createdAt: booking.createdAt,
-      legs,
-      returnLegs,
-      passengers: booking.passengers,
-      fare,
-      providerFareAmount: booking.providerFareAmount ? booking.providerFareAmount.toNumber() : null,
-      totalAmount: booking.totalAmount.toNumber(),
-      currency: booking.currency,
-    }).catch(() => null);
+    const pdfBuffer = await buildTicketPdf(
+      buildTicket({ ...booking, pnr: resolvedPnr, couponCode: booking.couponCode ?? null, discountAmount: booking.discountAmount ?? null }),
+    ).catch(() => null);
 
     await this.alertCustomer(tenantId, customerId, {
       type: "FLIGHT_BOOKING_CONFIRMED",
@@ -898,6 +892,17 @@ export class FlightsService {
       orderBy: { createdAt: "desc" },
     });
     return bookings.map((b) => this.toDto(b));
+  }
+
+  /** The e-ticket data (web page) for a booking the customer owns. */
+  async getTicket(tenantId: string, customerId: string, id: string): Promise<FlightTicketDto> {
+    return buildTicket(await this.getOwned(tenantId, customerId, id));
+  }
+
+  /** The same e-ticket as a PDF. */
+  async getTicketPdf(tenantId: string, customerId: string, id: string): Promise<{ filename: string; pdf: Buffer }> {
+    const ticket = buildTicket(await this.getOwned(tenantId, customerId, id));
+    return { filename: `Paxbook-eticket-${ticket.pnr ?? ticket.bookingRef}.pdf`, pdf: await buildTicketPdf(ticket) };
   }
 
   async findOneForCustomer(tenantId: string, customerId: string, id: string): Promise<FlightBookingDto> {

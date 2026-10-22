@@ -1,211 +1,22 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Plane } from "lucide-react";
-import type { FlightBookingDto, FlightLegDto } from "@paxbook/types";
+import type { FlightTicketDto } from "@paxbook/types";
 import { customerFetch, CustomerApiError } from "@/lib/customer-api";
-import { formatBaggage, formatDateTimeLong, formatMinutes } from "@/lib/flights";
-import { PrintButton } from "@/components/PrintButton";
-import { AirlineLogo } from "@/components/AirlineLogo";
+import { ETicketView } from "@/components/ETicketView";
 
 export const metadata: Metadata = { title: "E-Ticket" };
 
-const TYPE_LABEL: Record<string, string> = { A: "Adult", C: "Child", I: "Infant" };
-
 export default async function FlightTicketPage({ params }: { params: { id: string } }) {
-  let booking: FlightBookingDto;
+  let ticket: FlightTicketDto;
   try {
-    booking = await customerFetch<FlightBookingDto>(`/customer/flight-bookings/${params.id}`);
+    ticket = await customerFetch<FlightTicketDto>(`/customer/flight-bookings/${params.id}/ticket`);
   } catch (err) {
     if (err instanceof CustomerApiError && err.status === 404) notFound();
     throw err;
   }
-
-  const isTicketed = booking.status === "CONFIRMED" || booking.status === "PENDING_CONFIRMATION";
-
   return (
-    <div className="mx-auto max-w-3xl px-4 py-10 print:py-0">
-      <div className="rounded-2xl border border-slate-200 p-8 print:border-none">
-        <div className="flex items-baseline justify-between border-b border-slate-100 pb-6">
-          <div className="flex items-center gap-2">
-            <Plane className="h-5 w-5 text-brand" strokeWidth={1.75} />
-            <div>
-              <p className="text-xl font-bold text-brand">Paxbook</p>
-              <p className="text-xs text-slate-400">Electronic Ticket / Itinerary</p>
-            </div>
-          </div>
-          <div className="text-right text-sm">
-            <p className="text-slate-400">Booked {new Date(booking.createdAt).toLocaleDateString("en-IN")}</p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-xl border border-slate-100 text-sm">
-          <div className={`px-4 py-3 ${isTicketed ? "bg-emerald-50" : "bg-amber-50"}`}>
-            <p className="text-xs font-semibold uppercase text-slate-400">Booking status</p>
-            <p className={`text-base font-bold ${isTicketed ? "text-emerald-700" : "text-amber-700"}`}>{booking.status.replace(/_/g, " ")}</p>
-          </div>
-          <div className="border-l border-slate-100 bg-mist px-4 py-3">
-            <p className="text-xs font-semibold uppercase text-slate-400">Reference number</p>
-            <p className="text-base font-bold text-slate-900">{booking.pnr ?? "—"}</p>
-          </div>
-        </div>
-
-        {!isTicketed ? (
-          <p className="mt-6 rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-700">
-            This booking is {booking.status.replace(/_/g, " ").toLowerCase()} — the ticket below reflects what was requested and will be finalized once
-            confirmed.
-          </p>
-        ) : null}
-
-        {booking.legs.length > 0 ? (
-          <TicketSection title="Departure" legs={booking.legs} />
-        ) : (
-          <p className="mt-6 text-sm text-slate-500">
-            {booking.depCity} → {booking.arrCity}, {booking.onDate}
-          </p>
-        )}
-        {booking.returnLegs && booking.returnLegs.length > 0 ? <TicketSection title="Return" legs={booking.returnLegs} /> : null}
-
-        <div className="mt-8 border-t border-slate-100 pt-6">
-          <p className="text-xs font-semibold uppercase text-slate-400">Passengers</p>
-          <table className="mt-3 w-full text-left text-sm">
-            <thead className="text-xs uppercase text-slate-400">
-              <tr>
-                <th className="py-1 pr-4 font-medium">Name</th>
-                <th className="py-1 pr-4 font-medium">Type</th>
-                <th className="py-1 pr-4 font-medium">Ticket no.</th>
-                <th className="py-1 font-medium">PNR</th>
-              </tr>
-            </thead>
-            <tbody>
-              {booking.passengers.map((p) => (
-                <tr key={p.id} className="border-t border-slate-50">
-                  <td className="py-2 pr-4 text-slate-900">
-                    {p.title} {p.fName} {p.lName}
-                  </td>
-                  <td className="py-2 pr-4 text-slate-500">{TYPE_LABEL[p.pType] ?? p.pType}</td>
-                  <td className="py-2 pr-4 text-slate-500">{p.ticketNo ?? "—"}</td>
-                  <td className="py-2 text-slate-500">{p.pnr ?? "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {booking.fare ? (
-          <div className="mt-8 border-t border-slate-100 pt-6">
-            <p className="text-xs font-semibold uppercase text-slate-400">Baggage &amp; fare</p>
-            <div className="mt-3 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
-              <Field label="Check-in baggage" value={formatBaggage(booking.fare.baggageCheckIn)} />
-              <Field label="Cabin baggage" value={formatBaggage(booking.fare.baggageCabin)} />
-              <Field label="Fare type" value={booking.fare.fareTypeLabel} />
-              <Field label="Refundable" value={booking.fare.refundable ? "Yes" : "No"} />
-            </div>
-          </div>
-        ) : null}
-
-        {booking.fare ? <FareBreakdown booking={booking} fare={booking.fare} /> : (
-          <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-6">
-            <p className="font-semibold text-slate-900">Total paid</p>
-            <p className="text-2xl font-bold text-slate-900">
-              {booking.currency} {booking.totalAmount.toLocaleString("en-IN")}
-            </p>
-          </div>
-        )}
-
-        <p className="mt-6 text-xs text-slate-400">
-          Please carry a valid photo ID matching the passenger name(s) above. Arrive at the airport at least 2 hours before domestic departure. This document
-          is proof of your booking with Paxbook and the airline named above — it is not a boarding pass.
-        </p>
-
-        <PrintButton label="Print / Save as PDF" />
-      </div>
-    </div>
-  );
-}
-
-function TicketSection({ title, legs }: { title: string; legs: FlightLegDto[] }) {
-  return (
-    <div className="mt-6">
-      <p className="text-xs font-semibold uppercase text-slate-400">{title}</p>
-      <div className="mt-3 flex flex-col gap-4">
-        {legs.map((leg, idx) => (
-          <div key={idx} className="rounded-xl bg-mist p-4">
-            <div className="flex items-center justify-between text-sm">
-              <p className="flex items-center gap-1.5 font-semibold text-navy-deep">
-                <AirlineLogo code={leg.airlineCode} size={20} />
-                {leg.airlineName} {leg.airlineCode}-{leg.flightNo}
-              </p>
-              <p className="text-slate-500">{formatMinutes(leg.durationMinutes)}</p>
-            </div>
-            <div className="mt-2 grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="font-bold text-navy-deep">{leg.depCode}</p>
-                <p className="text-slate-500">{leg.depAirportName}</p>
-                {leg.depTerminal ? <p className="text-xs text-slate-400">Terminal {leg.depTerminal}</p> : null}
-                <p className="mt-1 text-slate-700">{formatDateTimeLong(leg.depDateTime)}</p>
-              </div>
-              <div className="text-right">
-                <p className="font-bold text-navy-deep">{leg.arrCode}</p>
-                <p className="text-slate-500">{leg.arrAirportName}</p>
-                {leg.arrTerminal ? <p className="text-xs text-slate-400">Terminal {leg.arrTerminal}</p> : null}
-                <p className="mt-1 text-slate-700">{formatDateTimeLong(leg.arrDateTime)}</p>
-              </div>
-            </div>
-            {leg.aircraftType ? <p className="mt-2 text-xs text-slate-400">Aircraft: {leg.aircraftType}</p> : null}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FareBreakdown({ booking, fare }: { booking: FlightBookingDto; fare: NonNullable<FlightBookingDto["fare"]> }) {
-  const base = fare.base;
-  const taxes = fare.tax + fare.tds;
-  const providerFare = booking.providerFareAmount ?? fare.total;
-  // Everything charged beyond the provider's own fare — seats, baggage, meals, web check-in.
-  const addons = Math.max(0, booking.totalAmount - providerFare);
-
-  return (
-    <div className="mt-8 border-t border-slate-100 pt-6">
-      <p className="text-xs font-semibold uppercase text-slate-400">Fare summary</p>
-      <table className="mt-3 w-full text-left text-sm">
-        <thead className="text-xs uppercase text-slate-400">
-          <tr>
-            <th className="py-1 pr-4 font-medium">Base fare</th>
-            <th className="py-1 pr-4 font-medium">Taxes &amp; charges</th>
-            {addons > 0 ? <th className="py-1 pr-4 font-medium">Add-ons</th> : null}
-            <th className="py-1 font-medium">Total</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr className="border-t border-slate-50">
-            <td className="py-2 pr-4 text-slate-700">
-              {booking.currency} {base.toLocaleString("en-IN")}
-            </td>
-            <td className="py-2 pr-4 text-slate-700">
-              {booking.currency} {taxes.toLocaleString("en-IN")}
-            </td>
-            {addons > 0 ? (
-              <td className="py-2 pr-4 text-slate-700">
-                {booking.currency} {addons.toLocaleString("en-IN")}
-              </td>
-            ) : null}
-            <td className="py-2 text-base font-bold text-slate-900">
-              {booking.currency} {booking.totalAmount.toLocaleString("en-IN")}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-slate-400">{label}</p>
-      <p className="font-medium text-slate-900">{value}</p>
+    <div className="px-4 py-8 print:p-0">
+      <ETicketView ticket={ticket} pdfHref={`/api/customer/flight-bookings/${params.id}/ticket.pdf`} />
     </div>
   );
 }

@@ -24,6 +24,15 @@ export class SmsService {
     private readonly configService: ConfigService,
   ) {}
 
+  /** Whether this site can send SMS at all (mobile OTPs depend on it). */
+  async isConfigured(tenantId: string): Promise<boolean> {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { twilioAccountSid: true, twilioAuthTokenEncrypted: true, twilioFromNumber: true },
+    });
+    return Boolean(tenant?.twilioAccountSid && tenant.twilioAuthTokenEncrypted && tenant.twilioFromNumber && this.configService.get<string>("INTEGRATION_ENCRYPTION_KEY"));
+  }
+
   async send(tenantId: string, to: string, body: string): Promise<SmsSendResult> {
     const tenant = await this.prisma.tenant.findUnique({
       where: { id: tenantId },

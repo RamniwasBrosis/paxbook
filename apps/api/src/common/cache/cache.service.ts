@@ -42,6 +42,37 @@ export class CacheService implements OnModuleDestroy {
     await this.client.del(...keys).catch(() => {});
   }
 
+  /** Short-lived single-use values (captcha answers). Falls back to process memory without Redis. */
+  private readonly memory = new Map<string, { value: string; expiresAt: number }>();
+
+  async putOnce(key: string, value: string, ttlSeconds: number): Promise<void> {
+    if (this.client && this.client.status === "ready") {
+      try {
+        await this.client.set(key, value, "EX", ttlSeconds);
+        return;
+      } catch {
+        // fall through to memory
+      }
+    }
+    this.memory.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 });
+    if (this.memory.size > 5000) for (const [k, v] of this.memory) if (v.expiresAt < Date.now()) this.memory.delete(k);
+  }
+
+  /** Reads and deletes in one step, so the same value can never be used twice. */
+  async takeOnce(key: string): Promise<string | null> {
+    if (this.client && this.client.status === "ready") {
+      try {
+        const value = await this.client.getdel(key);
+        if (value !== null) return value;
+      } catch {
+        // fall through to memory
+      }
+    }
+    const entry = this.memory.get(key);
+    this.memory.delete(key);
+    return entry && entry.expiresAt > Date.now() ? entry.value : null;
+  }
+
   onModuleDestroy() {
     this.client?.disconnect();
   }

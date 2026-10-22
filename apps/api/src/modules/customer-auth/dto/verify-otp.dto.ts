@@ -1,11 +1,17 @@
-import { IsString, Length, Matches } from "class-validator";
+import { IsString, Length, MaxLength } from "class-validator";
 
 export class VerifyOtpDto {
   @IsString()
-  @Matches(/^[0-9+][0-9\s-]{6,14}$/, { message: "Enter a valid phone number." })
-  phone!: string;
+  @MaxLength(254)
+  identifier!: string;
 
   @IsString()
   @Length(6, 6)
   code!: string;
+}
+
+export class VerifyOtpIdentifierDto {
+  @IsString()
+  @MaxLength(254)
+  identifier!: string;
 }

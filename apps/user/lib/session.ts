@@ -45,10 +45,10 @@ export function readSession(): CustomerSession | null {
  * backend's httpOnly refresh cookie into our own domain's httpOnly cookie, since the browser never
  * talks to the API's origin directly — everything customer-facing is proxied through this BFF.
  */
-export async function proxyAuthAndEstablishSession(backendPath: string, payload: unknown): Promise<NextResponse> {
+export async function proxyAuthAndEstablishSession(backendPath: string, payload: unknown, clientHeaders: Record<string, string> = {}): Promise<NextResponse> {
   const res = await fetch(`${API_BASE_URL}${backendPath}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...getTenantHeader() },
+    headers: { "Content-Type": "application/json", ...getTenantHeader(), ...clientHeaders },
     body: JSON.stringify(payload),
   });
   const data = await res.json();

@@ -26,8 +26,17 @@
     "transform": {
       "^.+\\.ts$": "ts-jest"
     },
-    "moduleFileExtensions": ["js", "json", "ts"],
-    "collectCoverageFrom": ["**/*.ts", "!**/*.spec.ts", "!**/*.dto.ts", "!main.ts"],
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "collectCoverageFrom": [
+      "**/*.ts",
+      "!**/*.spec.ts",
+      "!**/*.dto.ts",
+      "!main.ts"
+    ],
     "coverageDirectory": "../coverage"
   },
   "dependencies": {
@@ -45,6 +54,7 @@
     "@paxbook/types": "workspace:*",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^2.4.3",
+    "bwip-js": "^4",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",

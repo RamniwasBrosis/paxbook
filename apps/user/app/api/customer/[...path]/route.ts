@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { readSession } from "@/lib/session";
+import { forwardedFor } from "@/lib/client-ip";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000/api/v1";
 
@@ -23,11 +24,20 @@ async function handle(req: NextRequest, path: string[]) {
     headers: {
       Authorization: `Bearer ${session.accessToken}`,
       ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      ...forwardedFor(req),
     },
     body: hasBody ? await req.text() : undefined,
     cache: "no-store",
   });
 
+  // Files (the e-ticket PDF) pass through untouched; everything else is JSON.
+  const type = res.headers.get("content-type") ?? "";
+  if (!type.includes("application/json")) {
+    const headers = new Headers({ "Content-Type": type || "application/octet-stream" });
+    const disposition = res.headers.get("content-disposition");
+    if (disposition) headers.set("Content-Disposition", disposition);
+    return new NextResponse(res.body, { status: res.status, headers });
+  }
   const data = await res.json();
   return NextResponse.json(data, { status: res.status });
 }

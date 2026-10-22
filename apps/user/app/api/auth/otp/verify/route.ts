@@ -1,6 +1,7 @@
 import { proxyAuthAndEstablishSession } from "@/lib/session";
+import { forwardedFor } from "@/lib/client-ip";
 
 export async function POST(req: Request) {
   const payload = await req.json();
-  return proxyAuthAndEstablishSession("/customer-auth/otp/verify", payload);
+  return proxyAuthAndEstablishSession("/customer-auth/otp/verify", payload, forwardedFor(req));
 }

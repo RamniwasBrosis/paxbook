@@ -352,7 +352,7 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
   async function finishPayment(id: string, paymentId: string, payload: Record<string, unknown>, token: string | null) {
     try {
       await verifyPayment("booking", id, paymentId, payload, token);
-      router.push(confirmationUrl("booking", id, token));
+      window.location.assign(confirmationUrl("booking", id, token));
     } catch (err) {
       setPayError(err instanceof Error ? err.message : "Payment could not be verified.");
       setBusy(false);
@@ -535,15 +535,18 @@ export function FlightBookingWizard({ isLoggedIn: initiallyLoggedIn }: { isLogge
                   className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
                 />
                 </FieldLabel>
-                <FieldLabel label="PAN number" required={Boolean(validation?.panMandatory)} className="sm:col-span-2">
-                  <input
-                  required={Boolean(validation?.panMandatory)}
-                  placeholder={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"} aria-label={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
-                  value={panNo}
-                  onChange={(e) => setPanNo(e.target.value.toUpperCase())}
-                  className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
-                />
-                </FieldLabel>
+                {/* PAN is optional for most fares, so it is asked only when the fare requires it. */}
+                {Boolean(validation?.panMandatory) ? (
+                  <FieldLabel label="PAN number" required={Boolean(validation?.panMandatory)} className="sm:col-span-2">
+                    <input
+                    required={Boolean(validation?.panMandatory)}
+                    placeholder={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"} aria-label={validation?.panMandatory ? "PAN number (required for this fare)" : "PAN number (optional)"}
+                    value={panNo}
+                    onChange={(e) => setPanNo(e.target.value.toUpperCase())}
+                    className="h-12 rounded-xl border border-slate-200 bg-white px-4 text-[0.95rem] text-navy-deep outline-none placeholder:text-ink-muted focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/20"
+                  />
+                  </FieldLabel>
+                ) : null}
               </div>
               {ssr?.webCheckinEnabled ? (
                 <label className="mt-3 flex items-center gap-2.5 rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-navy-deep has-[:checked]:border-brand-blue has-[:checked]:bg-brand-blue-soft/40">

@@ -5,6 +5,8 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getBranding } from "@/lib/branding";
 import { MainWithHeaderOffset } from "@/components/templates/MainWithHeaderOffset";
+import { Suspense } from "react";
+import { NavigationProgress } from "@/components/NavigationProgress";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -75,6 +77,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               fbq('track', 'PageView');`}
           </Script>
         ) : null}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <Header />
         <MainWithHeaderOffset overlayOnHome={branding.templateSlug === "modern"}>{children}</MainWithHeaderOffset>
         <Footer />

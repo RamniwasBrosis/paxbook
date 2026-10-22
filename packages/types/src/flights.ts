@@ -630,3 +630,50 @@ export interface FlightImportantInfoSectionDto {
   title: string;
   points: string[];
 }
+
+/** Everything the e-ticket (web page and PDF) shows, built once on the server so both always match. */
+export interface FlightTicketDto {
+  bookingRef: string;
+  bookedAt: string;
+  status: FlightBookingStatus;
+  pnr: string | null;
+  support: { phone: string; email: string };
+  contact: { email: string | null; mobile: string | null };
+  /** One per direction (onward, and return for a round trip / international return). */
+  directions: Array<{
+    label: string;
+    fromCity: string;
+    toCity: string;
+    route: string;
+    airlineCode: string;
+    airlineName: string;
+    pnr: string | null;
+    refundable: boolean;
+    cabin: string;
+    fareType: string | null;
+    webCheckinUrl: string | null;
+    segments: FlightLegDto[];
+  }>;
+  passengers: Array<{
+    name: string;
+    type: string;
+    sectors: Array<{ route: string; pnr: string | null; ticketNo: string | null }>;
+    baggage: { cabin: string; checkIn: string };
+    /** What the barcode encodes: booking ref | PNR | ticket | SURNAME/FIRST | route | flight | date. */
+    barcodeText: string;
+    /** PDF417 barcode of `barcodeText`, as SVG markup. */
+    barcodeSvg: string;
+  }>;
+  fare: {
+    base: number;
+    taxes: number;
+    fareTotal: number;
+    baggageAndMeals: number;
+    seats: number;
+    webCheckin: number;
+    couponCode: string | null;
+    discount: number;
+    grandTotal: number;
+    currency: string;
+  };
+}
