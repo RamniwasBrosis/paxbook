@@ -140,7 +140,7 @@ function dt(iso: string): { date: string; time: string } {
   if (Number.isNaN(d.getTime())) return { date: iso, time: "" };
   return {
     date: d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" }).replace(/ (\d{2})$/, "'$1"),
-    time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false }),
+    time: d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hourCycle: "h23" }),
   };
 }
 
