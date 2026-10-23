@@ -161,7 +161,15 @@ function DetailsCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite: boolea
 function TripPreferencesCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite: boolean }) {
   const updateLead = useUpdateLead();
   const hasAny =
-    lead.travellerType || lead.interests.length > 0 || lead.tripDuration || lead.departureCity || lead.departureDate || lead.packageId;
+    lead.travellerType ||
+    lead.interests.length > 0 ||
+    lead.tripDuration ||
+    lead.departureCity ||
+    lead.departureDate ||
+    lead.packageId ||
+    lead.travellerCount ||
+    lead.stayType ||
+    lead.travelPace;
   if (!hasAny && !canWrite) return null;
 
   const [form, setForm] = React.useState({
@@ -170,6 +178,9 @@ function TripPreferencesCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite
     departureCity: lead.departureCity ?? "",
     departureDate: lead.departureDate ? lead.departureDate.slice(0, 10) : "",
     interests: lead.interests.join(", "),
+    travellerCount: lead.travellerCount ? String(lead.travellerCount) : "",
+    stayType: lead.stayType ?? "",
+    travelPace: lead.travelPace ?? "",
   });
   const [error, setError] = React.useState<string | null>(null);
   const [saved, setSaved] = React.useState(false);
@@ -187,6 +198,9 @@ function TripPreferencesCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite
           tripDuration: form.tripDuration || undefined,
           departureCity: form.departureCity || undefined,
           departureDate: form.departureDate || undefined,
+          travellerCount: form.travellerCount ? Number(form.travellerCount) : undefined,
+          stayType: form.stayType || undefined,
+          travelPace: form.travelPace || undefined,
           interests: form.interests
             .split(",")
             .map((s) => s.trim())
@@ -213,6 +227,26 @@ function TripPreferencesCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite
             <Input label="Departure city" value={form.departureCity} onChange={(e) => setForm((f) => ({ ...f, departureCity: e.target.value }))} />
             <Input label="Departure date" type="date" value={form.departureDate} onChange={(e) => setForm((f) => ({ ...f, departureDate: e.target.value }))} />
             <Input
+              label="Travellers"
+              type="number"
+              min={1}
+              max={99}
+              value={form.travellerCount}
+              onChange={(e) => setForm((f) => ({ ...f, travellerCount: e.target.value }))}
+            />
+            <Select label="Stay" value={form.stayType} onChange={(e) => setForm((f) => ({ ...f, stayType: e.target.value }))}>
+              <option value="">—</option>
+              {["Value", "Comfort", "Luxury"].map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </Select>
+            <Select label="Pace" value={form.travelPace} onChange={(e) => setForm((f) => ({ ...f, travelPace: e.target.value }))}>
+              <option value="">—</option>
+              {["Relaxed", "Balanced", "Packed"].map((o) => (
+                <option key={o}>{o}</option>
+              ))}
+            </Select>
+            <Input
               label="Interests (comma-separated)"
               className="sm:col-span-2"
               value={form.interests}
@@ -238,6 +272,24 @@ function TripPreferencesCard({ lead, canWrite }: { lead: LeadDetailDto; canWrite
               <div>
                 <dt className="text-xs text-slate-400">Traveller type</dt>
                 <dd className="text-sm font-medium text-slate-900">{lead.travellerType}</dd>
+              </div>
+            ) : null}
+            {lead.travellerCount ? (
+              <div>
+                <dt className="text-xs text-slate-400">Travellers</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.travellerCount}</dd>
+              </div>
+            ) : null}
+            {lead.stayType ? (
+              <div>
+                <dt className="text-xs text-slate-400">Stay</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.stayType}</dd>
+              </div>
+            ) : null}
+            {lead.travelPace ? (
+              <div>
+                <dt className="text-xs text-slate-400">Pace</dt>
+                <dd className="text-sm font-medium text-slate-900">{lead.travelPace}</dd>
               </div>
             ) : null}
             {lead.tripDuration ? (

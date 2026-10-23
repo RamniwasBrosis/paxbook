@@ -61,6 +61,9 @@ export class LeadsService {
         departureCity: dto.departureCity,
         departureDate: dto.departureDate ? new Date(dto.departureDate) : undefined,
         packageId: dto.packageId,
+        travellerCount: dto.travellerCount,
+        stayType: dto.stayType,
+        travelPace: dto.travelPace,
       },
       include: SUMMARY_INCLUDE,
     });
@@ -91,6 +94,9 @@ export class LeadsService {
         departureCity: dto.departureCity,
         departureDate: dto.departureDate ? new Date(dto.departureDate) : undefined,
         packageId: dto.packageId,
+        travellerCount: dto.travellerCount,
+        stayType: dto.stayType,
+        travelPace: dto.travelPace,
       },
       include: SUMMARY_INCLUDE,
     });
@@ -159,6 +165,9 @@ function toSummaryDto(lead: SummaryRow): LeadSummaryDto {
     departureDate: lead.departureDate?.toISOString() ?? null,
     packageId: lead.packageId,
     packageTitle: lead.package?.title ?? null,
+    travellerCount: lead.travellerCount,
+    stayType: lead.stayType,
+    travelPace: lead.travelPace,
     createdAt: lead.createdAt.toISOString(),
   };
 }

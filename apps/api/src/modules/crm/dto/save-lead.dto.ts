@@ -1,4 +1,4 @@
-import { IsArray, IsDateString, IsEmail, IsOptional, IsString, IsUUID, MinLength, ValidateIf } from "class-validator";
+import { IsArray, IsDateString, IsEmail, IsInt, IsOptional, IsString, IsUUID, Max, MaxLength, Min, MinLength, ValidateIf } from "class-validator";
 
 export class SaveLeadDto {
   @IsString()
@@ -55,4 +55,20 @@ export class SaveLeadDto {
   @IsOptional()
   @IsUUID()
   packageId?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(99)
+  travellerCount?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  stayType?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  travelPace?: string;
 }

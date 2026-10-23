@@ -18,6 +18,7 @@ import {
   Phone,
   PiggyBank,
   Plane,
+  Mail,
   ShieldCheck,
   Sparkles,
   ThumbsUp,
@@ -131,9 +132,16 @@ export function TripCustomizerWizard({
   const [selectedPackageId, setSelectedPackageId] = React.useState<string | undefined>();
   const [name, setName] = React.useState("");
   const [phone, setPhone] = React.useState("");
+  const [email, setEmail] = React.useState("");
+  const [touched, setTouched] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const topRef = React.useRef<HTMLDivElement>(null);
+
+  // Warm the cache for the interest photos while the visitor is still on the first step.
+  React.useEffect(() => {
+    for (const i of INTERESTS) new Image().src = i.image;
+  }, []);
 
   function go(next: Step) {
     setStep(next);
@@ -154,8 +162,18 @@ export function TripCustomizerWizard({
     setInterests((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]));
   }
 
+  // Every contact field is required: the expert needs a name, a 10-digit mobile and an email.
+  const mobileDigits = phone.replace(/\D/g, "").replace(/^(91|0)(?=\d{10}$)/, "");
+  const fieldErrors = {
+    name: name.trim().length < 2 ? "Please enter your full name." : null,
+    email: !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()) ? "Please enter a valid email address." : null,
+    phone: !/^[6-9]\d{9}$/.test(mobileDigits) ? "Please enter a valid 10-digit mobile number." : null,
+  };
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setTouched(true);
+    if (fieldErrors.name || fieldErrors.email || fieldErrors.phone) return;
     setBusy(true);
     setError(null);
     try {
@@ -163,8 +181,9 @@ export function TripCustomizerWizard({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name,
-          phone,
+          name: name.trim(),
+          phone: mobileDigits,
+          email: email.trim(),
           source: "Trip Customizer",
           destinationInterest: destination.name,
           travellerType: travellerType || undefined,
@@ -173,7 +192,9 @@ export function TripCustomizerWizard({
           departureCity: departureCity || undefined,
           departureDate: departureDate || undefined,
           packageId: selectedPackageId,
-          message: [`Travellers: ${travellerCount}`, stay && `Stay: ${stay}`, pace && `Pace: ${pace}`].filter(Boolean).join(" · "),
+          travellerCount,
+          stayType: stay || undefined,
+          travelPace: pace || undefined,
         }),
       });
       const json = await res.json();
@@ -204,7 +225,7 @@ export function TripCustomizerWizard({
 
       <WizardHero eyebrow="Customizing your trip to" title={destination.name} imageUrl={destination.heroImageUrl} />
 
-      <div ref={topRef} className="scroll-mt-32 bg-[radial-gradient(ellipse_at_top,#fff6d6_0%,#fffdf5_45%,#ffffff_80%)]">
+      <div ref={topRef} className="scroll-mt-32 bg-[radial-gradient(ellipse_at_top,rgb(245_183_61/0.14)_0%,rgb(10_19_44)_45%,rgb(7_13_31)_85%)]">
         <div className="shell py-12 sm:py-16">
           {step === "travellers" ? (
             <WizardStep title="Who are you travelling with?" onNext={goNext} nextDisabled={!travellerType} nextLabel="Choose your interests">
@@ -509,35 +530,47 @@ export function TripCustomizerWizard({
           ) : null}
 
           {step === "mobile" ? (
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleSubmit} noValidate>
               <WizardStep title="Almost there! Where should we send your itinerary?" onBack={goBack} submit busy={busy} nextLabel="Get my itinerary">
                 <div className="mx-auto max-w-xl rounded-[2rem] border border-sand-frame bg-white p-6 shadow-float sm:p-8">
-                  <p className="text-center text-sm text-ink-muted">A Paxbook expert will call you to finalise pricing and availability.</p>
+                  <p className="text-center text-sm text-ink-muted">A Paxbook expert will call you to finalise pricing and availability. All fields are required.</p>
                   <div className="mt-5 flex flex-col gap-3">
-                    <label className="flex h-14 items-center gap-3 rounded-2xl border-2 border-slate-200 px-4 focus-within:border-navy-deep">
-                      <User className="h-5 w-5 text-ink-muted" />
-                      <span className="sr-only">Your name</span>
-                      <input
-                        required
-                        placeholder="Your name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        className="w-full bg-transparent text-base text-navy-deep focus:outline-none"
-                      />
-                    </label>
-                    <label className="flex h-14 items-center gap-3 rounded-2xl border-2 border-slate-200 px-4 focus-within:border-navy-deep">
-                      <Phone className="h-5 w-5 text-ink-muted" />
-                      <span className="sr-only">Mobile number</span>
-                      <input
-                        required
-                        type="tel"
-                        inputMode="tel"
-                        placeholder="Mobile number"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="w-full bg-transparent text-base text-navy-deep focus:outline-none"
-                      />
-                    </label>
+                    {(
+                      [
+                        { key: "name", icon: User, label: "Full name", type: "text", value: name, set: setName, auto: "name", mode: undefined },
+                        { key: "email", icon: Mail, label: "Email address", type: "email", value: email, set: setEmail, auto: "email", mode: "email" },
+                        { key: "phone", icon: Phone, label: "Mobile number", type: "tel", value: phone, set: setPhone, auto: "tel", mode: "tel" },
+                      ] as const
+                    ).map((f) => {
+                      const err = touched ? fieldErrors[f.key] : null;
+                      return (
+                        <div key={f.key}>
+                          <label
+                            className={`flex h-14 items-center gap-3 rounded-2xl border-2 px-4 focus-within:border-navy-deep ${err ? "border-red-400" : "border-slate-200"}`}
+                          >
+                            <f.icon className="h-5 w-5 shrink-0 text-ink-muted" />
+                            <span className="sr-only">{f.label}</span>
+                            <input
+                              required
+                              type={f.type}
+                              inputMode={f.mode}
+                              autoComplete={f.auto}
+                              placeholder={`${f.label} *`}
+                              value={f.value}
+                              aria-invalid={Boolean(err)}
+                              aria-describedby={err ? `wiz-${f.key}-err` : undefined}
+                              onChange={(e) => f.set(e.target.value)}
+                              className="w-full bg-transparent text-base text-navy-deep focus:outline-none"
+                            />
+                          </label>
+                          {err ? (
+                            <p id={`wiz-${f.key}-err`} className="mt-1.5 pl-2 text-xs font-semibold text-red-600">
+                              {err}
+                            </p>
+                          ) : null}
+                        </div>
+                      );
+                    })}
                   </div>
                   {error ? (
                     <p role="alert" className="mt-3 text-sm font-semibold text-red-600">

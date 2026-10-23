@@ -207,7 +207,15 @@ function LeadsTab({ canWrite }: { canWrite: boolean }) {
                 </Link>
               ),
             },
-            { header: "Contact", cell: (l: LeadSummaryDto) => l.email ?? l.phone ?? "—" },
+            {
+              header: "Contact",
+              cell: (l: LeadSummaryDto) => (
+                <span className="flex flex-col">
+                  <span>{l.email ?? "—"}</span>
+                  <span className="text-xs text-slate-500">{l.phone ?? ""}</span>
+                </span>
+              ),
+            },
             { header: "Source", cell: (l: LeadSummaryDto) => (l.source ? <Badge tone={l.source === "View Price" ? "info" : "neutral"}>{l.source}</Badge> : "—") },
             { header: "Interest", cell: (l: LeadSummaryDto) => l.destinationInterest ?? "—" },
             { header: "Consultant", cell: (l: LeadSummaryDto) => l.assignedConsultantName ?? "Unassigned" },

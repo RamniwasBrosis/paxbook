@@ -994,6 +994,10 @@ model Lead {
   departureDate DateTime?
   packageId     String?
   package       Package? @relation(fields: [packageId], references: [id])
+  /// Also from the wizard: how many people, hotel class (Value/Comfort/Luxury) and pace (Relaxed/Balanced/Packed).
+  travellerCount Int?
+  stayType       String?
+  travelPace     String?
   createdAt           DateTime   @default(now())
 
   followUps LeadFollowUp[]

@@ -27,6 +27,9 @@ export interface LeadSummaryDto {
   departureDate: string | null;
   packageId: string | null;
   packageTitle: string | null;
+  travellerCount: number | null;
+  stayType: string | null;
+  travelPace: string | null;
   createdAt: string;
 }
 
@@ -56,6 +59,9 @@ export interface SaveLeadDto {
   departureCity?: string;
   departureDate?: string;
   packageId?: string;
+  travellerCount?: number;
+  stayType?: string;
+  travelPace?: string;
 }
 
 export interface UpdateLeadStatusDto {
