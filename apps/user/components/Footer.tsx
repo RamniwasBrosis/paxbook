@@ -63,7 +63,7 @@ export async function Footer() {
         <div>
           <Link href="/" className="inline-flex rounded-2xl bg-white px-3.5 py-2.5 shadow-soft">
             {branding.logoUrl ? (
-              <img src={branding.logoUrl} alt={branding.siteName} className="h-12 w-auto" />
+              <img src={branding.logoUrl} alt={branding.siteName} className="h-12 w-auto rounded-lg" />
             ) : (
               <span className="font-display text-xl font-extrabold tracking-tight text-navy-deep">{branding.siteName}</span>
             )}
@@ -130,7 +130,7 @@ export async function Footer() {
       </div>
 
       <div className="mx-auto max-w-[90rem] px-4 sm:px-6 lg:px-10">
-        <div className="mt-10 flex flex-col gap-2 border-t border-[#e3dcc6] py-6 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-2 border-t border-slate-200 py-6 text-sm text-ink-muted sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Paxbook. All journeys reserved.</p>
           <p>Travel · Explore · Experience</p>
         </div>

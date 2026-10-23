@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
+import { darkTheme } from "../../packages/ui/tailwind-dark";
 
 const config: Config = {
   content: [
@@ -21,6 +23,8 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-jakarta)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
+      // Full dark theme: remaps light colour names per utility (see packages/ui/tailwind-dark.ts).
+      ...darkTheme(colors),
     },
   },
   plugins: [],

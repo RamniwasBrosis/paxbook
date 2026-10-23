@@ -7,8 +7,69 @@ body {
   height: 100%;
 }
 
+/* ---- Dark theme palette (channels, so Tailwind opacity modifiers work). Used through the
+   remapped colour names in packages/ui/tailwind-dark.ts. ---- */
+:root {
+  color-scheme: dark;
+  --page: 7 13 31;
+  --surface: 15 26 53;
+  --surface-2: 21 34 70;
+  --surface-3: 29 45 90;
+  --band: 10 19 44;
+  --ink: 238 242 255;
+  --ink-muted: 169 181 210;
+  --navy-solid: 35 64 143;
+  --brand-solid: 47 111 194;
+  --brand-text: 125 166 240;
+}
+
+/* Gold and light fills keep dark ink, so "Plan My Trip"-style buttons stay readable. */
+.bg-accent,
+.bg-accent-dark,
+.hover\:bg-accent:hover,
+.hover\:bg-accent-dark:hover,
+.bg-amber-400,
+.bg-yellow-400 {
+  --ink: 18 42 99;
+  --ink-muted: 60 74 112;
+  --brand-text: 18 42 99;
+}
+
+/* Printing (e-ticket, invoices) goes back to the light palette. */
+@media print {
+  :root {
+    color-scheme: light;
+    --page: 255 255 255;
+    --surface: 255 255 255;
+    --surface-2: 244 247 253;
+    --surface-3: 232 238 251;
+    --band: 247 244 234;
+    --ink: 18 42 99;
+    --ink-muted: 81 98 143;
+    --navy-solid: 18 42 99;
+    --brand-solid: 27 63 143;
+    --brand-text: 27 63 143;
+  }
+}
+
+html {
+  background-color: rgb(var(--page));
+}
+
 body {
-  color: #1c2d5c; /* navy-tinted ink, Design 2 */
+  background-color: rgb(var(--page));
+  color: rgb(var(--ink));
+}
+
+/* Native form controls: dark fields with light text and readable placeholders. */
+input,
+select,
+textarea {
+  background-color: rgb(var(--surface));
+  color: rgb(var(--ink));
+}
+::placeholder {
+  color: rgb(var(--ink-muted) / 0.75);
 }
 
 /* The site header/footer wrap every page (including print-to-PDF pages like the e-ticket) —
@@ -49,14 +110,14 @@ body {
     font-weight: 700;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #a86a06; /* accent-ink: the fill gold (#d99417) fails contrast as text on white */
+    color: #f5b73d; /* gold reads well on the dark surfaces */
   }
 
   /* ---- Design 2 (paxbook.in pattern) ---- */
 
   /* Indigo → fuchsia → pink highlight for one key word in a heading ("Paxbook?", "Days?"). */
   .text-gradient {
-    background-image: linear-gradient(90deg, #4f46e5, #a21caf, #db2777);
+    background-image: linear-gradient(90deg, #818cf8, #e879f9, #f472b6);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -67,7 +128,7 @@ body {
     font-family: var(--font-caveat), cursive;
     font-weight: 700;
     line-height: 1;
-    color: #c27c0c;
+    color: #f5b73d;
   }
 
   /* Round-topped "door" frame used for hero photos and destination arches. */
@@ -197,7 +258,7 @@ body {
 
   .search-pill {
     border-radius: 999px;
-    background: #fff;
+    background: rgb(var(--surface));
     box-shadow:
       0 0 0 1px rgb(255 255 255 / 0.5),
       0 0 0 8px rgb(241 186 75 / 0.22),
@@ -223,12 +284,12 @@ body {
   }
 
   .dashed-rule {
-    border-top: 1.5px dashed rgb(47 111 203 / 0.28);
+    border-top: 1.5px dashed rgb(125 166 240 / 0.28);
   }
 
   .flat-card {
-    background: #fff;
-    border: 1px solid rgb(226 232 244);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(255 255 255 / 0.08);
     border-radius: 1.5rem;
     box-shadow: 0 12px 30px -24px rgb(18 42 99 / 0.35);
     transition:
@@ -237,7 +298,7 @@ body {
       transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .flat-card:hover {
-    border-color: rgb(47 111 203 / 0.4);
+    border-color: rgb(125 166 240 / 0.45);
     box-shadow: var(--shadow-lift);
     transform: translateY(-4px);
   }
@@ -246,11 +307,11 @@ body {
     position: relative;
     padding-block: 0.65rem;
     font-weight: 700;
-    color: rgb(100 116 139);
+    color: rgb(var(--ink-muted));
     white-space: nowrap;
   }
   .tab-underline[data-active="true"] {
-    color: #2f6fcb;
+    color: rgb(var(--brand-text));
   }
   .tab-underline[data-active="true"]::after {
     content: "";
@@ -280,22 +341,22 @@ body {
     border-radius: 9999px;
     font-size: 0.8rem;
     font-weight: 700;
-    border: 2px solid rgb(203 213 225);
-    color: rgb(100 116 139);
-    background: #fff;
+    border: 2px solid rgb(255 255 255 / 0.18);
+    color: rgb(var(--ink-muted));
+    background: rgb(var(--surface));
     transition:
       border-color 0.3s ease,
       background 0.3s ease,
       color 0.3s ease;
   }
   .step-circle[data-state="active"] {
-    border-color: var(--tenant-primary, #19377f);
-    color: var(--tenant-primary, #19377f);
-    background: var(--tenant-primary-light, #e6f0fa);
+    border-color: rgb(var(--brand-text));
+    color: rgb(var(--brand-text));
+    background: rgb(var(--surface-3));
   }
   .step-circle[data-state="complete"] {
-    border-color: var(--tenant-primary, #19377f);
-    background: var(--tenant-primary, #19377f);
+    border-color: rgb(var(--brand-solid));
+    background: rgb(var(--brand-solid));
     color: #fff;
   }
 
@@ -303,10 +364,10 @@ body {
     flex: 1 1 auto;
     height: 2px;
     min-width: 1.5rem;
-    background: rgb(203 213 225);
+    background: rgb(255 255 255 / 0.15);
   }
   .step-connector[data-complete="true"] {
-    background: var(--tenant-primary, #19377f);
+    background: rgb(var(--brand-solid));
   }
 
   /* Consistent hover/padding wrapper for multi-select filter checkboxes on the results page. */
@@ -319,14 +380,14 @@ body {
     transition: color 0.2s ease;
   }
   .filter-check:hover {
-    color: var(--tenant-primary, #19377f);
+    color: rgb(var(--brand-text));
   }
 }
 
 :root {
-  --shadow-card: 0 1px 2px rgb(15 23 55 / 0.06), 0 18px 40px -28px rgb(15 23 55 / 0.35);
-  --shadow-lift: 0 2px 6px rgb(15 23 55 / 0.08), 0 28px 60px -30px rgb(15 23 55 / 0.45);
-  --shadow-float: 0 30px 70px -32px rgb(10 18 40 / 0.45);
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.4), 0 18px 40px -26px rgb(0 0 0 / 0.75);
+  --shadow-lift: 0 2px 6px rgb(0 0 0 / 0.4), 0 28px 60px -28px rgb(0 0 0 / 0.85);
+  --shadow-float: 0 30px 70px -30px rgb(0 0 0 / 0.85);
 }
 
 @keyframes paxFadeUp {

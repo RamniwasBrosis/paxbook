@@ -38,7 +38,7 @@ export function ClassicHeader({
       <div className="mx-auto flex h-16 max-w-[90rem] items-center gap-3 px-4 sm:px-6 lg:h-20 lg:px-10">
         <Link href="/" className="flex shrink-0 items-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-10 w-auto lg:h-14" />
+            <img src={logoUrl} alt={siteName} className="h-10 w-auto rounded-lg lg:h-14" />
           ) : (
             <span className="font-display text-xl font-extrabold tracking-tight text-navy-deep">{siteName}</span>
           )}

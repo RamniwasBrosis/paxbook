@@ -25,7 +25,7 @@ export function ReviewCard({ testimonial }: { testimonial: TestimonialDto }) {
         <p className="text-xs text-ink-muted">Pax Name</p>
         <p className="font-display text-lg font-extrabold text-navy-deep">{name}</p>
       </div>
-      <blockquote className="text-[0.95rem] leading-relaxed text-[#3d4b72]">{testimonial.content}</blockquote>
+      <blockquote className="text-[0.95rem] leading-relaxed text-ink-muted">{testimonial.content}</blockquote>
       {location ? (
         <figcaption className="mt-auto inline-flex items-center gap-1.5 rounded-full bg-navy-deep px-4 py-2 text-xs font-bold text-white">
           <MapPin className="h-3.5 w-3.5" strokeWidth={2.25} />

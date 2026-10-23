@@ -155,7 +155,7 @@ function SeatGrid({
           <path d="M64 58 L84 50 L86 64 L66 70 Z M88 49 L99 47 L99 62 L90 63 Z M101 47 L112 49 L110 63 L101 62 Z M116 50 L136 58 L134 70 L114 64 Z" fill="#1b3f8f" opacity="0.85" />
         </svg>
 
-        <div className="relative -mt-px border-x-2 border-[#dbe3f1] bg-mist/60 px-2 pb-6 pt-1 sm:px-5">
+        <div className="relative -mt-px border-x-2 border-slate-200 bg-mist/60 px-2 pb-6 pt-1 sm:px-5">
           <p className="mb-3 text-center text-[0.65rem] font-bold uppercase tracking-[0.25em] text-ink-muted">Front</p>
 
           {/* column letters */}

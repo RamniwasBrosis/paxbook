@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
+import { darkTheme } from "../../packages/ui/tailwind-dark";
 
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
@@ -40,13 +42,6 @@ const config: Config = {
         display: ["var(--font-sora)", "var(--font-jakarta)", "ui-sans-serif", "sans-serif"],
         script: ["var(--font-caveat)", "cursive"],
       },
-      boxShadow: {
-        premium: "0 20px 40px -12px rgb(15 23 42 / 0.15)",
-        glow: "0 0 0 8px rgb(245 183 61 / 0.22)",
-        soft: "0 12px 30px -20px rgb(18 42 99 / 0.35)",
-        card: "0 16px 34px -22px rgb(18 42 99 / 0.4)",
-        float: "0 26px 50px -28px rgb(18 42 99 / 0.45)",
-      },
       keyframes: {
         marquee: {
           "0%": { transform: "translateX(0)" },
@@ -66,6 +61,8 @@ const config: Config = {
         fly: "fly 2.4s ease-in-out infinite",
         runway: "runway 0.8s linear infinite",
       },
+      // Full dark theme: remaps light colour names per utility (see packages/ui/tailwind-dark.ts).
+      ...darkTheme(colors),
     },
   },
   plugins: [],

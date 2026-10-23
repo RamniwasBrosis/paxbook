@@ -1,4 +1,6 @@
 import type { Config } from "tailwindcss";
+import colors from "tailwindcss/colors";
+import { darkTheme } from "../../packages/ui/tailwind-dark";
 
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
@@ -14,6 +16,8 @@ const config: Config = {
           DEFAULT: "#d97706",
         },
       },
+      // Full dark theme: remaps light colour names per utility (see packages/ui/tailwind-dark.ts).
+      ...darkTheme(colors),
     },
   },
   plugins: [],

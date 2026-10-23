@@ -56,7 +56,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <aside className="flex w-64 flex-none flex-col border-r border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-5 py-4">
-          <img src="/logo.jpg" alt="Paxbook" className="h-8 w-auto" />
+          <img src="/logo.jpg" alt="Paxbook" className="h-8 w-auto rounded-md" />
           <p className="mt-2 text-xs text-slate-500">{admin.roleName}</p>
         </div>
 

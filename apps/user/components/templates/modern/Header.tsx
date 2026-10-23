@@ -33,7 +33,7 @@ export function ModernHeader({
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
         <Link href="/" className="flex items-center">
           {logoUrl ? (
-            <img src={logoUrl} alt={siteName} className="h-11 w-auto" />
+            <img src={logoUrl} alt={siteName} className="h-11 w-auto rounded-lg" />
           ) : (
             <span className="text-lg font-bold uppercase tracking-widest text-slate-900">{siteName}</span>
           )}
