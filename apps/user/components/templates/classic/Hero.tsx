@@ -66,18 +66,6 @@ export function ClassicHero({
           </div>
 
           <div className="relative mx-auto h-[21rem] w-full max-w-[34rem] sm:h-[30rem]">
-            <svg viewBox="0 0 560 480" className="absolute inset-0 h-full w-full" aria-hidden="true" preserveAspectRatio="none">
-              <path
-                d="M 30 440 C 90 260, 200 170, 330 160 S 520 100, 540 24"
-                fill="none"
-                stroke="#1b3f8f"
-                strokeWidth="2"
-                strokeDasharray="7 8"
-                opacity="0.5"
-              />
-              <circle cx="30" cy="440" r="7" fill="#f5b73d" />
-              <circle cx="540" cy="24" r="7" fill="#db2777" />
-            </svg>
             <div className="arch absolute left-1/2 top-6 h-[88%] w-[72%] -translate-x-1/2 overflow-hidden rounded-b-[1.75rem] border-8 border-white bg-mist shadow-float">
               <HeroVideo src={heroVideoUrl || "/hero.mp4"} poster={backgroundImageUrl} />
             </div>
