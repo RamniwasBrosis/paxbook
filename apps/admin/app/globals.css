@@ -7,20 +7,7 @@ body {
   height: 100%;
 }
 
-/* Dark theme palette, shared names with the user site (see packages/ui/tailwind-dark.ts). */
-:root {
-  color-scheme: dark;
-  --page: 7 13 31;
-  --surface: 15 26 53;
-  --surface-2: 21 34 70;
-  --surface-3: 29 45 90;
-  --band: 10 19 44;
-  --ink: 238 242 255;
-  --ink-muted: 169 181 210;
-  --navy-solid: 35 64 143;
-  --brand-solid: 47 111 194;
-  --brand-text: 125 166 240;
-}
+/* Dark (default) and light palettes come from the Tailwind theme plugin (packages/ui/tailwind-dark.ts). */
 
 .bg-accent,
 .hover\:bg-accent:hover {
@@ -29,19 +16,6 @@ body {
   --brand-text: 18 42 99;
 }
 
-@media print {
-  :root {
-    color-scheme: light;
-    --page: 255 255 255;
-    --surface: 255 255 255;
-    --surface-2: 248 250 252;
-    --surface-3: 241 245 249;
-    --ink: 15 23 42;
-    --ink-muted: 100 116 139;
-    --brand-solid: 26 60 140;
-    --brand-text: 26 60 140;
-  }
-}
 
 html,
 body {

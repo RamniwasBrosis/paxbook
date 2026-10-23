@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ShieldCheck, Headset, Star, Plane } from "lucide-react";
+import { ShieldCheck, Headset } from "lucide-react";
 import type { DestinationDto, PublicStatsDto } from "@paxbook/types";
 import { PlanTripButton } from "@/components/PlanTripButton";
 import { HomeSearchTabs } from "@/components/HomeSearchTabs";
@@ -81,27 +81,6 @@ export function ClassicHero({
             <div className="arch absolute left-1/2 top-6 h-[88%] w-[72%] -translate-x-1/2 overflow-hidden rounded-b-[1.75rem] border-8 border-white bg-mist shadow-float">
               <HeroVideo src={heroVideoUrl || "/hero.mp4"} poster={backgroundImageUrl} />
             </div>
-            <div className="absolute right-0 top-16 hidden items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-float sm:flex">
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-violet-100">
-                <Plane className="h-5 w-5 text-violet-700" strokeWidth={2} />
-              </span>
-              <span className="flex flex-col leading-tight">
-                <strong className="text-sm text-navy-deep">Flights, stays &amp; visas</strong>
-                <span className="text-xs text-ink-muted">One booking, one expert</span>
-              </span>
-            </div>
-            {stats?.averageRating ? (
-              <div className="absolute bottom-8 left-0 flex items-center gap-3 rounded-2xl bg-white px-4 py-3 shadow-float">
-                <span className="flex gap-0.5 text-accent" aria-label={`Rated ${stats.averageRating} out of 5`}>
-                  {Array.from({ length: 5 }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-current" strokeWidth={0} />
-                  ))}
-                </span>
-                <span className="text-sm font-bold text-navy-deep">
-                  {stats.averageRating}/5 <span className="font-medium text-ink-muted">· {stats.reviewCount}+ reviews</span>
-                </span>
-              </div>
-            ) : null}
           </div>
         </div>
       </section>

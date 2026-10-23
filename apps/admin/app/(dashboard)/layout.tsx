@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ThemeToggle } from "../../components/ThemeToggle";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -57,7 +58,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="flex w-64 flex-none flex-col border-r border-slate-200 bg-white">
         <div className="border-b border-slate-100 px-5 py-4">
           <img src="/logo.jpg" alt="Paxbook" className="h-8 w-auto rounded-md" />
-          <p className="mt-2 text-xs text-slate-500">{admin.roleName}</p>
+          <div className="mt-2 flex items-center justify-between gap-2">
+            <p className="text-xs text-slate-500">{admin.roleName}</p>
+            <ThemeToggle />
+          </div>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">

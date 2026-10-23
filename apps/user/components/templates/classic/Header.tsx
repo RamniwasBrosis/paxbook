@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "../../ThemeToggle";
 import { Phone, Sparkles, Menu } from "lucide-react";
 import type { DestinationDto } from "@paxbook/types";
 import { readSession } from "@/lib/session";
@@ -78,6 +79,7 @@ export function ClassicHeader({
             </span>
             7300047077
           </a>
+          <ThemeToggle className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 text-navy-deep transition-colors hover:border-brand-blue hover:text-brand-blue" />
           <HeaderActions
             destinations={destinations}
             session={session ? { name: session.customer.name } : null}

@@ -225,7 +225,7 @@ export function TripCustomizerWizard({
 
       <WizardHero eyebrow="Customizing your trip to" title={destination.name} imageUrl={destination.heroImageUrl} />
 
-      <div ref={topRef} className="scroll-mt-32 bg-[radial-gradient(ellipse_at_top,rgb(245_183_61/0.14)_0%,rgb(10_19_44)_45%,rgb(7_13_31)_85%)]">
+      <div ref={topRef} className="scroll-mt-32 bg-[radial-gradient(ellipse_at_top,rgb(245_183_61/0.16)_0%,rgb(var(--band-2))_45%,rgb(var(--page))_85%)]">
         <div className="shell py-12 sm:py-16">
           {step === "travellers" ? (
             <WizardStep title="Who are you travelling with?" onNext={goNext} nextDisabled={!travellerType} nextLabel="Choose your interests">

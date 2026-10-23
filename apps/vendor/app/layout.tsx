@@ -2,6 +2,8 @@ import "./globals.css";
 import Link from "next/link";
 import { readSession } from "@/lib/session";
 import { LogoutButton } from "@/components/LogoutButton";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 
 export const metadata = {
   title: { default: "Paxbook Vendor Portal", template: "%s | Paxbook Vendor" },
@@ -20,7 +22,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const session = readSession();
 
   return (
-    <html lang="en">
+    // The theme script may set data-theme before React hydrates.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-screen flex-col bg-slate-50 text-slate-800">
         {session ? (
           <header className="border-b border-slate-200 bg-white">
@@ -36,6 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 ))}
               </nav>
               <div className="flex items-center gap-4">
+                <ThemeToggle />
                 <span className="hidden text-sm text-slate-500 sm:inline">{session.vendor.name}</span>
                 <LogoutButton />
               </div>

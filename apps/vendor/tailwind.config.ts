@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 import colors from "tailwindcss/colors";
-import { darkTheme } from "../../packages/ui/tailwind-dark";
+import { darkTheme, themeVars } from "../../packages/ui/tailwind-dark";
 
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
@@ -20,7 +20,8 @@ const config: Config = {
       ...darkTheme(colors),
     },
   },
-  plugins: [],
+  // Dark (default) and light palettes as CSS variables; <html data-theme="light"> switches.
+  plugins: [themeVars(colors, { dark: { "--brand-solid": "15 118 110", "--brand-text": "94 234 212" }, light: { "--brand-solid": "15 118 110", "--brand-text": "15 118 110" } })],
 };
 
 export default config;

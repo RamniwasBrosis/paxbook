@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "../../ThemeToggle";
 import { User, Phone, Sparkles, Menu } from "lucide-react";
 import type { DestinationDto } from "@paxbook/types";
 import { readSession } from "@/lib/session";
@@ -65,6 +66,7 @@ export function ModernHeader({
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition-colors hover:border-brand hover:text-brand" />
           <a
             href="tel:+917300047077"
             className="hidden items-center gap-1.5 text-sm font-semibold text-slate-600 transition-colors hover:text-brand xl:flex"

@@ -7,20 +7,7 @@ body {
   height: 100%;
 }
 
-/* Dark theme palette (see packages/ui/tailwind-dark.ts); the vendor portal keeps its teal brand. */
-:root {
-  color-scheme: dark;
-  --page: 7 13 31;
-  --surface: 15 26 53;
-  --surface-2: 21 34 70;
-  --surface-3: 29 45 90;
-  --band: 10 19 44;
-  --ink: 238 242 255;
-  --ink-muted: 169 181 210;
-  --navy-solid: 35 64 143;
-  --brand-solid: 15 118 110;
-  --brand-text: 94 234 212;
-}
+/* Dark (default) and light palettes come from the Tailwind theme plugin (packages/ui/tailwind-dark.ts). */
 
 .bg-accent,
 .hover\:bg-accent:hover {
@@ -28,18 +15,6 @@ body {
   --ink-muted: 60 74 112;
 }
 
-@media print {
-  :root {
-    color-scheme: light;
-    --page: 255 255 255;
-    --surface: 255 255 255;
-    --surface-2: 248 250 252;
-    --surface-3: 241 245 249;
-    --ink: 15 23 42;
-    --ink-muted: 100 116 139;
-    --brand-text: 15 118 110;
-  }
-}
 
 html,
 body {

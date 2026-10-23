@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 import colors from "tailwindcss/colors";
-import { darkTheme } from "../../packages/ui/tailwind-dark";
+import { darkTheme, themeVars } from "../../packages/ui/tailwind-dark";
 
 const config: Config = {
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
@@ -65,7 +65,8 @@ const config: Config = {
       ...darkTheme(colors),
     },
   },
-  plugins: [],
+  // Dark (default) and light palettes as CSS variables; <html data-theme="light"> switches.
+  plugins: [themeVars(colors)],
 };
 
 export default config;

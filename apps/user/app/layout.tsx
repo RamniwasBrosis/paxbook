@@ -1,4 +1,5 @@
 import { Caveat, Plus_Jakarta_Sans, Sora } from "next/font/google";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import Script from "next/script";
 import "./globals.css";
 import { Header } from "@/components/Header";
@@ -42,6 +43,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang="en"
+      // The theme script below may set data-theme before React hydrates.
+      suppressHydrationWarning
       className={`${jakarta.variable} ${sora.variable} ${caveat.variable}`}
       style={
         {
@@ -51,6 +54,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         } as React.CSSProperties
       }
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body className="flex min-h-screen flex-col bg-white font-sans">
         {branding.ga4MeasurementId ? (
           <>
